@@ -11092,7 +11092,7 @@ function initiateLogoCheck(videoId, logoFile) {
 // ********NotDOMed**************Part 41 Note:> i upgraded this area as a 'backup' to make sure audios work at their scheduled time. -4:58pm on 1/24/25
 
 function checkDatabaseForScheduledMedia() {
-    fetch('public_html/includes/AudioScheduledTimeBackUp.php')
+    fetch('includes/AudioScheduledTimeBackUp.php')
         .then(response => response.json())
         .then(data => {
             if (data.status === "success") {
