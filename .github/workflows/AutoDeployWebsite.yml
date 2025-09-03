@@ -1,0 +1,100 @@
+# DON'T TOUCH THIS OR MODIFY THIS, JUST READ IT; ITS HELPFUL! -Salem ("Go find the "Main Code" if you're looking for a place to practice your coding)
+
+# What this does:>>>> Part A.) "We have 2 folders. Folder 1 (the 'includes' folder) and Folder 2 (the 'main code' folder)."
+# Part A.1) Folder 1 ('includes' folder:> ) has "the individual files that we create. our code, (the 'main code' in the 'main code folder') links to these files, to make sure our website works correctly. once you create a file? and you're ready to send it over to hostinger? then please read this area and look for "***Folder 1" to dissect and figure out how to attach your code to get sent over to hostinger aswell. Try not to mess this up; but do; try to figure out how this goes overtime. this is called a '.github/workflows/ .yml' <creation. (what does this mean? this means when 'github' 'scans your repo' if it sees a '.github/workflows' then it 'knows' its being told 'do a github action, and read the .yml file to learn what kind'. you can name what your yml file/github action is, before the period in the .yml (Example: "DeployBoy.yml" or "AutoLoadingWebsiteOnHostinger.yml" stuff like so; thats where you can name your yml and what this does))"
+# Part A.2 Folder 2 ('includes 'main code folder') shouldnt really be touched. If you "Checked out Lesson 3" we share with you "How to build a website using hostinger themes." a few thing about "themes" A.) You can either:> "build your code from scratch" or "use a wordpress template to help structure you out." ID RATHER BUILD OUR OWN CODE FROM SCRATCH!" but, if you want to use 'woocommerce' (which 'gives a website e-commerce/selling-items capability') then using a theme:>>>>>>>>>>>>>>>>>> that comes with 'woocommerce,' (and then deleting/& building off the now deleted/empty theme- while keeping woocommerce-) means you have 'a safe way for you/your client to start accepting money with credit cards instantly; without worrying if your own custom code will have any integration features with woocommerce or figuring out how to connect to them' <<<<<<<<<<<<<<<<<<<<<<<<<< MEANING, WHAT I RECCOMMEND, AND WHAT YOU ARE SEEING, IS THIS:> 1.) If you use a wordpress theme (in our (uminion.com's) case: The "Astra" Theme [which COMES WITH WOOCOMMERCE PREINSTALLED AND EASY TO CONNECT TO via just adding /shop or /cart or /checkout to the end of your website's name (like uminion.com/shop uminion.com/cart uminion.com/checkout <<<THIS IS WHAT "woocommerce prepackaged in" LOOKS LIKE! you 'get the astra theme' then 'delete everything except the woocommerce part in the astra theme' and then 'build your own code on top of it')]) 2.) Now here's where it gets tricky. "because its a THEME? then when 'astra, upgrades their theme(astra)'s code? Then you lose all your stuff. darn. The way to AVOID THIS? is you look at "astra" as a "parent". and then you create a child theme from it. (in our case: "Astra-Child"). this way, when "astra"(the company; does a 'theme update') and "kicks everyone off astra" WELLLLLL!!!! YOUUUUUU WONT BE KICKED OFFFFFFF, BECAUSEEEEE "astra's code is in the parent not the child" 3.) So to make sure we have our "astra-child" HOOK, ONTO, THE "Astra parent", THEN WHEN WE LOOK AT OUR "Themes" FOLDER, WE SEE 3 FILES (The first of three being a css that we dont touch (we do css in the main code). the second of three being the main code, called front page. AND THE THIRD OF THREE FILES INSIDE OUR "Themes/astra-child" FOLDER IS:>>>>> "a custom made wordpress plugin, that tells our astra-parent, we are putting our page ('front-page')'on top of the astra-parent.'" this is called; the 'functions' page. 4.) I highly highly highly recommend (not touching but:) learning how this 'functions' page works. this is not html, css, or javascript. this is a different coding language called: "Wordpress plugin". thats the coding language. thats what it looks like. thats what it does. if and when you create a website, using a (parent)theme, to adopt woocommerce/ecommerce capability, and want YOUR website to 'lay over the main (wordpress) theme' you then: A.) create the (wordpress) child theme (astra-child) B.) create the 'Functions wordpressplugin' that will connect your 'front page/index/main landing page' to overlap over the (parents)themes page (so that way, if and when 'astra' (or whoever you choose) 'updates their theme' your stuff doesnt get kicked off. cause its in a different folder, a child of that theme to stay connected to woocommerce (and not lose track of your product during maintenance updates), and uses the functions page to help connect the child theme (in our case: "***Folder 2 contents including main code". and THIS .yml file THAT YOU SEE BELOW, IS HOW TO SEND THE 'astra-child' THEME, INTO, THE "Themes folder" WHICH HAS THE "Astra-parent" OVER IN HOSTINGER (You, do not, have access to that; cause its irrelevant to us. we just need the 'astra-child' so you can 'learn how to create a functions page and main code and the css that comes with 'this area (not really OUR css, that's inside our main code and or our 'includes folder' (Folder 1))'))).
+# Part B.) TL;DR:> "This sends our two folders, over to hostinger, for autodeployment; when things get git pushed." -Salem
+
+
+#>>>>>>>>>>>>>>>>>>The code below this, is the .yml file to 'autodeploy from github to hostinger using a 'github action.' -Salem (if you're gonna copy paste, and tell an ai to do 'something like this but more for yourself with diff file names and folder locations;' copy whats in between:>>>>>>>>>>>>>>>>>>> & <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< (and remove my lil notes in folder 1 and 2))
+
+name: Deploy to Hostinger via FTP
+
+on:
+  push:
+    branches:
+      - main    # change if you deploy from a different branch
+  workflow_dispatch: {}  # lets you run manually from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Optional: show what commit is deploying
+      - name: Show git status
+        run: |
+          git rev-parse --short HEAD
+          ls -la
+
+      # (***Folder 1, what gets sent over with Folder 1 the 'includes' (read it and figure out how to add your own without messing it up please- thank you -Salem)) 
+      # Prepare an includes-bundle directory with only the files you want to upload
+      - name: Prepare includes bundle
+        run: |
+          set -e
+          mkdir -p includes-bundle
+          cp includes/AudioScheduledTimeBackUp.php includes-bundle/
+          cp includes/checkAudioPlayed.php includes-bundle/
+          cp includes/fetchFiles.php includes-bundle/
+          cp includes/filterExpiredEntries.php includes-bundle/
+          cp includes/getHistoricalArchive.php includes-bundle/
+          cp includes/getPopularityArchive.php includes-bundle/
+          cp includes/getRandomArchive.php includes-bundle/
+          cp includes/getRecentArchive.php includes-bundle/
+          cp includes/getScheduledMp3s.php includes-bundle/
+          cp includes/getScheduledVideos.php includes-bundle/
+          cp includes/getUpcomingVideos.php includes-bundle/
+          cp includes/logout.php includes-bundle/
+          cp includes/submitMp3.php includes-bundle/
+          cp includes/updateAudioPlayedStatus.php includes-bundle/
+          cp includes/updateAudioTimePlayed.php includes-bundle/
+          cp includes/updateAudioTimes.php includes-bundle/
+          cp includes/UpdateSkippedAudio.php includes-bundle/
+          cp includes/updateVideoAsPlayed.php includes-bundle/
+          cp includes/updateVideoPlayed.php includes-bundle/
+          cp includes/updateVideoStatus.php includes-bundle/
+          cp includes/uploadRecordedAudio.php includes-bundle/
+          cp includes/VideoSubmit.php includes-bundle/
+          cp includes/VoteDown.php includes-bundle/
+          cp includes/VoteUp.php includes-bundle/
+          echo "Bundle contents:" && ls -la includes-bundle
+
+      # (***Folder 2, what gets sent over with Folder 2 the 'main code folder' (read it and figure out/learn how to copy/recreate your own when you want to send just 'one folder' to a location (like on a hostinger FTP system. ask ai to help create a 'github action .yml file that can sync with hostinger's FTP system to autodeploy our code and make em live' or something like that and you should be fine) please dont mess this part up/no need to modify it/just read and learn please- thank you -Salem)) 
+      # Deploy the astra-child theme folder into wp-content/themes
+      - name: Upload astra-child theme
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: ${{ secrets.FTP_PORT }}
+          local-dir: ./wp-content/themes/
+          server-dir: wp-content/themes/
+          exclude: |
+            **/.git*
+            **/.DS_Store
+            **/node_modules/**
+          include: |
+            astra-child/**
+
+      # Deploy only the selected PHP files to includes
+      - name: Upload selected PHP files to includes
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: ${{ secrets.FTP_PORT }}
+          local-dir: ./includes-bundle/
+          server-dir: includes/
+          exclude: |
+            **/.git*
+            **/.DS_Store
+
+
+#<<<<<<<<<<<<<<<<<<The code above this, is the .yml file to 'autodeploy from github to hostinger using a 'github action.' -Salem
