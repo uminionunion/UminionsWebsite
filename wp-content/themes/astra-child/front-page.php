@@ -1845,7 +1845,7 @@ button {
                 <!-- Input for selecting the audio file, initially hidden -->
                 <input type="file" id="fileInput" name="my_audio" style="display: none;">
                 <!-- Button to trigger the upload of MP3 file -->
-                <button type="button" id="uploadMp3Btn">Upload Mp3?</button>
+                <button type="button" id="uploadMp3Btn">Submit Mp3?</button>
                 
             </form>
 
