@@ -1664,6 +1664,60 @@ button {
 
 /* The code above is for the toast for security purposes */
 
+
+
+/* The code below is for GitHubIssue#35 Part 1 of 3 */
+
+			/* stylesForLogoBar.css */
+
+.CarouselContainerForLogoBar {
+  width: 300px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  position: relative;
+  border: 1px solid transparent;
+}
+
+.CarouselButtonForLogoBar {
+  width: 20px;
+  height: 55px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.LogoStripForLogoBar {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+  justify-content: space-evenly;
+  align-items: center;
+  background: transparent;
+  overflow: hidden;
+}
+
+.LogoForLogoBar {
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+}
+
+.LogoForLogoBar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+			
         </style>
     </head>
     
@@ -3161,8 +3215,15 @@ button {
 <!-- Toast Container for Bug Image -->
 <div id="toastcontainerforbugimage" class="toast-container-for-bug-image"></div>
 
+<!--Implementing GitHubIssue#35 Part 2 of 3 -->
 
+  <div class="CarouselContainerForLogoBar">
+    <button class="CarouselButtonForLogoBar" onclick="scrollLeftForLogoBar()">◀</button>
+    <div class="LogoStripForLogoBar" id="LogoStripForLogoBar"></div>
+    <button class="CarouselButtonForLogoBar" onclick="scrollRightForLogoBar()">▶</button>
+  </div>
 
+		
 <!-- Ending div for "Archive Container" -->
 </div>
 
@@ -11818,7 +11879,57 @@ button.addEventListener('click', () => {
 // ********NotDOMed**************Part 53 This code below, is the code for: 
 
 
+// code in here is for GitHubIssue#35 part 3 of 3
 
+	// scriptForLogoBar.js
+const LogosForLogoBar = [
+  { name: "Facebook", url: "https://www.facebook.com/share/g/16rAWr8eDn/", img: "https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" },
+  { name: "YouTube", url: "https://www.youtube.com/@UminionUnion", img: "https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg" },
+  { name: "Bluesky", url: "https://bsky.app/profile/uminion.bsky.social", img: "https://upload.wikimedia.org/wikipedia/commons/6/6e/Bluesky_Logo.svg" },
+  { name: "Instagram", url: "https://www.instagram.com/theuminionunion?igsh=ajdjeGUycHRmczVs&ut-m_source=qr", img: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg" },
+  { name: "Twitch", url: "https://www.twitch.tv/theuminionunion", img: "https://upload.wikimedia.org/wikipedia/commons/2/26/Twitch_logo.svg" },
+  { name: "Discord", url: "https://discord.com/channels/1357919291428573204/1357919292280144075", img: "https://upload.wikimedia.org/wikipedia/commons/9/98/Discord_logo.svg" },
+  { name: "Threads", url: "https://www.threads.com/@theuminionunion", img: "https://upload.wikimedia.org/wikipedia/commons/4/4f/Threads_%28app%29_logo.svg" },
+  { name: "Mastodon", url: "https://mastodon.social/@uminion", img: "https://upload.wikimedia.org/wikipedia/commons/4/4f/Mastodon_Logotype_%28Simple%29.svg" },
+  { name: "Patreon", url: "https://www.patreon.com/uminion", img: "https://upload.wikimedia.org/wikipedia/commons/9/94/Patreon_logo.svg" },
+  { name: "Telegram", url: "https://t.me/TheUminionUnion", img: "https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" },
+  { name: "Snapchat", url: "https://snapchat.com/t/Qjp6doq5", img: "https://upload.wikimedia.org/wikipedia/en/a/ad/Snapchat_logo.svg" },
+  { name: "Tumblr", url: "https://www.tumblr.com/blog/theuminionunion", img: "https://upload.wikimedia.org/wikipedia/commons/3/31/Tumblr_Logo.svg" },
+  { name: "Pinterest", url: "https://www.pinterest.com/theuminionunion/", img: "https://upload.wikimedia.org/wikipedia/commons/0/08/Pinterest-logo.png" },
+  { name: "TikTok", url: "https://www.tiktok.com/@theuminionunion?_t=ZT-8zoud0oiVCf&_r=1", img: "https://upload.wikimedia.org/wikipedia/en/6/69/TikTok_logo.svg" },
+  { name: "Twitter/X", url: "https://x.com/theuminionunion", img: "https://upload.wikimedia.org/wikipedia/commons/5/53/X_logo_2023.svg" }
+];
+
+let CurrentIndexForLogoBar = 0;
+
+function renderLogosForLogoBar() {
+  const strip = document.getElementById("LogoStripForLogoBar");
+  strip.innerHTML = "";
+  const shuffledForLogoBar = [...LogosForLogoBar].sort(() => 0.5 - Math.random());
+  const visibleForLogoBar = shuffledForLogoBar.slice(CurrentIndexForLogoBar, CurrentIndexForLogoBar + 5);
+  visibleForLogoBar.forEach(logo => {
+    const div = document.createElement("div");
+    div.className = "LogoForLogoBar";
+    div.onclick = () => window.open(logo.url, "_blank");
+    const img = document.createElement("img");
+    img.src = logo.img;
+    img.alt = logo.name;
+    div.appendChild(img);
+    strip.appendChild(div);
+  });
+}
+
+function scrollLeftForLogoBar() {
+  CurrentIndexForLogoBar = (CurrentIndexForLogoBar - 5 + LogosForLogoBar.length) % LogosForLogoBar.length;
+  renderLogosForLogoBar();
+}
+
+function scrollRightForLogoBar() {
+  CurrentIndexForLogoBar = (CurrentIndexForLogoBar + 5) % LogosForLogoBar.length;
+  renderLogosForLogoBar();
+}
+
+renderLogosForLogoBar();
 
 
 </script>
