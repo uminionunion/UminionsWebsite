@@ -11883,31 +11883,34 @@ button.addEventListener('click', () => {
 
 	// scriptForLogoBar.js
 const LogosForLogoBar = [
-  {
-    name: "Snapchat",
-    url: "https://snapchat.com/t/Qjp6doq5",
-    img: "https://1000logos.net/wp-content/uploads/2017/08/Snapchat-logo.png"
-  },
-  {
-    name: "Mastodon",
-    url: "https://mastodon.social/@uminion",
-    img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/mastodon.svg"
-  },
-  {
-    name: "Twitter/X",
-    url: "https://x.com/theuminionunion",
-    img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/x.svg"
-  },
-  {
-    name: "TikTok",
-    url: "https://www.tiktok.com/@theuminionunion?_t=ZT-8zoud0oiVCf&_r=1",
-    img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/tiktok.svg"
-  },
-  {
-    name: "Bluesky",
-    url: "https://bsky.app/profile/uminion.bsky.social",
-    img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/bluesky.svg"
-  }
+  { name: "Facebook", url: "https://www.facebook.com/share/g/16rAWr8eDn/", img: "https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" },
+  { name: "YouTube", url: "https://www.youtube.com/@UminionUnion", img: "https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg" },
+
+  // Bluesky (working source)
+  { name: "Bluesky", url: "https://bsky.app/profile/uminion.bsky.social", img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/bluesky.svg" },
+
+  { name: "Instagram", url: "https://www.instagram.com/theuminionunion?igsh=ajdjeGUycHRmczVs&ut-m_source=qr", img: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg" },
+  { name: "Twitch", url: "https://www.twitch.tv/theuminionunion", img: "https://upload.wikimedia.org/wikipedia/commons/2/26/Twitch_logo.svg" },
+  { name: "Discord", url: "https://discord.com/channels/1357919291428573204/1357919292280144075", img: "https://1000logos.net/wp-content/uploads/2021/04/Discord-logo.png" },
+  { name: "Threads", url: "https://www.threads.com/@theuminionunion", img: "https://1000logos.net/wp-content/uploads/2023/07/Threads-Logo.png" },
+
+  // Mastodon (working source)
+  { name: "Mastodon", url: "https://mastodon.social/@uminion", img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/mastodon.svg" },
+
+  { name: "Patreon", url: "https://www.patreon.com/uminion", img: "https://upload.wikimedia.org/wikipedia/commons/9/94/Patreon_logo.svg" },
+  { name: "Telegram", url: "https://t.me/TheUminionUnion", img: "https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" },
+
+  // Snapchat (working source)
+  { name: "Snapchat", url: "https://snapchat.com/t/Qjp6doq5", img: "https://1000logos.net/wp-content/uploads/2017/08/Snapchat-logo.png" },
+
+  { name: "Tumblr", url: "https://www.tumblr.com/blog/theuminionunion", img: "https://1000logos.net/wp-content/uploads/2017/06/Tumblr-logo.png" },
+  { name: "Pinterest", url: "https://www.pinterest.com/theuminionunion/", img: "https://upload.wikimedia.org/wikipedia/commons/0/08/Pinterest-logo.png" },
+
+  // TikTok (working source)
+  { name: "TikTok", url: "https://www.tiktok.com/@theuminionunion?_t=ZT-8zoud0oiVCf&_r=1", img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/tiktok.svg" },
+
+  // Twitter/X (working source)
+  { name: "Twitter/X", url: "https://x.com/theuminionunion", img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/x.svg" }
 ];
 
 let CurrentIndexForLogoBar = 0;
@@ -11916,6 +11919,7 @@ function renderLogosForLogoBar() {
   const strip = document.getElementById("LogoStripForLogoBar");
   strip.innerHTML = "";
 
+  // Randomize order
   const shuffledForLogoBar = [...LogosForLogoBar].sort(() => 0.5 - Math.random());
   const visibleForLogoBar = shuffledForLogoBar.slice(CurrentIndexForLogoBar, CurrentIndexForLogoBar + 5);
 
@@ -11945,6 +11949,7 @@ function scrollRightForLogoBar() {
 }
 
 renderLogosForLogoBar();
+
 
 
 
