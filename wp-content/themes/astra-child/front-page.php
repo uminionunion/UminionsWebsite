@@ -1671,7 +1671,7 @@ button {
 			/* stylesForLogoBar.css */
 
 .CarouselContainerForLogoBar {
-  width: 700px;
+  width: 600px;
   height: 55px;
   display: flex;
   align-items: center;
