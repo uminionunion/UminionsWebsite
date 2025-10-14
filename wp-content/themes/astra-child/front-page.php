@@ -5991,7 +5991,7 @@ const reorderIntervalId = setInterval(() => {
                     ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
                     
                         
-                        ID: ${entry.id}
+                        umiumiumiID: ${entry.id}
                     
                 </div>
                 `;
@@ -6097,7 +6097,7 @@ const reorderIntervalId = setInterval(() => {
                                 ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
                                 
                                     
-                                    ID: ${entry.id}
+                                    IDumiumiumi: ${entry.id}
                                 
                             </div>
                             `;
