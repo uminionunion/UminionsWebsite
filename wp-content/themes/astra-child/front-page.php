@@ -5991,7 +5991,7 @@ const reorderIntervalId = setInterval(() => {
                     ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
                     
                         
-                        umiumiumiID: ${entry.id}
+                        umiumiumiID: ${entry.id} //Quest:> Let me know if you see this umiumiumi show up somewhere/ (bonus points for 'and how it showed up where it showed up' thank you! -Salem) [[[umiumiumi is our 'controlledBug' its here to help us find the code when we see it on the real world. if you see umiumiumi; this is what caused it; so you know what to do with it -2:25pm on 10/14/25]]]
                     
                 </div>
                 `;
@@ -6097,7 +6097,7 @@ const reorderIntervalId = setInterval(() => {
                                 ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
                                 
                                     
-                                    IDumiumiumi: ${entry.id}
+                                    ID: ${entry.id}
                                 
                             </div>
                             `;
