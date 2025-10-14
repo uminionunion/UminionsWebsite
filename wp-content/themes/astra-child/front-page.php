@@ -6087,29 +6087,37 @@ const reorderIntervalId = setInterval(() => {
 
                         // Reappend sorted entries
                         entries.forEach(entry => {
-                            let existingEvent = document.createElement('p'); // Create a new paragraph element for the event
-                            existingEvent.id = `event-${entry.id}`; // Set the event ID
-                            existingEvent.style.color = "white"; // Set the text color to white
-                            existingEvent.innerHTML = `
-                                <div>${new Date(entry.playTime).toLocaleTimeString()} 
-                                <span style="cursor: pointer;" onclick="playMedia('${entry.audioUrl}', '${entry.videoUrl}')">►</span> <span style="font-weight:bold; background: linear-gradient(10deg, #f7ec9c, #ff8651);-webkit-background-clip: text; color: transparent;">${entry.title ? `${entry.title}` : ""}</span>
-                                ${entry.description ? `${entry.description}` : ""}
-                                ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
-                                
-                                    
-                                    ID: ${entry.id}
-                                
-                            </div>
-                            `;
-                            dateSlot.appendChild(existingEvent); // Append the event to the date slot
+    let existingEvent = document.createElement('p'); // Create a new paragraph element for the event
+    existingEvent.id = `event-${entry.id}`; // Set the event ID
+    existingEvent.style.color = "white"; // Set the text color to white
+    existingEvent.innerHTML = `
+        <div>
+            ${new Date(entry.playTime).toLocaleTimeString()} 
+            <span style="cursor: pointer;" onclick="playMedia('${entry.audioUrl}', '${entry.videoUrl}')">►</span> 
+            <span style="font-weight:bold; background: linear-gradient(10deg, #f7ec9c, #ff8651);-webkit-background-clip: text; color: transparent;">
+                ${entry.title ? `${entry.title}` : ""}
+            </span>
+            ${entry.description ? `${entry.description}` : ""}
+            ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
+            
+            ID: ${entry.id}
+            <button 
+              class="shareBtnForModalSharingSocials" 
+              onclick="openShareModalForModalSharingSocials('${entry.id}')">
+              Share
+            </button>
+        </div>
+    `;
+    dateSlot.appendChild(existingEvent); // Append the event to the date slot
 
-                            // Add loading GIF if the logo file exists and image hasn't been loaded
-                            if (entry.logoUrl && !loadedImages[entry.id]) {
-                                const logoContainer = document.getElementById(`logo-${entry.id}`);
-                                logoContainer.innerHTML = '<img src="/includes/UminionRadioGIFversion06.gif" alt="Loading..." style="width: 100px; height: 100px;">';
-                                checkAndUpdateLogo(entry.id, entry.logoUrl, 0); // Check and update the logo
-                            }
-                        });
+    // Add loading GIF if the logo file exists and image hasn't been loaded
+    if (entry.logoUrl && !loadedImages[entry.id]) {
+        const logoContainer = document.getElementById(`logo-${entry.id}`);
+        logoContainer.innerHTML = '<img src="/includes/UminionRadioGIFversion06.gif" alt="Loading..." style="width: 100px; height: 100px;">';
+        checkAndUpdateLogo(entry.id, entry.logoUrl, 0); // Check and update the logo
+    }
+});
+
                     }
                 });
 
