@@ -6101,14 +6101,14 @@ const reorderIntervalId = setInterval(() => {
             ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
 
 
-			// This modal share thang is part of github collab project 002 1of2 (found in github wiki) as of 2:10am on 10/15/25
+			
             ID: ${entry.id}
             <button 
               class="shareBtnForModalSharingSocials" 
               onclick="openShareModalForModalSharingSocials('${entry.id}')">
               Share
-            </button>
-        </div>
+            </button>// This modal share thang is part of github collab project 002 1of2 (found in github wiki) as of 2:10am on 10/15/25
+        </div> 
     `;
     dateSlot.appendChild(existingEvent); // Append the event to the date slot
 
