@@ -6099,7 +6099,9 @@ const reorderIntervalId = setInterval(() => {
             </span>
             ${entry.description ? `${entry.description}` : ""}
             ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
-            
+
+
+			// This modal share thang is part of github collab project 002 1of2 (found in github wiki) as of 2:10am on 10/15/25
             ID: ${entry.id}
             <button 
               class="shareBtnForModalSharingSocials" 
@@ -11958,6 +11960,79 @@ function scrollRightForLogoBar() {
 
 renderLogosForLogoBar();
 
+// This modal share thang is part of github collab project 002 2of2 (found in github wiki) as of 2:10am on 10/15/25
+	// ===== Share Button Feature JS =====
+
+// Modal references
+const modalForModalSharingSocials = document.getElementById("modalForModalSharingSocials");
+const closeBtnForModalSharingSocials = document.getElementById("closeBtnForModalSharingSocials");
+const iconsContainerForModalSharingSocials = document.getElementById("iconsContainerForModalSharingSocials");
+
+// Socials list
+const socialsForModalSharingSocials = [
+  { name: "Facebook", url: "https://www.facebook.com/share/g/16rAWr8eDn/", img: "https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" },
+  { name: "YouTube", url: "https://www.youtube.com/@UminionUnion", img: "https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg" },
+  { name: "Bluesky", url: "https://bsky.app/profile/uminion.bsky.social", img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/bluesky.svg" },
+  { name: "Instagram", url: "https://www.instagram.com/theuminionunion?igsh=ajdjeGUycHRmczVs&ut-m_source=qr", img: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg" },
+  { name: "Twitch", url: "https://www.twitch.tv/theuminionunion", img: "https://upload.wikimedia.org/wikipedia/commons/2/26/Twitch_logo.svg" },
+  { name: "Discord", url: "https://discord.com/channels/1357919291428573204/1357919292280144075", img: "https://1000logos.net/wp-content/uploads/2021/04/Discord-logo.png" },
+  { name: "Threads", url: "https://www.threads.com/@theuminionunion", img: "https://1000logos.net/wp-content/uploads/2023/07/Threads-Logo.png" },
+  { name: "Mastodon", url: "https://mastodon.social/@uminion", img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/mastodon.svg" },
+  { name: "Patreon", url: "https://www.patreon.com/uminion", img: "https://upload.wikimedia.org/wikipedia/commons/9/94/Patreon_logo.svg" },
+  { name: "Telegram", url: "https://t.me/TheUminionUnion", img: "https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" },
+  { name: "Snapchat", url: "https://snapchat.com/t/Qjp6doq5", img: "https://1000logos.net/wp-content/uploads/2017/08/Snapchat-logo.png" },
+  { name: "Tumblr", url: "https://www.tumblr.com/blog/theuminionunion", img: "https://1000logos.net/wp-content/uploads/2017/06/Tumblr-logo.png" },
+  { name: "Pinterest", url: "https://www.pinterest.com/theuminionunion/", img: "https://upload.wikimedia.org/wikipedia/commons/0/08/Pinterest-logo.png" },
+  { name: "TikTok", url: "https://www.tiktok.com/@theuminionunion?_t=ZT-8zoud0oiVCf&_r=1", img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/tiktok.svg" },
+  { name: "Twitter/X", url: "https://x.com/theuminionunion", img: "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/x.svg" }
+];
+
+// Shuffle array
+function shuffleForModalSharingSocials(array) {
+  return array.sort(() => Math.random() - 0.5);
+}
+
+// Render icons
+function renderIconsForModalSharingSocials() {
+  iconsContainerForModalSharingSocials.innerHTML = "";
+  const shuffled = shuffleForModalSharingSocials([...socialsForModalSharingSocials]);
+  shuffled.forEach(social => {
+    const a = document.createElement("a");
+    a.href = social.url;
+    a.target = "_blank";
+
+    const img = document.createElement("img");
+    img.src = social.img;
+    img.alt = social.name;
+
+    // Tooltip
+    const tooltip = document.createElement("div");
+    tooltip.className = "tooltipForModalSharingSocials";
+    tooltip.textContent = social.name;
+
+    a.appendChild(img);
+    a.appendChild(tooltip);
+    iconsContainerForModalSharingSocials.appendChild(a);
+  });
+}
+
+// Open modal (called by each Share button next to ID)
+function openShareModalForModalSharingSocials(entryId) {
+  renderIconsForModalSharingSocials();
+  modalForModalSharingSocials.style.display = "block";
+}
+
+// Close modal
+closeBtnForModalSharingSocials.onclick = () => {
+  modalForModalSharingSocials.style.display = "none";
+};
+
+// Close when clicking outside modal content
+window.onclick = (event) => {
+  if (event.target === modalForModalSharingSocials) {
+    modalForModalSharingSocials.style.display = "none";
+  }
+};
 
 
 
