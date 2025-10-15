@@ -1717,6 +1717,119 @@ button {
   object-fit: contain;
 }
 
+/* the code below is for modal share thang is part of github collab project 002's 3of3 */	
+
+/* Share button */
+.shareBtnForModalSharingSocials {
+  background-color: #333;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.3s;
+}
+.shareBtnForModalSharingSocials:hover {
+  background-color: #555;
+}
+
+/* Modal overlay */
+.modalForModalSharingSocials {
+  display: none;
+  position: fixed;
+  z-index: 99999; /* very high to ensure it overlays everything */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.8);
+}
+
+/* Modal content */
+.modalContentForModalSharingSocials {
+  background-color: #1e1e1e;
+  margin: 5% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(0,0,0,0.5);
+}
+
+.modalContentForModalSharingSocials h2 {
+  margin-top: 0;
+  color: #fff;
+  font-weight: bold;
+}
+
+/* Close button */
+.closeForModalSharingSocials {
+  color: #aaa;
+  float: right;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.closeForModalSharingSocials:hover {
+  color: #fff;
+}
+
+/* Social icons container */
+.socialIconsForModalSharingSocials {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.socialIconsForModalSharingSocials a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background: #222;
+  border-radius: 8px;
+  transition: transform 0.2s, background 0.3s;
+}
+.socialIconsForModalSharingSocials a:hover {
+  transform: scale(1.1);
+  background: #333;
+}
+
+.socialIconsForModalSharingSocials img {
+  max-width: 32px;
+  max-height: 32px;
+}
+
+/* Tooltip styling */
+.tooltipForModalSharingSocials {
+  visibility: hidden;
+  opacity: 0;
+  width: max-content;
+  background-color: #000;
+  color: #fff;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  position: absolute;
+  bottom: 70px;
+  font-size: 12px;
+  transition: opacity 0.3s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.socialIconsForModalSharingSocials a:hover .tooltipForModalSharingSocials {
+  visibility: visible;
+  opacity: 1;
+}
+
 			
         </style>
     </head>
@@ -6110,7 +6223,7 @@ const reorderIntervalId = setInterval(() => {
             </button>
         </div> 
     `;
-    dateSlot.appendChild(existingEvent); // Append the event to the date slot // This modal^ share thang is part of github collab project 002 1of2 (found in github wiki) as of 2:10am on 10/15/25
+    dateSlot.appendChild(existingEvent); // Append the event to the date slot // This modal^ share thang is part of github collab project 002 1of3 (found in github wiki) as of 2:10am on 10/15/25
 
     // Add loading GIF if the logo file exists and image hasn't been loaded
     if (entry.logoUrl && !loadedImages[entry.id]) {
@@ -11960,7 +12073,7 @@ function scrollRightForLogoBar() {
 
 renderLogosForLogoBar();
 
-// This modal share thang is part of github collab project 002 2of2 (found in github wiki) as of 2:10am on 10/15/25
+// This modal share thang is part of github collab project 002 2of3 (found in github wiki) as of 2:10am on 10/15/25
 	// ===== Share Button Feature JS =====
 
 // Modal references
