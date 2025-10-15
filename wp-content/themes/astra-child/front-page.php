@@ -6107,10 +6107,10 @@ const reorderIntervalId = setInterval(() => {
               class="shareBtnForModalSharingSocials" 
               onclick="openShareModalForModalSharingSocials('${entry.id}')">
               Share
-            </button>// This modal share thang is part of github collab project 002 1of2 (found in github wiki) as of 2:10am on 10/15/25
+            </button>
         </div> 
     `;
-    dateSlot.appendChild(existingEvent); // Append the event to the date slot
+    dateSlot.appendChild(existingEvent); // Append the event to the date slot // This modal^ share thang is part of github collab project 002 1of2 (found in github wiki) as of 2:10am on 10/15/25
 
     // Add loading GIF if the logo file exists and image hasn't been loaded
     if (entry.logoUrl && !loadedImages[entry.id]) {
