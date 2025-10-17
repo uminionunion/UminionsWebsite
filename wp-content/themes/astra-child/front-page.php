@@ -1717,7 +1717,7 @@ button {
   object-fit: contain;
 }
 
-/* the code below is for modal share thang is part of github collab project 002's 3of3 */	
+/* the code below is for modal share thang is part of github collab project 002's 3of4 */	
 
 /* Share button */
 .shareBtnForModalSharingSocials {
@@ -3067,6 +3067,18 @@ button {
     </div>
 </div>
 
+		<!-- this modal share thang is part of github collab project 002 4of4 (found in github wiki) as of 1:27am on 10/17/25
+<!-- Static modal container (add this once, outside the dynamic area) -->
+<div id="modalForModalSharingSocials" class="modalForModalSharingSocials">
+  <div class="modalContentForModalSharingSocials">
+    <span class="closeForModalSharingSocials" id="closeBtnForModalSharingSocials">&times;</span>
+    <h2>Share To Socials:</h2>
+    <div class="socialIconsForModalSharingSocials" id="iconsContainerForModalSharingSocials"></div>
+  </div>
+</div>
+
+
+		
 <!-- Main container for the footer section -->
 <footer class="footer-container">
 
@@ -6223,7 +6235,7 @@ const reorderIntervalId = setInterval(() => {
             </button>
         </div> 
     `;
-    dateSlot.appendChild(existingEvent); // Append the event to the date slot // This modal^ share thang is part of github collab project 002 1of3 (found in github wiki) as of 2:10am on 10/15/25
+    dateSlot.appendChild(existingEvent); // Append the event to the date slot // This modal^ share thang is part of github collab project 002 1of4 (found in github wiki) as of 2:10am on 10/15/25
 
     // Add loading GIF if the logo file exists and image hasn't been loaded
     if (entry.logoUrl && !loadedImages[entry.id]) {
@@ -12073,7 +12085,7 @@ function scrollRightForLogoBar() {
 
 renderLogosForLogoBar();
 
-// This modal share thang is part of github collab project 002 2of3 (found in github wiki) as of 2:10am on 10/15/25
+// This modal share thang is part of github collab project 002 2of4 (found in github wiki) as of 2:10am on 10/15/25
 	// ===== Share Button Feature JS =====
 
 // Modal references
