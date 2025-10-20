@@ -1842,7 +1842,7 @@ button {
 /* Share button inline */
 .shareBtnForModalSharingSocials {
   display: inline-block;
-  width: 65%;   /* roughly two thirds */
+  width: 45%;   /* roughly two thirds */
   margin-left: 5%; /* spacing between play and share */
   vertical-align: middle;
 }
