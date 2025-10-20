@@ -6244,14 +6244,12 @@ const reorderIntervalId = setInterval(() => {
 existingEvent.innerHTML = `
   <div>
     ${new Date(entry.playTime).toLocaleTimeString()} 
-    <div class="playShareWrapperForModalSharingSocials">
-      <span class="playBtnForModalSharingSocials" onclick="playMedia('${entry.audioUrl}', '${entry.videoUrl}')">►</span>
-      <button 
-        class="shareBtnForModalSharingSocials" 
-        onclick="openShareModalForModalSharingSocials('${entry.id}')">
-        Share
-      </button>
-    </div>
+    <span class="playBtnForModalSharingSocials" onclick="playMedia('${entry.audioUrl}', '${entry.videoUrl}')">►</span>
+    <button 
+      class="shareBtnForModalSharingSocials" 
+      onclick="openShareModalForModalSharingSocials('${entry.id}')">
+      Share
+    </button>
     <span style="font-weight:bold; background: linear-gradient(10deg, #f7ec9c, #ff8651); -webkit-background-clip: text; color: transparent;">
       ${entry.title ? `${entry.title}` : ""}
     </span>
@@ -6261,6 +6259,7 @@ existingEvent.innerHTML = `
     ID: ${entry.id}
   </div>
 `;
+
 
 
     dateSlot.appendChild(existingEvent); // Append the event to the date slot // This modal^ share thang is part of github collab project 002 1of4 (found in github wiki) as of 2:10am on 10/15/25
