@@ -1830,26 +1830,23 @@ button {
   opacity: 1;
 }
 
-			/* Container for play + share buttons */
-.playShareWrapperForModalSharingSocials {
-  display: flex;
-  align-items: center;
-  gap: 8px; /* small spacing between them */
-  margin: 4px 0;
-}
-
-/* Play button area (1/3 width) */
+			/* Play button inline */
 .playBtnForModalSharingSocials {
-  flex: 1; /* one part */
+  display: inline-block;
+  width: 30%;   /* roughly one third */
   text-align: left;
   cursor: pointer;
+  vertical-align: middle;
 }
 
-/* Share button area (2/3 width) */
+/* Share button inline */
 .shareBtnForModalSharingSocials {
-  flex: 2; /* two parts */
-  text-align: center;
+  display: inline-block;
+  width: 65%;   /* roughly two thirds */
+  margin-left: 5%; /* spacing between play and share */
+  vertical-align: middle;
 }
+
 
 
 			
