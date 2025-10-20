@@ -6279,30 +6279,40 @@ const reorderIntervalId = setInterval(() => {
                         dateSlot.appendChild(dateHeader);
 
                         // Reappend sorted entries
-                        entries.forEach(entry => {
-    let existingEvent = document.createElement('p'); // Create a new paragraph element for the event
-    existingEvent.id = `event-${entry.id}`; // Set the event ID
-    existingEvent.style.color = "white"; // Set the text color to white
-existingEvent.innerHTML = `
-  <div>
-    ${new Date(entry.playTime).toLocaleTimeString()} 
-    <span class="controlsRowForModalSharingSocials">
-      <span class="playBtnForModalSharingSocials" onclick="playMedia('${entry.audioUrl}', '${entry.videoUrl}')">►</span>
-      <button 
-        class="shareBtnForModalSharingSocials" 
-        onclick="openShareModalForModalSharingSocials('${entry.id}')">
-        Share
-      </button>
-    </span>
-    <span style="font-weight:bold; background: linear-gradient(10deg, #f7ec9c, #ff8651); -webkit-background-clip: text; color: transparent;">
-      ${entry.title ? `${entry.title}` : ""}
-    </span>
-    ${entry.description ? `${entry.description}` : ""}
-    ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
-    
-    ID: ${entry.id}
-  </div>
-`;
+        entries.forEach(entry => {
+  let existingEvent = document.createElement('p');
+  existingEvent.id = `event-${entry.id}`;
+  existingEvent.style.color = "white";
+  existingEvent.innerHTML = `
+    <div>
+      ${new Date(entry.playTime).toLocaleTimeString()} 
+      <span class="controlsRowForModalSharingSocials">
+        <span class="playBtnForModalSharingSocials" onclick="playMedia('${entry.audioUrl}', '${entry.videoUrl}')">►</span>
+        <button 
+          class="shareBtnForModalSharingSocials" 
+          onclick="openShareModalForModalSharingSocials('${entry.id}')">
+        </button>
+      </span>
+      <span style="font-weight:bold; background: linear-gradient(10deg, #f7ec9c, #ff8651); -webkit-background-clip: text; color: transparent;">
+        ${entry.title ? `${entry.title}` : ""}
+      </span>
+      ${entry.description ? `${entry.description}` : ""}
+      ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
+      
+      ID: ${entry.id}
+    </div>
+  `;
+
+  // append the event into your container
+  dateSlot.appendChild(existingEvent);
+
+  // 🔹 now initialize the share button cycling
+  const shareBtn = existingEvent.querySelector(".shareBtnForModalSharingSocials");
+  if (shareBtn) {
+    initShareButton(shareBtn);
+  }
+});
+
 
 
 
