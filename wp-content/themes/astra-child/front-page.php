@@ -1830,6 +1830,28 @@ button {
   opacity: 1;
 }
 
+			/* Container for play + share buttons */
+.playShareWrapperForModalSharingSocials {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* small spacing between them */
+  margin: 4px 0;
+}
+
+/* Play button area (1/3 width) */
+.playBtnForModalSharingSocials {
+  flex: 1; /* one part */
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Share button area (2/3 width) */
+.shareBtnForModalSharingSocials {
+  flex: 2; /* two parts */
+  text-align: center;
+}
+
+
 			
         </style>
     </head>
