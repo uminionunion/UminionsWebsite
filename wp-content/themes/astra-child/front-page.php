@@ -6311,7 +6311,7 @@ const reorderIntervalId = setInterval(() => {
   if (shareBtn) {
     initShareButton(shareBtn);
   }
-});
+
 
 
 
