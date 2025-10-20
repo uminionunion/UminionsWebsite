@@ -1855,6 +1855,42 @@ button {
 
 
 
+
+
+			/* Share button base */
+.shareBtnForModalSharingSocials {
+  display: inline-block;
+  width: 65px;              /* fixed size so images fit nicely */
+  height: 40px;
+  background: url("/includes/PotentialShareLogo008.01WITHsignature.png") center/cover no-repeat;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+/* Hover overlay text */
+.shareBtnForModalSharingSocials::after {
+  content: "Share";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.shareBtnForModalSharingSocials:hover::after {
+  opacity: 1;
+}
+
+
+
 			
         </style>
     </head>
@@ -12195,6 +12231,50 @@ window.onclick = (event) => {
   }
 };
 
+// List of possible background images
+const shareButtonImages = [
+  "/includes/PotentialShareLogo001.01WITHsignature.png",
+  "/includes/PotentialShareLogo002.01WITHsignature.png",
+  "/includes/PotentialShareLogo003.01WITHsignature.png",
+  "/includes/PotentialShareLogo004.01WITHsignature.png",
+  "/includes/PotentialShareLogo005.01WITHsignature.png",
+  "/includes/PotentialShareLogo006.01WITHsignature.png",
+  "/includes/PotentialShareLogo007.01WITHsignature.png",
+  "/includes/PotentialShareLogo008.01WITHsignature.png",
+  "/includes/PotentialShareLogo009.01WITHsignature.png",
+  "/includes/PotentialShareLogo010.01WITHsignature.png",
+  "/includes/PotentialShareLogo011.01WITHsignature.png",
+  "/includes/PotentialShareLogo012.01WITHsignature.png",
+  "/includes/PotentialShareLogo013.01WITHsignature.png",
+  "/includes/PotentialShareLogo014.01WITHsignature.png",
+  "/includes/PotentialShareLogo015.01WITHsignature.png"
+];
+
+// Helper: pick a random image
+function getRandomShareImage() {
+  const idx = Math.floor(Math.random() * shareButtonImages.length);
+  return shareButtonImages[idx];
+}
+
+// Helper: pick a random interval between 3–10 seconds
+function getRandomInterval() {
+  return (Math.floor(Math.random() * 8) + 3) * 1000;
+}
+
+// Initialize a share button with random cycling
+function initShareButton(btn) {
+  // Set initial random background
+  btn.style.backgroundImage = `url('${getRandomShareImage()}')`;
+
+  // Function to change background periodically
+  function cycleBackground() {
+    btn.style.backgroundImage = `url('${getRandomShareImage()}')`;
+    setTimeout(cycleBackground, getRandomInterval());
+  }
+
+  // Start cycling
+  setTimeout(cycleBackground, getRandomInterval());
+}
 
 
 </script>
