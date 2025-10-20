@@ -3068,14 +3068,21 @@ button {
 </div>
 
 		<!-- this modal share thang is part of github collab project 002 4of4 (found in github wiki) as of 1:27am on 10/17/25
-<!-- Static modal container (add this once, outside the dynamic area) -->
+
+		<!-- Static modal container -->
 <div id="modalForModalSharingSocials" class="modalForModalSharingSocials">
   <div class="modalContentForModalSharingSocials">
     <span class="closeForModalSharingSocials" id="closeBtnForModalSharingSocials">&times;</span>
-    <h2>Share To Socials:</h2>
+    <img 
+      id="ModalTitleOfShareUtoSocials001" 
+      src="/includes/sharetosocials.jpg" 
+      alt="Share To Socials" 
+      style="max-width: 100%; height: auto; margin-bottom: 20px;"
+    >
     <div class="socialIconsForModalSharingSocials" id="iconsContainerForModalSharingSocials"></div>
   </div>
 </div>
+
 
 
 		
@@ -6216,25 +6223,24 @@ const reorderIntervalId = setInterval(() => {
     existingEvent.id = `event-${entry.id}`; // Set the event ID
     existingEvent.style.color = "white"; // Set the text color to white
     existingEvent.innerHTML = `
-        <div>
-            ${new Date(entry.playTime).toLocaleTimeString()} 
-            <span style="cursor: pointer;" onclick="playMedia('${entry.audioUrl}', '${entry.videoUrl}')">►</span> 
-            <span style="font-weight:bold; background: linear-gradient(10deg, #f7ec9c, #ff8651);-webkit-background-clip: text; color: transparent;">
-                ${entry.title ? `${entry.title}` : ""}
-            </span>
-            ${entry.description ? `${entry.description}` : ""}
-            ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
+  <div>
+    ${new Date(entry.playTime).toLocaleTimeString()} 
+    <span style="cursor: pointer;" onclick="playMedia('${entry.audioUrl}', '${entry.videoUrl}')">►</span>
+    <button 
+      class="shareBtnForModalSharingSocials" 
+      onclick="openShareModalForModalSharingSocials('${entry.id}')">
+      Share
+    </button>
+    <span style="font-weight:bold; background: linear-gradient(10deg, #f7ec9c, #ff8651); -webkit-background-clip: text; color: transparent;">
+      ${entry.title ? `${entry.title}` : ""}
+    </span>
+    ${entry.description ? `${entry.description}` : ""}
+    ${entry.logoUrl ? `<p id="logo-${entry.id}"><img src="../uploads/${entry.logoUrl}" alt="Loading..." style="max-width: 100px; max-height: 100px; object-fit: contain; vertical-align: middle;"></p>` : ""}
+    
+    ID: ${entry.id}
+  </div>
+`;
 
-
-			
-            ID: ${entry.id}
-            <button 
-              class="shareBtnForModalSharingSocials" 
-              onclick="openShareModalForModalSharingSocials('${entry.id}')">
-              Share
-            </button>
-        </div> 
-    `;
     dateSlot.appendChild(existingEvent); // Append the event to the date slot // This modal^ share thang is part of github collab project 002 1of4 (found in github wiki) as of 2:10am on 10/15/25
 
     // Add loading GIF if the logo file exists and image hasn't been loaded
