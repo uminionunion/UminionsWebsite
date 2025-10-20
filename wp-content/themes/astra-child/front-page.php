@@ -3075,7 +3075,7 @@ button {
     <span class="closeForModalSharingSocials" id="closeBtnForModalSharingSocials">&times;</span>
     <img 
       id="ModalTitleOfShareUtoSocials001" 
-      src="/includes/sharetosocials.jpg" 
+      src="/includes/ShareToSocialsBanner002.01.png" 
       alt="Share To Socials" 
       style="max-width: 100%; height: auto; margin-bottom: 20px;"
     >
