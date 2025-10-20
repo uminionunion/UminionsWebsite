@@ -1830,20 +1830,26 @@ button {
   opacity: 1;
 }
 
-			/* Play button inline */
-.playBtnForModalSharingSocials {
-  display: inline-block;
-  width: 30%;   /* roughly one third */
-  text-align: left;
+			/* ********* Inline row to keep controls on the same line and allow shrink */
+.controlsRowForModalSharingSocials {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;          /* small space between play and share */
+  white-space: nowrap;
+  max-width: 100%;   /* prevent overflow */
+}
+
+/* Play stays fixed size */
+.controlsRowForModalSharingSocials .playBtnForModalSharingSocials {
+  flex: 0 0 auto;    /* no grow, no shrink, auto width */
   cursor: pointer;
   vertical-align: middle;
 }
 
-/* Share button inline */
-.shareBtnForModalSharingSocials {
-  display: inline-block;
-  width: 45%;   /* roughly two thirds */
-  margin-left: 5%; /* spacing between play and share */
+/* Share auto-shrinks to fit on the same line */
+.controlsRowForModalSharingSocials .shareBtnForModalSharingSocials {
+  flex: 1 1 auto;    /* can grow and shrink */
+  min-width: 0;      /* critical: allows actual shrinking in flex */
   vertical-align: middle;
 }
 
@@ -6244,12 +6250,14 @@ const reorderIntervalId = setInterval(() => {
 existingEvent.innerHTML = `
   <div>
     ${new Date(entry.playTime).toLocaleTimeString()} 
-    <span class="playBtnForModalSharingSocials" onclick="playMedia('${entry.audioUrl}', '${entry.videoUrl}')">►</span>
-    <button 
-      class="shareBtnForModalSharingSocials" 
-      onclick="openShareModalForModalSharingSocials('${entry.id}')">
-      Share
-    </button>
+    <span class="controlsRowForModalSharingSocials">
+      <span class="playBtnForModalSharingSocials" onclick="playMedia('${entry.audioUrl}', '${entry.videoUrl}')">►</span>
+      <button 
+        class="shareBtnForModalSharingSocials" 
+        onclick="openShareModalForModalSharingSocials('${entry.id}')">
+        Share
+      </button>
+    </span>
     <span style="font-weight:bold; background: linear-gradient(10deg, #f7ec9c, #ff8651); -webkit-background-clip: text; color: transparent;">
       ${entry.title ? `${entry.title}` : ""}
     </span>
@@ -6259,6 +6267,7 @@ existingEvent.innerHTML = `
     ID: ${entry.id}
   </div>
 `;
+
 
 
 
