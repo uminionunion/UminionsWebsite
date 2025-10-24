@@ -2081,6 +2081,24 @@ button {
             <div id="uploadStatus">
             </div>
 
+
+
+			<!-- This Code BELOW is part of: "GitHub Quest#34's Part 1 of Z: (part of 'test001' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
+
+			<div id="emojiLineForGitHubQuest#34onFrontPage">🎶🎶🎶🎶🎶🎶🎶</div>
+
+
+
+			<!-- This Code ABOVE is part of: "GitHub Quest#34's Part 1 of Z: (part of 'test001' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
+
+
+
+
+
+
+
+			
+
         </div><!-- closing div for "othertopleftbottomcontainer" -->
 
     </div>  <!-- closing div for "containerForTopLeftSection" -->
