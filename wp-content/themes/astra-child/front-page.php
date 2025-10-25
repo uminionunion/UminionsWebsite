@@ -77,7 +77,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
 
 		<!-- This Code BELOW is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
-		<script type="module" src="/includes/UminionMainHubVersion.js"></script>
+		<script type="module" src="/includes/UminionMainHubVersion.jsx"></script>
 
 		<!-- This Code ABOVE is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
