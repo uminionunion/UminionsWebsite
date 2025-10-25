@@ -12,7 +12,7 @@ const MyTestingComponent001 = () => {
 
 
 
-const rootElement = document.getElementById("emojiLineForGitHubQuest34onFrontPage");
+const rootElement = document.getElementById("emojiLineForGitHubQuest#34onFrontPage");
 const root = createRoot(rootElement);
 
 root.render(<MyTestingComponent001 />);
