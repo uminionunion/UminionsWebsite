@@ -49,6 +49,7 @@ jobs:
           cp includes/getUpcomingVideos.php includes-bundle/
           cp includes/logout.php includes-bundle/
           cp includes/submitMp3.php includes-bundle/
+          cp includes/UminionMainHubVersion.jsx includes-bundle/
           cp includes/updateAudioPlayedStatus.php includes-bundle/
           cp includes/updateAudioTimePlayed.php includes-bundle/
           cp includes/updateAudioTimes.php includes-bundle/
