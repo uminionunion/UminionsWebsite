@@ -3323,52 +3323,11 @@ button {
                                 </div>
                                 <!-- Additional container for future use -->
                                 <div id="headerRightContainer006">
-                                </div>
-                            </div>
-
-                </div>
 
 
 
 
 
-
-
-
-            </div> <!-- Main container for the header-right-container section -->
-
-            <!-- Main container for the header right section -->
-            <div id="headerRightContainer000" style="display: flex; flex-direction: row; position: absolute; top: 15px; left: 200px;">
-
-
-                <!-- Menu container with icons to toggle the dropdown -->
-                <div class="menu-container">
-                    <div class="menu-icon" onclick="toggleDropdown()"></div>
-                    <div class="menu-icon" onclick="toggleDropdown()"></div>
-                    <div class="menu-icon" onclick="toggleDropdown()"></div>
-                </div>
-                <!-- Dropdown menu with various links -->
-                <ul class="dropdown" id="dropdownMenu">
-                    <li><a href="">UnionRadio</a></li>
-                    <li><a href="UnionChatRooms.php">*ChatRooms*</a></li>
-                    <li><a href="includes/logout.php">Logout</a></li>
-                    <li><a href="#" id="clearSingleEntry" onclick="enableSingleEntryDeletion()">Clear Single Calendar or Archive Entry?</a></li>
-                    <li><a href="#" id="clearAllCalendar" onclick="clearAllCalendarEntries()">Clear All Calendar Entries?</a></li>
-                    <li><a href="#" id="clearAllArchive" onclick="clearAllArchiveEntries()">Clear All Archive Entries?</a></li>
-                </ul>
-                <!-- Check if the user is logged in by verifying the session ID -->
-                <?php if (!empty($_SESSION["id"])): ?>
-                <!-- Welcome message for the logged-in user -->
-                <div id="WelcomeSignForFrontPage"> Welcome <?php echo $row["username_Uminion"];?> </div> <!-- $row is the connection to the MySQL database, calling the person's username -->
-                    <!-- Additional dropdown menu for logged-in user -->
-                    <ul class="dropdown" id="dropdownMenu">
-                        <li><a href="#">Clear an Entry?</a></li>
-                        <li><a href="#">Clear All Entries?</a></li>
-                    </ul>
-                <?php endif; ?>
-            </div>
-
-            
            
 <!-- This Area Below is the HTML code for the "BetaButtonV001" section -->
 
@@ -3433,6 +3392,63 @@ button {
 
 
 <!-- This Area Above is the HTML code for the "BetaButtonV001" section -->
+
+
+
+
+
+
+
+
+
+
+															 
+                                </div>
+                            </div>
+
+                </div>
+
+
+
+
+
+
+
+
+            </div> <!-- Main container for the header-right-container section -->
+
+            <!-- Main container for the header right section -->
+            <div id="headerRightContainer000" style="display: flex; flex-direction: row; position: absolute; top: 15px; left: 200px;">
+
+
+                <!-- Menu container with icons to toggle the dropdown -->
+                <div class="menu-container">
+                    <div class="menu-icon" onclick="toggleDropdown()"></div>
+                    <div class="menu-icon" onclick="toggleDropdown()"></div>
+                    <div class="menu-icon" onclick="toggleDropdown()"></div>
+                </div>
+                <!-- Dropdown menu with various links -->
+                <ul class="dropdown" id="dropdownMenu">
+                    <li><a href="">UnionRadio</a></li>
+                    <li><a href="UnionChatRooms.php">*ChatRooms*</a></li>
+                    <li><a href="includes/logout.php">Logout</a></li>
+                    <li><a href="#" id="clearSingleEntry" onclick="enableSingleEntryDeletion()">Clear Single Calendar or Archive Entry?</a></li>
+                    <li><a href="#" id="clearAllCalendar" onclick="clearAllCalendarEntries()">Clear All Calendar Entries?</a></li>
+                    <li><a href="#" id="clearAllArchive" onclick="clearAllArchiveEntries()">Clear All Archive Entries?</a></li>
+                </ul>
+                <!-- Check if the user is logged in by verifying the session ID -->
+                <?php if (!empty($_SESSION["id"])): ?>
+                <!-- Welcome message for the logged-in user -->
+                <div id="WelcomeSignForFrontPage"> Welcome <?php echo $row["username_Uminion"];?> </div> <!-- $row is the connection to the MySQL database, calling the person's username -->
+                    <!-- Additional dropdown menu for logged-in user -->
+                    <ul class="dropdown" id="dropdownMenu">
+                        <li><a href="#">Clear an Entry?</a></li>
+                        <li><a href="#">Clear All Entries?</a></li>
+                    </ul>
+                <?php endif; ?>
+            </div>
+
+            
 
 </header>
 
