@@ -1900,6 +1900,219 @@ button {
 
 
 
+
+
+/* This Area Below is the CSS code for the "BetaButtonV001" section */
+
+
+/* =========================
+   BetaButtonV001 - SCOPED STYLES (all selectors prefixed with .BetaButtonV001-root)
+   Paste this block into your page. It assumes you place the widget inside an
+   element with class="BetaButtonV001-root" to avoid colliding with other :root styles.
+   Uses Group 1 palette only; JS will set inline background-images for tiles/controls.
+   ========================= */
+
+.BetaButtonV001-root{
+  --bb-radius: 12px;
+  --bb-gap: 10px;
+  --bb-font: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --bb-overlay: rgba(0,0,0,0.45);
+}
+
+/* Page base inside scope */
+.BetaButtonV001-root body,
+.BetaButtonV001-root * { box-sizing: border-box; }
+
+.BetaButtonV001-root { display:block; font-family: var(--bb-font); color:#111; background:transparent; }
+
+/* Launcher button (fallback until JS supplies merged gradient) */
+.BetaButtonV001-root #BetaButtonV001-mainBtn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  border-radius: calc(var(--bb-radius) + 2px);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  border: none;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+  background-image: linear-gradient(90deg, #9EEFD8 0%, #0B7F73 100%);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.24);
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+.BetaButtonV001-root #BetaButtonV001-mainBtn:hover{ transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.28); }
+.BetaButtonV001-root #BetaButtonV001-mainBtn:active{ transform: translateY(-1px) scale(0.995); }
+.BetaButtonV001-root #BetaButtonV001-mainBtn:focus{ outline: 3px solid rgba(11,127,115,0.22); outline-offset: 3px; }
+
+/* Overlay / modal */
+.BetaButtonV001-root #BetaButtonV001-overlay{
+  position: fixed;
+  inset: 0;
+  background: var(--bb-overlay);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+}
+
+/* Modal container */
+.BetaButtonV001-root #BetaButtonV001-modal{
+  width: 100%;
+  max-width: 980px;
+  background: #fff;
+  border-radius: calc(var(--bb-radius) + 4px);
+  padding: 14px;
+  box-shadow: 0 28px 80px rgba(0,0,0,0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 90vh;
+}
+
+/* Header */
+.BetaButtonV001-root #BetaButtonV001-modalHeader{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 6px 12px 0 12px;
+}
+.BetaButtonV001-root #BetaButtonV001-modalTitle{
+  font-size: 18px;
+  font-weight: 800;
+  color: #111;
+  margin: 0;
+  text-align: center;
+}
+.BetaButtonV001-root #BetaButtonV001-closeBtn{
+  position: absolute;
+  right: 8px;
+  top: 6px;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #444;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.BetaButtonV001-root #BetaButtonV001-closeBtn:hover{ background: rgba(0,0,0,0.04); color: #000; }
+
+/* Scrollable content area for grid */
+.BetaButtonV001-root #BetaButtonV001-modalContent{
+  overflow: auto; /* enables vertical scrolling when needed */
+  padding: 12px;
+  max-height: calc(90vh - 140px); /* leave room for header + footer */
+}
+
+/* 5x5 grid */
+.BetaButtonV001-root #BetaButtonV001-grid{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--bb-gap);
+  width: 100%;
+}
+
+/* Tile base */
+.BetaButtonV001-root .BetaButtonV001-pageBtn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  min-height: 64px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+  overflow: hidden;
+  position: relative;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+/* Hover / active */
+.BetaButtonV001-root .BetaButtonV001-pageBtn:hover{ transform: translateY(-6px); box-shadow: 0 18px 40px rgba(0,0,0,0.26); }
+.BetaButtonV001-root .BetaButtonV001-pageBtn:active{ transform: translateY(-3px) scale(0.995); }
+
+/* Label */
+.BetaButtonV001-root .BetaButtonV001-pageBtn .label{
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  z-index: 3;
+  pointer-events: none;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 6px rgba(0,0,0,0.45);
+}
+
+/* Background overlay for image contrast */
+.BetaButtonV001-root .BetaButtonV001-pageBtn .bg-overlay{
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  z-index: 2;
+  pointer-events: none;
+  transition: background 160ms ease;
+}
+.BetaButtonV001-root .BetaButtonV001-pageBtn.has-image .bg-overlay{ background: rgba(0,0,0,0.28); }
+
+/* Footer controls */
+.BetaButtonV001-root #BetaButtonV001-controls{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px 10px 12px;
+}
+.BetaButtonV001-root #BetaButtonV001-prevBtn,
+.BetaButtonV001-root #BetaButtonV001-nextBtn{
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+  transition: transform 110ms ease;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+.BetaButtonV001-root #BetaButtonV001-prevBtn[disabled],
+.BetaButtonV001-root #BetaButtonV001-nextBtn[disabled]{ opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.BetaButtonV001-root #BetaButtonV001-pageCounter{ font-size: 13px; color: #222; font-weight: 700; text-align: center; }
+
+/* Responsive adjustments */
+@media (max-width: 880px){
+  .BetaButtonV001-root #BetaButtonV001-grid{ grid-template-columns: repeat(4, 1fr); }
+  .BetaButtonV001-root .BetaButtonV001-pageBtn{ min-height: 58px; }
+}
+@media (max-width: 520px){
+  .BetaButtonV001-root #BetaButtonV001-grid{ grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .BetaButtonV001-root .BetaButtonV001-pageBtn{ min-height: 52px; font-size: 12px; }
+}
+@media (max-width: 360px){
+  .BetaButtonV001-root #BetaButtonV001-controls{ flex-direction: column-reverse; align-items: stretch; gap: 8px; }
+  .BetaButtonV001-root #BetaButtonV001-prevBtn,
+  .BetaButtonV001-root #BetaButtonV001-nextBtn{ width: 100%; }
+  .BetaButtonV001-root #BetaButtonV001-pageCounter{ text-align: center; }
+}
+
+
+/* This Area Above is the CSS code for the "BetaButtonV001" section */
+
+
+			
 			
         </style>
     </head>
@@ -2090,6 +2303,95 @@ button {
             <div id="uploadStatus">
             </div>
 
+
+
+
+
+
+
+
+			
+
+
+<!-- This Area Below is the HTML code for the "BetaButtonV001" section -->
+
+
+  <div class="BetaButtonV001-root">
+    <div class="BetaButtonV001-container">
+      <!-- Launcher button -->
+      <button id="BetaButtonV001-mainBtn" type="button" aria-haspopup="dialog" aria-controls="BetaButtonV001-modal">
+        BETA: Features in Development
+      </button>
+
+      <!-- Modal overlay -->
+      <div id="BetaButtonV001-overlay" aria-hidden="true">
+        <div id="BetaButtonV001-modal" role="dialog" aria-modal="true" aria-labelledby="BetaButtonV001-modalTitle">
+          <!-- Header -->
+          <div id="BetaButtonV001-modalHeader">
+            <h2 id="BetaButtonV001-modalTitle">Beta Pages</h2>
+            <button id="BetaButtonV001-closeBtn" type="button" aria-label="Close Beta Pages">✕</button>
+          </div>
+
+          <!-- Scrollable content -->
+          <div id="BetaButtonV001-modalContent">
+            <div id="BetaButtonV001-grid">
+              <!-- 25 tiles (JS will populate labels, hrefs, images, gradients) -->
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-001" data-index="1" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page001</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-002" data-index="2" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page002</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-003" data-index="3" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page003</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-004" data-index="4" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page004</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-005" data-index="5" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page005</span></a>
+
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-006" data-index="6" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page006</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-007" data-index="7" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page007</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-008" data-index="8" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page008</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-009" data-index="9" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page009</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-010" data-index="10" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page010</span></a>
+
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-011" data-index="11" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page011</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-012" data-index="12" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page012</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-013" data-index="13" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page013</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-014" data-index="14" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page014</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-015" data-index="15" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page015</span></a>
+
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-016" data-index="16" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page016</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-017" data-index="17" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page017</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-018" data-index="18" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page018</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-019" data-index="19" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page019</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-020" data-index="20" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page020</span></a>
+
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-021" data-index="21" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page021</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-022" data-index="22" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page022</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-023" data-index="23" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page023</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-024" data-index="24" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page024</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-025" data-index="25" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page025</span></a>
+            </div>
+          </div>
+
+          <!-- Footer controls -->
+          <div id="BetaButtonV001-controls">
+            <button id="BetaButtonV001-prevBtn" type="button" disabled>Previous Page</button>
+            <div id="BetaButtonV001-pageCounter" aria-live="polite">Page 1 of 4</div>
+            <button id="BetaButtonV001-nextBtn" type="button">Next Page</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+<!-- This Area Above is the HTML code for the "BetaButtonV001" section -->
+
+
+
+
+
+
+			
+
+
+
+			
 
 
 			<!-- This Code BELOW is part of: "GitHub Quest#34's Part 1 of Z: (part of 'test001' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
@@ -12313,6 +12615,219 @@ function initShareButton(btn) {
   setTimeout(cycleBackground, getRandomInterval());
 }
 
+
+
+
+
+	
+
+// This Area Below is the JS code for the "BetaButtonV001" section
+
+
+// BetaButtonV001 JavaScript (paste inside the <script> in your HTML)
+// - Uses the .BetaButtonV001-root scope placed in your HTML
+// - Group 1 palette ONLY (random 4-color merges per tile/control)
+// - Editable pages map: update URLs/images in the `pages` object below
+// - Public API at window.BetaButtonV001
+
+;(function(){
+  const root = document.querySelector('.BetaButtonV001-root');
+  if (!root) return console.warn('BetaButtonV001: root element .BetaButtonV001-root not found');
+
+  // Element refs scoped to root
+  const mainBtn = root.querySelector('#BetaButtonV001-mainBtn');
+  const overlay = root.querySelector('#BetaButtonV001-overlay');
+  const modal = root.querySelector('#BetaButtonV001-modal');
+  const closeBtn = root.querySelector('#BetaButtonV001-closeBtn');
+  const grid = root.querySelector('#BetaButtonV001-grid');
+  const modalContent = root.querySelector('#BetaButtonV001-modalContent');
+  const prevBtn = root.querySelector('#BetaButtonV001-prevBtn');
+  const nextBtn = root.querySelector('#BetaButtonV001-nextBtn');
+  const pageCounter = root.querySelector('#BetaButtonV001-pageCounter');
+
+  // Config
+  const PAGE_SIZE = 25;
+  const TOTAL = 100;
+  const TOTAL_PAGES = Math.ceil(TOTAL / PAGE_SIZE);
+
+  // Editable pages map (1..100) - change urls/images here
+  // Example:
+  // pages[1] = { url: 'https://example.com/1', image: 'https://via.placeholder.com/600x400/FF0054/ffffff?text=1' };
+  const pages = {};
+  for (let i = 1; i <= TOTAL; i++) pages[i] = { url: 'https://uminion.com', image: null };
+
+  // GROUP 1 palette (chosen) — 20 bold colors (used exclusively)
+  const colors = [
+    '#FF0054','#FF6A00','#FFD200','#FFF200','#00E676','#00B8D9','#0057FF','#2979FF','#6A00FF','#D500F9',
+    '#FF1744','#F57F17','#FF3D00','#FF6D00','#FF8A65','#FF5252','#FF9100','#FFC400','#00C853','#00E5FF'
+  ];
+
+  // Utilities
+  function pad(n){ return String(n).padStart(3,'0'); }
+  function pickDistinctIndices(n){
+    const pool = Array.from({length: colors.length}, (_,i) => i);
+    const out = [];
+    while (out.length < n && pool.length){
+      const idx = Math.floor(Math.random() * pool.length);
+      out.push(pool.splice(idx,1)[0]);
+    }
+    return out;
+  }
+  function randomQuadColors(){ return pickDistinctIndices(4).map(i => colors[i]); }
+  // Strong single-direction blend for bold merges
+  function mergedGradient(l,t,r,b){
+    return `linear-gradient(135deg, ${l} 0%, ${t} 33%, ${r} 66%, ${b} 100%)`;
+  }
+
+  // State
+  let currentView = 1;
+  let tiles = Array.from(grid.querySelectorAll('.BetaButtonV001-pageBtn'));
+
+  // Normalize exact number of tiles to PAGE_SIZE
+  (function normalizeTiles(){
+    if (tiles.length < PAGE_SIZE){
+      const missing = PAGE_SIZE - tiles.length;
+      for (let i = 0; i < missing; i++){
+        const a = document.createElement('a');
+        a.className = 'BetaButtonV001-pageBtn';
+        a.href = '#';
+        a.setAttribute('role','button');
+        a.innerHTML = '<span class="bg-overlay"></span><span class="label"></span>';
+        grid.appendChild(a);
+      }
+    } else if (tiles.length > PAGE_SIZE){
+      for (let i = PAGE_SIZE; i < tiles.length; i++) grid.removeChild(tiles[i]);
+    }
+    tiles = Array.from(grid.querySelectorAll('.BetaButtonV001-pageBtn'));
+  })();
+
+  // Render a view (1..TOTAL_PAGES)
+  function renderView(view){
+    currentView = Math.min(Math.max(1, view), TOTAL_PAGES);
+    const startIndex = (currentView - 1) * PAGE_SIZE + 1;
+
+    tiles.forEach((tile, idx) => {
+      const pageNum = startIndex + idx;
+      const labelText = 'Page' + pad(pageNum);
+
+      // label
+      let labelEl = tile.querySelector('.label');
+      if (!labelEl){ labelEl = document.createElement('span'); labelEl.className = 'label'; tile.appendChild(labelEl); }
+      labelEl.textContent = labelText;
+      tile.id = 'BetaButtonV001-pageBtn-' + pad(pageNum);
+      tile.dataset.index = String(pageNum);
+
+      // page definition
+      const def = pages[pageNum] || { url: 'https://uminion.com', image: null };
+      tile.href = def.url || 'https://uminion.com';
+
+      if (def.image){
+        tile.classList.add('has-image');
+        const [l,t,r,b] = randomQuadColors();
+        // image first, then strong merged gradient tint
+        tile.style.backgroundImage = `url("${def.image}"), ${mergedGradient(l,t,r,b)}`;
+        const ov = tile.querySelector('.bg-overlay'); if (ov) ov.style.background = 'rgba(0,0,0,0.28)';
+      } else {
+        tile.classList.remove('has-image');
+        const [l,t,r,b] = randomQuadColors();
+        tile.style.backgroundImage = mergedGradient(l,t,r,b);
+        const ov = tile.querySelector('.bg-overlay'); if (ov) ov.style.background = 'rgba(0,0,0,0)';
+      }
+
+      // click behavior: modifiers open new tab naturally; plain click navigates
+      tile.onclick = function(ev){
+        const target = tile.href || def.url || 'https://uminion.com';
+        if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+        ev.preventDefault();
+        window.location.href = target;
+      };
+    });
+
+    // Controls and launcher styled from same palette
+    (function styleControls(){
+      const [pl,pt,pr,pb] = randomQuadColors(); prevBtn.style.backgroundImage = mergedGradient(pl,pt,pr,pb);
+      const [nl,nt,nr,nb] = randomQuadColors(); nextBtn.style.backgroundImage = mergedGradient(nl,nt,nr,nb);
+      const [ml,mt,mr,mb] = randomQuadColors(); mainBtn.style.backgroundImage = mergedGradient(ml,mt,mr,mb);
+    })();
+
+    prevBtn.disabled = currentView === 1;
+    nextBtn.disabled = currentView === TOTAL_PAGES;
+    pageCounter.textContent = `Page ${currentView} of ${TOTAL_PAGES}`;
+
+    // Ensure modalContent is scrolled to top on view change for a consistent UX
+    if (modalContent) modalContent.scrollTop = 0;
+  }
+
+  // Open / Close modal
+  function openModal(){
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    overlay.setAttribute('aria-hidden','false');
+    renderView(currentView);
+    const first = tiles[0];
+    (first || closeBtn).focus();
+    // prevent body scroll behind modal but allow modalContent to scroll
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    if (!overlay) return;
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden','true');
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    if (mainBtn) mainBtn.focus();
+  }
+
+  // Event bindings
+  if (mainBtn) mainBtn.addEventListener('click', openModal);
+  if (closeBtn) closeBtn.addEventListener('click', closeModal);
+  if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+  // Keyboard handling (scoped — only active when modal open)
+  document.addEventListener('keydown', (e) => {
+    if (!overlay || overlay.style.display !== 'flex') return;
+    if (e.key === 'Escape'){ e.preventDefault(); closeModal(); return; }
+    if (e.key === 'ArrowLeft'){ e.preventDefault(); if (!prevBtn.disabled) renderView(currentView - 1); return; }
+    if (e.key === 'ArrowRight'){ e.preventDefault(); if (!nextBtn.disabled) renderView(currentView + 1); return; }
+  });
+
+  if (prevBtn) prevBtn.addEventListener('click', () => { if (currentView > 1) renderView(currentView - 1); });
+  if (nextBtn) nextBtn.addEventListener('click', () => { if (currentView < TOTAL_PAGES) renderView(currentView + 1); });
+
+  // Initial render to apply launcher gradient and control visuals
+  renderView(1);
+
+  // Public API (modify pages and control view)
+  window.BetaButtonV001 = {
+    open: openModal,
+    close: closeModal,
+    setPage: function(index, obj){
+      // obj: { url: '...', image: '...' } - partial allowed
+      if (!Number.isInteger(index) || index < 1 || index > TOTAL) return;
+      pages[index] = Object.assign(pages[index] || {}, obj);
+    },
+    setAll: function(map){
+      // map: {1:{url,image}, 2:{...}, ...}
+      for (let i = 1; i <= TOTAL; i++) if (map[i]) pages[i] = map[i];
+      renderView(currentView);
+    },
+    gotoView: function(viewNum){
+      renderView(viewNum);
+    },
+    getPages: function(){ return Object.assign({}, pages); }
+  };
+})();
+
+
+// This Area Above is the JS code for the "BetaButtonV001" section 
+
+
+
+
+
+
+		
 
 </script>
 </body>
