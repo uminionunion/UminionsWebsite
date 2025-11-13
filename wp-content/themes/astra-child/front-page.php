@@ -3323,12 +3323,8 @@ button {
                                 </div>
                                 <!-- Additional container for future use -->
                                 <div id="headerRightContainer006">
-
-	 
                                 </div>
-
-
-
+                            </div>
 
 
 
@@ -3401,13 +3397,7 @@ button {
 
 
 
-
-
-
-
-		
-                            </div>
-
+					
                 </div>
 
 
