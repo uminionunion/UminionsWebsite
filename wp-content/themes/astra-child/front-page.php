@@ -3325,9 +3325,12 @@ button {
                                 <div id="headerRightContainer006">
                                 </div>
                             </div>
+					
+                </div>
 
 
 
+				
 
 <!-- This Area Below is the HTML code for the "BetaButtonV001" section -->
 
@@ -3394,11 +3397,6 @@ button {
 <!-- This Area Above is the HTML code for the "BetaButtonV001" section -->
 
 
-
-
-
-					
-                </div>
 
 
 
