@@ -2336,83 +2336,7 @@ button {
 			
 
         </div><!-- closing div for "othertopleftbottomcontainer" -->
-
-
-
-
-
-
-
-<!-- This Area Below is the HTML code for the "BetaButtonV001" section -->
-
-
-  <div class="BetaButtonV001-root">
-    <div class="BetaButtonV001-container">
-      <button id="BetaButtonV001-mainBtn" type="button" aria-haspopup="dialog" aria-controls="BetaButtonV001-modal">
-        BETA: Features in Development
-      </button>
-
-      <div id="BetaButtonV001-overlay" aria-hidden="true">
-        <div id="BetaButtonV001-modal" role="dialog" aria-modal="true" aria-labelledby="BetaButtonV001-modalTitle">
-          <div id="BetaButtonV001-modalHeader">
-            <h2 id="BetaButtonV001-modalTitle">Beta Pages</h2>
-            <button id="BetaButtonV001-closeBtn" type="button" aria-label="Close Beta Pages">✕</button>
-          </div>
-
-          <div id="BetaButtonV001-modalContent">
-            <div id="BetaButtonV001-grid">
-              <!-- 25 tiles -->
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-001" data-index="1" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page001</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-002" data-index="2" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page002</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-003" data-index="3" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page003</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-004" data-index="4" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page004</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-005" data-index="5" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page005</span></a>
-
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-006" data-index="6" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page006</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-007" data-index="7" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page007</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-008" data-index="8" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page008</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-009" data-index="9" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page009</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-010" data-index="10" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page010</span></a>
-
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-011" data-index="11" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page011</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-012" data-index="12" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page012</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-013" data-index="13" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page013</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-014" data-index="14" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page014</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-015" data-index="15" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page015</span></a>
-
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-016" data-index="16" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page016</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-017" data-index="17" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page017</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-018" data-index="18" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page018</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-019" data-index="19" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page019</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-020" data-index="20" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page020</span></a>
-
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-021" data-index="21" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page021</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-022" data-index="22" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page022</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-023" data-index="23" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page023</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-024" data-index="24" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page024</span></a>
-              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-025" data-index="25" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page025</span></a>
-            </div>
-          </div>
-
-          <div id="BetaButtonV001-controls">
-            <button id="BetaButtonV001-prevBtn" type="button" disabled>Previous Page</button>
-            <div id="BetaButtonV001-pageCounter" aria-live="polite">Page 1 of 4</div>
-            <button id="BetaButtonV001-nextBtn" type="button">Next Page</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-
-<!-- This Area Above is the HTML code for the "BetaButtonV001" section -->
-
-
-
-
-
-
-		
+	
 
     </div>  <!-- closing div for "containerForTopLeftSection" -->
 
@@ -3446,7 +3370,69 @@ button {
 
             
            
+<!-- This Area Below is the HTML code for the "BetaButtonV001" section -->
 
+
+  <div class="BetaButtonV001-root">
+    <div class="BetaButtonV001-container">
+      <button id="BetaButtonV001-mainBtn" type="button" aria-haspopup="dialog" aria-controls="BetaButtonV001-modal">
+        BETA: Features in Development
+      </button>
+
+      <div id="BetaButtonV001-overlay" aria-hidden="true">
+        <div id="BetaButtonV001-modal" role="dialog" aria-modal="true" aria-labelledby="BetaButtonV001-modalTitle">
+          <div id="BetaButtonV001-modalHeader">
+            <h2 id="BetaButtonV001-modalTitle">Beta Pages</h2>
+            <button id="BetaButtonV001-closeBtn" type="button" aria-label="Close Beta Pages">✕</button>
+          </div>
+
+          <div id="BetaButtonV001-modalContent">
+            <div id="BetaButtonV001-grid">
+              <!-- 25 tiles -->
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-001" data-index="1" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page001</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-002" data-index="2" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page002</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-003" data-index="3" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page003</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-004" data-index="4" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page004</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-005" data-index="5" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page005</span></a>
+
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-006" data-index="6" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page006</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-007" data-index="7" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page007</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-008" data-index="8" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page008</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-009" data-index="9" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page009</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-010" data-index="10" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page010</span></a>
+
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-011" data-index="11" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page011</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-012" data-index="12" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page012</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-013" data-index="13" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page013</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-014" data-index="14" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page014</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-015" data-index="15" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page015</span></a>
+
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-016" data-index="16" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page016</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-017" data-index="17" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page017</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-018" data-index="18" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page018</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-019" data-index="19" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page019</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-020" data-index="20" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page020</span></a>
+
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-021" data-index="21" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page021</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-022" data-index="22" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page022</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-023" data-index="23" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page023</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-024" data-index="24" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page024</span></a>
+              <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-025" data-index="25" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page025</span></a>
+            </div>
+          </div>
+
+          <div id="BetaButtonV001-controls">
+            <button id="BetaButtonV001-prevBtn" type="button" disabled>Previous Page</button>
+            <div id="BetaButtonV001-pageCounter" aria-live="polite">Page 1 of 4</div>
+            <button id="BetaButtonV001-nextBtn" type="button">Next Page</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+<!-- This Area Above is the HTML code for the "BetaButtonV001" section -->
 
 </header>
 
