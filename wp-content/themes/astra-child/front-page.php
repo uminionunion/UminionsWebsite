@@ -1904,11 +1904,9 @@ button {
 
 /* This Area Below is the CSS code for the "BetaButtonV001" section */
 
-
+			
 /* =========================
-   BetaButtonV001 - SCOPED STYLES (all selectors prefixed with .BetaButtonV001-root)
-   Paste this block into your page. It assumes you place the widget inside an
-   element with class="BetaButtonV001-root" to avoid colliding with other :root styles.
+   BetaButtonV001 - SCOPED STYLES (all selectors within .BetaButtonV001-root)
    Uses Group 1 palette only; JS will set inline background-images for tiles/controls.
    ========================= */
 
@@ -1919,13 +1917,11 @@ button {
   --bb-overlay: rgba(0,0,0,0.45);
 }
 
-/* Page base inside scope */
-.BetaButtonV001-root body,
+/* Scope safety */
 .BetaButtonV001-root * { box-sizing: border-box; }
+.BetaButtonV001-root { display:block; font-family: var(--bb-font); color:#111; background:transparent; padding:16px; }
 
-.BetaButtonV001-root { display:block; font-family: var(--bb-font); color:#111; background:transparent; }
-
-/* Launcher button (fallback until JS supplies merged gradient) */
+/* Launcher button (fallback until JS applies Group 1 merged gradient) */
 .BetaButtonV001-root #BetaButtonV001-mainBtn{
   display: inline-flex;
   align-items: center;
@@ -2004,9 +2000,9 @@ button {
 
 /* Scrollable content area for grid */
 .BetaButtonV001-root #BetaButtonV001-modalContent{
-  overflow: auto; /* enables vertical scrolling when needed */
+  overflow: auto;
   padding: 12px;
-  max-height: calc(90vh - 140px); /* leave room for header + footer */
+  max-height: calc(90vh - 140px);
 }
 
 /* 5x5 grid */
@@ -2092,7 +2088,7 @@ button {
 .BetaButtonV001-root #BetaButtonV001-nextBtn[disabled]{ opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 .BetaButtonV001-root #BetaButtonV001-pageCounter{ font-size: 13px; color: #222; font-weight: 700; text-align: center; }
 
-/* Responsive adjustments */
+/* Responsive */
 @media (max-width: 880px){
   .BetaButtonV001-root #BetaButtonV001-grid{ grid-template-columns: repeat(4, 1fr); }
   .BetaButtonV001-root .BetaButtonV001-pageBtn{ min-height: 58px; }
@@ -2318,24 +2314,20 @@ button {
 
   <div class="BetaButtonV001-root">
     <div class="BetaButtonV001-container">
-      <!-- Launcher button -->
       <button id="BetaButtonV001-mainBtn" type="button" aria-haspopup="dialog" aria-controls="BetaButtonV001-modal">
         BETA: Features in Development
       </button>
 
-      <!-- Modal overlay -->
       <div id="BetaButtonV001-overlay" aria-hidden="true">
         <div id="BetaButtonV001-modal" role="dialog" aria-modal="true" aria-labelledby="BetaButtonV001-modalTitle">
-          <!-- Header -->
           <div id="BetaButtonV001-modalHeader">
             <h2 id="BetaButtonV001-modalTitle">Beta Pages</h2>
             <button id="BetaButtonV001-closeBtn" type="button" aria-label="Close Beta Pages">✕</button>
           </div>
 
-          <!-- Scrollable content -->
           <div id="BetaButtonV001-modalContent">
             <div id="BetaButtonV001-grid">
-              <!-- 25 tiles (JS will populate labels, hrefs, images, gradients) -->
+              <!-- 25 tiles -->
               <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-001" data-index="1" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page001</span></a>
               <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-002" data-index="2" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page002</span></a>
               <a class="BetaButtonV001-pageBtn" id="BetaButtonV001-pageBtn-003" data-index="3" href="#" role="button"><span class="bg-overlay"></span><span class="label">Page003</span></a>
@@ -2368,7 +2360,6 @@ button {
             </div>
           </div>
 
-          <!-- Footer controls -->
           <div id="BetaButtonV001-controls">
             <button id="BetaButtonV001-prevBtn" type="button" disabled>Previous Page</button>
             <div id="BetaButtonV001-pageCounter" aria-live="polite">Page 1 of 4</div>
@@ -12623,201 +12614,257 @@ function initShareButton(btn) {
 
 // This Area Below is the JS code for the "BetaButtonV001" section
 
+	
+  // =========================
+  // BetaButtonV001 JavaScript (uses BetaButtonV001_pages map)
+  // - All gradients use Group 1 palette only
+  // - Prev/Next working, modal scrollable
+  // - Edit BetaButtonV001_pages object inside to set URLs/images for 1..100
+  // =========================
 
-// BetaButtonV001 JavaScript (paste inside the <script> in your HTML)
-// - Uses the .BetaButtonV001-root scope placed in your HTML
-// - Group 1 palette ONLY (random 4-color merges per tile/control)
-// - Editable pages map: update URLs/images in the `pages` object below
-// - Public API at window.BetaButtonV001
+  (function(){
+    const root = document.querySelector('.BetaButtonV001-root');
+    if (!root) return console.warn('BetaButtonV001: root element not found');
 
-;(function(){
-  const root = document.querySelector('.BetaButtonV001-root');
-  if (!root) return console.warn('BetaButtonV001: root element .BetaButtonV001-root not found');
+    // Scoped elements
+    const mainBtn = root.querySelector('#BetaButtonV001-mainBtn');
+    const overlay = root.querySelector('#BetaButtonV001-overlay');
+    const modalContent = root.querySelector('#BetaButtonV001-modalContent');
+    const grid = root.querySelector('#BetaButtonV001-grid');
+    const closeBtn = root.querySelector('#BetaButtonV001-closeBtn');
+    const prevBtn = root.querySelector('#BetaButtonV001-prevBtn');
+    const nextBtn = root.querySelector('#BetaButtonV001-nextBtn');
+    const pageCounter = root.querySelector('#BetaButtonV001-pageCounter');
 
-  // Element refs scoped to root
-  const mainBtn = root.querySelector('#BetaButtonV001-mainBtn');
-  const overlay = root.querySelector('#BetaButtonV001-overlay');
-  const modal = root.querySelector('#BetaButtonV001-modal');
-  const closeBtn = root.querySelector('#BetaButtonV001-closeBtn');
-  const grid = root.querySelector('#BetaButtonV001-grid');
-  const modalContent = root.querySelector('#BetaButtonV001-modalContent');
-  const prevBtn = root.querySelector('#BetaButtonV001-prevBtn');
-  const nextBtn = root.querySelector('#BetaButtonV001-nextBtn');
-  const pageCounter = root.querySelector('#BetaButtonV001-pageCounter');
+    // Config
+    const PAGE_SIZE = 25;
+    const TOTAL = 100;
+    const TOTAL_PAGES = Math.ceil(TOTAL / PAGE_SIZE);
 
-  // Config
-  const PAGE_SIZE = 25;
-  const TOTAL = 100;
-  const TOTAL_PAGES = Math.ceil(TOTAL / PAGE_SIZE);
+    // --- Editable map for pages 1..100 ---
+    // Each entry is an object with { url: 'https://...', image: 'https://... or null' }
+    // Edit any entry here to customize the destination URL and optional background image for that page.
+    const BetaButtonV001_pages = {
+      1:  { url: 'Page002.uminion.com', image: null }, 2:  { url: 'https://uminion.com', image: null },
+      3:  { url: 'https://uminion.com', image: null }, 4:  { url: 'https://uminion.com', image: null },
+      5:  { url: 'https://uminion.com', image: null }, 6:  { url: 'https://uminion.com', image: null },
+      7:  { url: 'https://uminion.com', image: null }, 8:  { url: 'https://uminion.com', image: null },
+      9:  { url: 'https://uminion.com', image: null }, 10: { url: 'https://uminion.com', image: null },
+      11: { url: 'https://uminion.com', image: null }, 12: { url: 'https://uminion.com', image: null },
+      13: { url: 'https://uminion.com', image: null }, 14: { url: 'https://uminion.com', image: null },
+      15: { url: 'https://uminion.com', image: null }, 16: { url: 'https://uminion.com', image: null },
+      17: { url: 'https://uminion.com', image: null }, 18: { url: 'https://uminion.com', image: null },
+      19: { url: 'https://uminion.com', image: null }, 20: { url: 'https://uminion.com', image: null },
+      21: { url: 'https://uminion.com', image: null }, 22: { url: 'https://uminion.com', image: null },
+      23: { url: 'https://uminion.com', image: null }, 24: { url: 'https://uminion.com', image: null },
+      25: { url: 'https://uminion.com', image: null }, 26: { url: 'https://uminion.com', image: null },
+      27: { url: 'https://uminion.com', image: null }, 28: { url: 'https://uminion.com', image: null },
+      29: { url: 'https://uminion.com', image: null }, 30: { url: 'https://uminion.com', image: null },
+      31: { url: 'https://uminion.com', image: null }, 32: { url: 'https://uminion.com', image: null },
+      33: { url: 'https://uminion.com', image: null }, 34: { url: 'https://uminion.com', image: null },
+      35: { url: 'https://uminion.com', image: null }, 36: { url: 'https://uminion.com', image: null },
+      37: { url: 'https://uminion.com', image: null }, 38: { url: 'https://uminion.com', image: null },
+      39: { url: 'https://uminion.com', image: null }, 40: { url: 'https://uminion.com', image: null },
+      41: { url: 'https://uminion.com', image: null }, 42: { url: 'https://uminion.com', image: null },
+      43: { url: 'https://uminion.com', image: null }, 44: { url: 'https://uminion.com', image: null },
+      45: { url: 'https://uminion.com', image: null }, 46: { url: 'https://uminion.com', image: null },
+      47: { url: 'https://uminion.com', image: null }, 48: { url: 'https://uminion.com', image: null },
+      49: { url: 'https://uminion.com', image: null }, 50: { url: 'https://uminion.com', image: null },
+      51: { url: 'https://uminion.com', image: null }, 52: { url: 'https://uminion.com', image: null },
+      53: { url: 'https://uminion.com', image: null }, 54: { url: 'https://uminion.com', image: null },
+      55: { url: 'https://uminion.com', image: null }, 56: { url: 'https://uminion.com', image: null },
+      57: { url: 'https://uminion.com', image: null }, 58: { url: 'https://uminion.com', image: null },
+      59: { url: 'https://uminion.com', image: null }, 60: { url: 'https://uminion.com', image: null },
+      61: { url: 'https://uminion.com', image: null }, 62: { url: 'https://uminion.com', image: null },
+      63: { url: 'https://uminion.com', image: null }, 64: { url: 'https://uminion.com', image: null },
+      65: { url: 'https://uminion.com', image: null }, 66: { url: 'https://uminion.com', image: null },
+      67: { url: 'https://uminion.com', image: null }, 68: { url: 'https://uminion.com', image: null },
+      69: { url: 'https://uminion.com', image: null }, 70: { url: 'https://uminion.com', image: null },
+      71: { url: 'https://uminion.com', image: null }, 72: { url: 'https://uminion.com', image: null },
+      73: { url: 'https://uminion.com', image: null }, 74: { url: 'https://uminion.com', image: null },
+      75: { url: 'https://uminion.com', image: null }, 76: { url: 'https://uminion.com', image: null },
+      77: { url: 'https://uminion.com', image: null }, 78: { url: 'https://uminion.com', image: null },
+      79: { url: 'https://uminion.com', image: null }, 80: { url: 'https://uminion.com', image: null },
+      81: { url: 'https://uminion.com', image: null }, 82: { url: 'https://uminion.com', image: null },
+      83: { url: 'https://uminion.com', image: null }, 84: { url: 'https://uminion.com', image: null },
+      85: { url: 'https://uminion.com', image: null }, 86: { url: 'https://uminion.com', image: null },
+      87: { url: 'https://uminion.com', image: null }, 88: { url: 'https://uminion.com', image: null },
+      89: { url: 'https://uminion.com', image: null }, 90: { url: 'https://uminion.com', image: null },
+      91: { url: 'https://uminion.com', image: null }, 92: { url: 'https://uminion.com', image: null },
+      93: { url: 'https://uminion.com', image: null }, 94: { url: 'https://uminion.com', image: null },
+      95: { url: 'https://uminion.com', image: null }, 96: { url: 'https://uminion.com', image: null },
+      97: { url: 'https://uminion.com', image: null }, 98: { url: 'https://uminion.com', image: null },
+      99: { url: 'https://uminion.com', image: null }, 100:{ url: 'https://uminion.com', image: null }
+    };
+    // --- end editable map ---
 
-  // Editable pages map (1..100) - change urls/images here
-  // Example:
-  // pages[1] = { url: 'https://example.com/1', image: 'https://via.placeholder.com/600x400/FF0054/ffffff?text=1' };
-  const pages = {};
-  for (let i = 1; i <= TOTAL; i++) pages[i] = { url: 'https://uminion.com', image: null };
+    // Group 1 palette (only)
+    const colors = [
+      '#FF0054','#FF6A00','#FFD200','#FFF200','#00E676','#00B8D9','#0057FF','#2979FF','#6A00FF','#D500F9',
+      '#FF1744','#F57F17','#FF3D00','#FF6D00','#FF8A65','#FF5252','#FF9100','#FFC400','#00C853','#00E5FF'
+    ];
 
-  // GROUP 1 palette (chosen) — 20 bold colors (used exclusively)
-  const colors = [
-    '#FF0054','#FF6A00','#FFD200','#FFF200','#00E676','#00B8D9','#0057FF','#2979FF','#6A00FF','#D500F9',
-    '#FF1744','#F57F17','#FF3D00','#FF6D00','#FF8A65','#FF5252','#FF9100','#FFC400','#00C853','#00E5FF'
-  ];
-
-  // Utilities
-  function pad(n){ return String(n).padStart(3,'0'); }
-  function pickDistinctIndices(n){
-    const pool = Array.from({length: colors.length}, (_,i) => i);
-    const out = [];
-    while (out.length < n && pool.length){
-      const idx = Math.floor(Math.random() * pool.length);
-      out.push(pool.splice(idx,1)[0]);
-    }
-    return out;
-  }
-  function randomQuadColors(){ return pickDistinctIndices(4).map(i => colors[i]); }
-  // Strong single-direction blend for bold merges
-  function mergedGradient(l,t,r,b){
-    return `linear-gradient(135deg, ${l} 0%, ${t} 33%, ${r} 66%, ${b} 100%)`;
-  }
-
-  // State
-  let currentView = 1;
-  let tiles = Array.from(grid.querySelectorAll('.BetaButtonV001-pageBtn'));
-
-  // Normalize exact number of tiles to PAGE_SIZE
-  (function normalizeTiles(){
-    if (tiles.length < PAGE_SIZE){
-      const missing = PAGE_SIZE - tiles.length;
-      for (let i = 0; i < missing; i++){
-        const a = document.createElement('a');
-        a.className = 'BetaButtonV001-pageBtn';
-        a.href = '#';
-        a.setAttribute('role','button');
-        a.innerHTML = '<span class="bg-overlay"></span><span class="label"></span>';
-        grid.appendChild(a);
+    function pad(n){ return String(n).padStart(3,'0'); }
+    function pickDistinctIndices(n){
+      const pool = Array.from({length: colors.length}, (_,i) => i);
+      const out = [];
+      while (out.length < n && pool.length){
+        const idx = Math.floor(Math.random() * pool.length);
+        out.push(pool.splice(idx,1)[0]);
       }
-    } else if (tiles.length > PAGE_SIZE){
-      for (let i = PAGE_SIZE; i < tiles.length; i++) grid.removeChild(tiles[i]);
+      return out;
     }
-    tiles = Array.from(grid.querySelectorAll('.BetaButtonV001-pageBtn'));
-  })();
+    function randomQuadColors(){ return pickDistinctIndices(4).map(i => colors[i]); }
+    function mergedGradient(l,t,r,b){ return `linear-gradient(135deg, ${l} 0%, ${t} 33%, ${r} 66%, ${b} 100%)`; }
 
-  // Render a view (1..TOTAL_PAGES)
-  function renderView(view){
-    currentView = Math.min(Math.max(1, view), TOTAL_PAGES);
-    const startIndex = (currentView - 1) * PAGE_SIZE + 1;
-
-    tiles.forEach((tile, idx) => {
-      const pageNum = startIndex + idx;
-      const labelText = 'Page' + pad(pageNum);
-
-      // label
-      let labelEl = tile.querySelector('.label');
-      if (!labelEl){ labelEl = document.createElement('span'); labelEl.className = 'label'; tile.appendChild(labelEl); }
-      labelEl.textContent = labelText;
-      tile.id = 'BetaButtonV001-pageBtn-' + pad(pageNum);
-      tile.dataset.index = String(pageNum);
-
-      // page definition
-      const def = pages[pageNum] || { url: 'https://uminion.com', image: null };
-      tile.href = def.url || 'https://uminion.com';
-
-      if (def.image){
-        tile.classList.add('has-image');
-        const [l,t,r,b] = randomQuadColors();
-        // image first, then strong merged gradient tint
-        tile.style.backgroundImage = `url("${def.image}"), ${mergedGradient(l,t,r,b)}`;
-        const ov = tile.querySelector('.bg-overlay'); if (ov) ov.style.background = 'rgba(0,0,0,0.28)';
-      } else {
-        tile.classList.remove('has-image');
-        const [l,t,r,b] = randomQuadColors();
-        tile.style.backgroundImage = mergedGradient(l,t,r,b);
-        const ov = tile.querySelector('.bg-overlay'); if (ov) ov.style.background = 'rgba(0,0,0,0)';
+    // tiles
+    let tiles = Array.from(grid.querySelectorAll('.BetaButtonV001-pageBtn'));
+    (function normalizeTiles(){
+      if (tiles.length < PAGE_SIZE){
+        const missing = PAGE_SIZE - tiles.length;
+        for (let i = 0; i < missing; i++){
+          const a = document.createElement('a');
+          a.className = 'BetaButtonV001-pageBtn';
+          a.href = '#';
+          a.setAttribute('role','button');
+          a.innerHTML = '<span class="bg-overlay"></span><span class="label"></span>';
+          grid.appendChild(a);
+        }
+      } else if (tiles.length > PAGE_SIZE){
+        for (let i = PAGE_SIZE; i < tiles.length; i++) grid.removeChild(tiles[i]);
       }
-
-      // click behavior: modifiers open new tab naturally; plain click navigates
-      tile.onclick = function(ev){
-        const target = tile.href || def.url || 'https://uminion.com';
-        if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
-        ev.preventDefault();
-        window.location.href = target;
-      };
-    });
-
-    // Controls and launcher styled from same palette
-    (function styleControls(){
-      const [pl,pt,pr,pb] = randomQuadColors(); prevBtn.style.backgroundImage = mergedGradient(pl,pt,pr,pb);
-      const [nl,nt,nr,nb] = randomQuadColors(); nextBtn.style.backgroundImage = mergedGradient(nl,nt,nr,nb);
-      const [ml,mt,mr,mb] = randomQuadColors(); mainBtn.style.backgroundImage = mergedGradient(ml,mt,mr,mb);
+      tiles = Array.from(grid.querySelectorAll('.BetaButtonV001-pageBtn'));
     })();
 
-    prevBtn.disabled = currentView === 1;
-    nextBtn.disabled = currentView === TOTAL_PAGES;
-    pageCounter.textContent = `Page ${currentView} of ${TOTAL_PAGES}`;
+    // Render view
+    let currentView = 1;
+    function renderView(view){
+      currentView = Math.min(Math.max(1, view), TOTAL_PAGES);
+      const startIndex = (currentView - 1) * PAGE_SIZE + 1;
 
-    // Ensure modalContent is scrolled to top on view change for a consistent UX
-    if (modalContent) modalContent.scrollTop = 0;
-  }
+      tiles.forEach((tile, idx) => {
+        const pageNum = startIndex + idx;
+        const labelText = 'Page' + pad(pageNum);
 
-  // Open / Close modal
-  function openModal(){
-    if (!overlay) return;
-    overlay.style.display = 'flex';
-    overlay.setAttribute('aria-hidden','false');
-    renderView(currentView);
-    const first = tiles[0];
-    (first || closeBtn).focus();
-    // prevent body scroll behind modal but allow modalContent to scroll
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.overflow = 'hidden';
-  }
-  function closeModal(){
-    if (!overlay) return;
-    overlay.style.display = 'none';
-    overlay.setAttribute('aria-hidden','true');
-    document.documentElement.style.overflow = '';
-    document.body.style.overflow = '';
-    if (mainBtn) mainBtn.focus();
-  }
+        let labelEl = tile.querySelector('.label');
+        if (!labelEl){ labelEl = document.createElement('span'); labelEl.className = 'label'; tile.appendChild(labelEl); }
+        labelEl.textContent = labelText;
+        tile.id = 'BetaButtonV001-pageBtn-' + pad(pageNum);
+        tile.dataset.index = String(pageNum);
 
-  // Event bindings
-  if (mainBtn) mainBtn.addEventListener('click', openModal);
-  if (closeBtn) closeBtn.addEventListener('click', closeModal);
-  if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+        const def = BetaButtonV001_pages[pageNum] || { url: 'https://uminion.com', image: null };
+        tile.href = def.url || 'https://uminion.com';
 
-  // Keyboard handling (scoped — only active when modal open)
-  document.addEventListener('keydown', (e) => {
-    if (!overlay || overlay.style.display !== 'flex') return;
-    if (e.key === 'Escape'){ e.preventDefault(); closeModal(); return; }
-    if (e.key === 'ArrowLeft'){ e.preventDefault(); if (!prevBtn.disabled) renderView(currentView - 1); return; }
-    if (e.key === 'ArrowRight'){ e.preventDefault(); if (!nextBtn.disabled) renderView(currentView + 1); return; }
-  });
+        if (def.image){
+          tile.classList.add('has-image');
+          const [l,t,r,b] = randomQuadColors();
+          tile.style.backgroundImage = `url("${def.image}"), ${mergedGradient(l,t,r,b)}`;
+          const ov = tile.querySelector('.bg-overlay'); if (ov) ov.style.background = 'rgba(0,0,0,0.28)';
+        } else {
+          tile.classList.remove('has-image');
+          const [l,t,r,b] = randomQuadColors();
+          tile.style.backgroundImage = mergedGradient(l,t,r,b);
+          const ov = tile.querySelector('.bg-overlay'); if (ov) ov.style.background = 'rgba(0,0,0,0)';
+        }
 
-  if (prevBtn) prevBtn.addEventListener('click', () => { if (currentView > 1) renderView(currentView - 1); });
-  if (nextBtn) nextBtn.addEventListener('click', () => { if (currentView < TOTAL_PAGES) renderView(currentView + 1); });
+        tile.onclick = function(ev){
+          const target = tile.href || def.url || 'https://uminion.com';
+          if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+          ev.preventDefault();
+          window.location.href = target;
+        };
+      });
 
-  // Initial render to apply launcher gradient and control visuals
-  renderView(1);
+      // style controls and main button
+      (function styleControls(){
+        const [pl,pt,pr,pb] = randomQuadColors(); prevBtn.style.backgroundImage = mergedGradient(pl,pt,pr,pb);
+        const [nl,nt,nr,nb] = randomQuadColors(); nextBtn.style.backgroundImage = mergedGradient(nl,nt,nr,nb);
+        const [ml,mt,mr,mb] = randomQuadColors(); mainBtn.style.backgroundImage = mergedGradient(ml,mt,mr,mb);
+      })();
 
-  // Public API (modify pages and control view)
-  window.BetaButtonV001 = {
-    open: openModal,
-    close: closeModal,
-    setPage: function(index, obj){
-      // obj: { url: '...', image: '...' } - partial allowed
-      if (!Number.isInteger(index) || index < 1 || index > TOTAL) return;
-      pages[index] = Object.assign(pages[index] || {}, obj);
-    },
-    setAll: function(map){
-      // map: {1:{url,image}, 2:{...}, ...}
-      for (let i = 1; i <= TOTAL; i++) if (map[i]) pages[i] = map[i];
+      prevBtn.disabled = currentView === 1;
+      nextBtn.disabled = currentView === TOTAL_PAGES;
+      pageCounter.textContent = `Page ${currentView} of ${TOTAL_PAGES}`;
+
+      if (modalContent) modalContent.scrollTop = 0;
+    }
+
+    // open/close
+    function openModal(){
+      overlay.style.display = 'flex';
+      overlay.setAttribute('aria-hidden','false');
       renderView(currentView);
-    },
-    gotoView: function(viewNum){
-      renderView(viewNum);
-    },
-    getPages: function(){ return Object.assign({}, pages); }
-  };
-})();
+      const first = tiles[0]; (first || closeBtn).focus();
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModal(){
+      overlay.style.display = 'none';
+      overlay.setAttribute('aria-hidden','true');
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+      if (mainBtn) mainBtn.focus();
+    }
+
+    // events
+    if (mainBtn) mainBtn.addEventListener('click', openModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+    document.addEventListener('keydown', (e) => {
+      if (!overlay || overlay.style.display !== 'flex') return;
+      if (e.key === 'Escape'){ e.preventDefault(); closeModal(); return; }
+      if (e.key === 'ArrowLeft'){ e.preventDefault(); if (!prevBtn.disabled) renderView(currentView - 1); return; }
+      if (e.key === 'ArrowRight'){ e.preventDefault(); if (!nextBtn.disabled) renderView(currentView + 1); return; }
+    });
+
+    if (prevBtn) prevBtn.addEventListener('click', () => { if (currentView > 1) renderView(currentView - 1); });
+    if (nextBtn) nextBtn.addEventListener('click', () => { if (currentView < TOTAL_PAGES) renderView(currentView + 1); });
+
+    // initial render
+    renderView(1);
+
+    // Public API to update pages programmatically while preserving the exact map name
+    window.BetaButtonV001 = {
+      open: openModal,
+      close: closeModal,
+      // set single entry: setPage(3, { url:'https://x', image:'https://x.jpg' })
+      setPage: function(index, obj){
+        if (!Number.isInteger(index) || index < 1 || index > TOTAL) return;
+        if (!obj || typeof obj !== 'object') return;
+        BetaButtonV001_pages[index] = { url: typeof obj.url === 'string' && obj.url.length ? obj.url : (BetaButtonV001_pages[index] && BetaButtonV001_pages[index].url) || 'https://uminion.com', image: typeof obj.image === 'string' && obj.image.length ? obj.image : null };
+        renderView(currentView);
+      },
+      // setPagesMap({1:{...}, 5:{...}})
+      setPagesMap: function(map){
+        if (!map || typeof map !== 'object') return;
+        Object.keys(map).forEach(k => {
+          const idx = Number(k);
+          if (!Number.isInteger(idx) || idx < 1 || idx > TOTAL) return;
+          const val = map[k];
+          if (val && typeof val === 'object'){
+            BetaButtonV001_pages[idx] = { url: typeof val.url === 'string' && val.url.length ? val.url : (BetaButtonV001_pages[idx] && BetaButtonV001_pages[idx].url) || 'https://uminion.com', image: typeof val.image === 'string' && val.image.length ? val.image : null };
+          }
+        });
+        renderView(currentView);
+      },
+      // replaceAllPagesMap: provide an object map with 1..100 keys
+      replaceAllPagesMap: function(map){
+        if (!map || typeof map !== 'object') return;
+        for (let i = 1; i <= TOTAL; i++){
+          if (map[i] && typeof map[i] === 'object'){
+            BetaButtonV001_pages[i] = { url: typeof map[i].url === 'string' && map[i].url.length ? map[i].url : 'https://uminion.com', image: typeof map[i].image === 'string' && map[i].image.length ? map[i].image : null };
+          } else {
+            BetaButtonV001_pages[i] = { url: 'https://uminion.com', image: null };
+          }
+        }
+        renderView(currentView);
+      },
+      gotoView: function(viewNum){ if (Number.isInteger(viewNum)) renderView(viewNum); },
+      getPagesMap: function(){ return JSON.parse(JSON.stringify(BetaButtonV001_pages)); }
+    };
+
+  })();
 
 
 // This Area Above is the JS code for the "BetaButtonV001" section 
