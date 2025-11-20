@@ -15,7 +15,7 @@ services:
     restart: always
     volumes:
       - /root/private-includes/includes:/var/www/html/includes
-
+      - /root/private-includes/includes:/app/includes
   db:
     image: mysql:5.7
     restart: always
