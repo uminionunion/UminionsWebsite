@@ -1,5 +1,5 @@
 <?php
-require('/app/includes/db.Conn.Ver01.php'); // This line of code includes the database connection script. ***BIG UPDATE ON THIS NOW THAT WE DOCKERIZING! instead of using: >>> require 'includes/db.Conn.Ver01.php'; <<< we now use:>>> require_once('/app/includes/db.Conn.Ver01.php'); <<< i believe. this is to make sure the dockercontainer hosting this code AND the DATABASE ON THE VPS is correctly connected. 
+require_once('/app/includes/db.Conn.Ver01.php'); // This line of code includes the database connection script. ***BIG UPDATE ON THIS NOW THAT WE DOCKERIZING! instead of using: >>> require 'includes/db.Conn.Ver01.php'; <<< we now use:>>> require_once('/app/includes/db.Conn.Ver01.php'); <<< i believe. this is to make sure the dockercontainer hosting this code AND the DATABASE ON THE VPS is correctly connected. 
 
 if(isset($_POST["submit1"])) { // Check if the registration form was submitted.
     $username = $_POST['username']; // Get the username from the submitted form.
