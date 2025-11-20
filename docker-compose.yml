@@ -13,6 +13,8 @@ services:
     depends_on:
       - db
     restart: always
+    volumes:
+      - /root/private-includes/includes:/var/www/html/includes
 
   db:
     image: mysql:5.7
