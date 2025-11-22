@@ -6,7 +6,7 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 } else {
     echo "Database connection successful!";
-}
+} //<<<Friendly reminder; this is the new way to add a connection i believe
 
 
 
