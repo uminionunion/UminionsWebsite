@@ -12891,13 +12891,6 @@ function initShareButton(btn) {
 
 
 
-//testing testing; feel free deleting this //testing testing if it works.
-
-		
-
 </script>
 </body>
 </html>
-
-
-
