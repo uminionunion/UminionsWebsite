@@ -2296,11 +2296,11 @@ button {
 
                 <!-- Section remaining below the image -->
                 <!-- Button to submit the form -->
-                <button type="submit" id="submitMp3" name="submit" value="Upload">Submit!</button>
+                <button type="submit" id="submitMp3" name="submit" value="Upload">Submit</button>
                 <!-- Input for selecting the audio file, initially hidden -->
                 <input type="file" id="fileInput" name="my_audio" style="display: none;">
                 <!-- Button to trigger the upload of MP3 file -->
-                <button type="button" id="uploadMp3Btn">Upload Mp3</button>
+                <button type="button" id="uploadMp3Btn">Upload Mp3?</button>
                 
             </form>
 
