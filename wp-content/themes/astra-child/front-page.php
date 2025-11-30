@@ -2,11 +2,11 @@
 // >didnt work?:> require 'includes/db.Conn.Ver01.php'; // This line of code includes the database connection script. ***BIG UPDATE ON THIS NOW THAT WE DOCKERIZING! instead of using: >>> require 'includes/db.Conn.Ver01.php'; <<< we now use:>>> require_once('/app/includes/db.Conn.Ver01.php'); <<< i believe. this is to make sure the dockercontainer hosting this code AND the DATABASE ON THE VPS is correctly connected. Which apparently now uses this connection:>>> 
 
 require_once('/app/includes/db.Conn.Ver01.php');
-if (!$conn) {
-    die("Connection failed: " . mysqli_connect_error());
-} else {
-    echo "Database connection successful!";
-} //<<<Friendly reminder; this is the new way to add a connection i believe
+// if (!$conn) {
+//    die("Connection failed: " . mysqli_connect_error());
+//} else {
+//    echo "Database connection successful!";
+// } //<<<Friendly reminder; this is the new way to add a connection i believe
 
 
 
