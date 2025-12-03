@@ -12664,7 +12664,7 @@ function initShareButton(btn) {
     // Each entry is an object with { url: 'https://...', image: 'https://... or null' }
     // Edit any entry here to customize the destination URL and optional background image for that page.
     const BetaButtonV001_pages = {
-      1:  { url: '//Page002.uminion.com', image: null }, 2:  { url: 'https://uminion.com', image: null },
+      1:  { url: 'https://uminion.com', image: null }, 2:  { url: '//Page002.uminion.com', image: null },
       3:  { url: 'https://uminion.com', image: null }, 4:  { url: 'https://uminion.com', image: null },
       5:  { url: 'https://uminion.com', image: null }, 6:  { url: 'https://uminion.com', image: null },
       7:  { url: 'https://uminion.com', image: null }, 8:  { url: 'https://uminion.com', image: null },
