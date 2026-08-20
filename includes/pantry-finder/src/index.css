@@ -41,6 +41,27 @@
     --chart-5: 27 87% 67%;
     --radius: 1rem;
   }
+
+  .pantry-finder-root .pantry-finder-launch-button {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+    border: 0 !important;
+    border-radius: 0.75rem !important;
+    min-height: 2.75rem;
+    padding: 0.5rem 2rem;
+  }
+
+  .pantry-finder-root .pantry-finder-launch-button:hover {
+    background-color: hsl(var(--primary) / 0.9) !important;
+  }
+
+  .pantry-finder-root .pantry-finder-dialog-overlay {
+    z-index: 2147483000 !important;
+  }
+
+  .pantry-finder-root .pantry-finder-dialog {
+    z-index: 2147483001 !important;
+  }
   .pantry-finder-root.dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
