@@ -151,6 +151,19 @@
     color: #a1a1aa !important;
   }
 
+  .pantry-finder-root input,
+  .pantry-finder-root textarea {
+    background-color: #020817 !important;
+    color: #a1a1aa !important;
+    caret-color: #f8fafc !important;
+  }
+
+  .pantry-finder-root input::placeholder,
+  .pantry-finder-root textarea::placeholder {
+    color: #a1a1aa !important;
+    opacity: 1 !important;
+  }
+
   .pantry-finder-root select:focus,
   .pantry-finder-root select option:checked {
     background-color: #2563eb !important;
