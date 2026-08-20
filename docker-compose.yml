@@ -49,7 +49,7 @@ services:
       sh -c "pip install --no-cache-dir sqlite-web &&
       sqlite_web --host 0.0.0.0 --port 8080 /data/database.sqlite"
     ports:
-      - "127.0.0.1:8090:8080"
+      - "127.0.0.1:8091:8080"
     volumes:
       - pantry_data:/data
     restart: always
