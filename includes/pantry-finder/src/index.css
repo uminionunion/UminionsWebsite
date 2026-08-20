@@ -4,7 +4,17 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  .pantry-finder-root,
+  .pantry-finder-root *,
+  .pantry-finder-root ::before,
+  .pantry-finder-root ::after {
+    box-sizing: border-box;
+    border-color: hsl(var(--border));
+  }
+
+  .pantry-finder-root {
+    margin: 0;
+    line-height: 1.5;
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
     --card: 0 0% 100%;
@@ -31,7 +41,7 @@
     --chart-5: 27 87% 67%;
     --radius: 1rem;
   }
-  .dark {
+  .pantry-finder-root.dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
     --card: 240 10% 3.9%;
@@ -59,10 +69,10 @@
   }
 }
 @layer base {
-  * {
+  .pantry-finder-root * {
     @apply border-border;
   }
-  body {
+  .pantry-finder-root {
     @apply bg-background text-foreground;
   }
 }
@@ -82,35 +92,35 @@
 }
 
 /* Leaflet popup dark theme */
-.leaflet-popup-content-wrapper {
+.pantry-finder-root .leaflet-popup-content-wrapper {
   background-color: #020817; /* slate-950 or similar dark color */
   color: #f8fafc; /* slate-50 */
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-.leaflet-popup-tip-container {
+.pantry-finder-root .leaflet-popup-tip-container {
   width: 40px;
   height: 20px;
 }
 
-.leaflet-popup-tip {
+.pantry-finder-root .leaflet-popup-tip {
   background-color: #020817;
   border: none;
   box-shadow: none;
 }
 
-.leaflet-popup-content {
+.pantry-finder-root .leaflet-popup-content {
   margin: 0 !important;
   padding: 0 !important;
 }
 
-.leaflet-popup-close-button {
+.pantry-finder-root .leaflet-popup-close-button {
   color: #f8fafc !important;
   padding: 8px 8px 0 0 !important;
 }
 
-.leaflet-popup-close-button:hover {
+.pantry-finder-root .leaflet-popup-close-button:hover {
   background-color: transparent !important;
   color: #cbd5e1 !important;
 }
