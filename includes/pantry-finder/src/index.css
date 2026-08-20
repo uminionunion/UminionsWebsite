@@ -63,6 +63,9 @@
 
   .pantry-finder-root .pantry-finder-dialog {
     z-index: 2147483001 !important;
+    max-height: 90vh;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .pantry-finder-root .pantry-finder-launcher button,
