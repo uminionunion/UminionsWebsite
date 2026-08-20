@@ -13,6 +13,13 @@ if (!mountPoint) {
 }
 
 mountPoint.classList.add('pantry-finder-root', 'dark');
+mountPoint.style.setProperty('display', 'inline-block', 'important');
+mountPoint.style.setProperty('width', 'fit-content', 'important');
+mountPoint.style.setProperty('height', 'auto', 'important');
+mountPoint.style.setProperty('min-height', '0', 'important');
+mountPoint.style.setProperty('margin', '0', 'important');
+mountPoint.style.setProperty('padding', '0', 'important');
+mountPoint.style.setProperty('background', 'transparent', 'important');
 
 ReactDOM.createRoot(mountPoint).render(
   <React.StrictMode>

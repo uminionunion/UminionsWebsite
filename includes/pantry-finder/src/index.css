@@ -15,6 +15,10 @@
   .pantry-finder-root {
     margin: 0;
     line-height: 1.5;
+    display: inline-block;
+    width: fit-content;
+    height: auto;
+    min-height: 0;
     background: transparent;
     color: hsl(var(--foreground));
     --background: 0 0% 100%;
@@ -54,6 +58,12 @@
   }
 
   .pantry-finder-root .pantry-finder-launcher {
+    display: inline-flex !important;
+    width: fit-content !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     background: transparent !important;
   }
 
@@ -137,28 +147,28 @@
 
   .pantry-finder-root select,
   .pantry-finder-root select option {
-    background-color: #020817 !important;
-    color: #f8fafc !important;
+    background-color: #27272a !important;
+    color: #a1a1aa !important;
   }
 
   .pantry-finder-root select:focus,
   .pantry-finder-root select option:checked {
-    background-color: #1d4ed8 !important;
+    background-color: #2563eb !important;
     color: #ffffff !important;
   }
 
   .pantry-finder-root [data-radix-select-content] {
     z-index: 2147483002 !important;
-    background-color: #020817 !important;
-    color: #f8fafc !important;
+    background-color: #27272a !important;
+    color: #a1a1aa !important;
   }
 
   .pantry-finder-root [data-radix-select-item] {
-    color: #f8fafc !important;
+    color: #a1a1aa !important;
   }
 
   .pantry-finder-root [data-radix-select-item][data-highlighted] {
-    background-color: #1d4ed8 !important;
+    background-color: #2563eb !important;
     color: #ffffff !important;
   }
   .pantry-finder-root.dark {
