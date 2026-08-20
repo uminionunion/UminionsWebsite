@@ -1,0 +1,22 @@
+{
+  "name": "uminions-pantry-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.server.json",
+    "start": "node scripts/init-db.cjs && node scripts/backfill-pantry-locations.cjs && node dist/server/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "dotenv": "16.4.7",
+    "express": "5.1.0",
+    "kysely": "^0.28.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "5.0.0",
+    "@types/node": "22.13.5",
+    "tsx": "4.19.3",
+    "typescript": "5.8.2"
+  }
+}

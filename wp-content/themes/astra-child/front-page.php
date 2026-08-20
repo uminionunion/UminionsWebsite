@@ -86,7 +86,11 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
 
 		<!-- This Code BELOW is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
-		<script type="module" src="/includes/UminionMainHubVersion.jsx"></script>
+        <link rel="stylesheet" href="/includes/pantry-finder/dist/pantry-finder.css">
+        <script>
+            window.PANTRY_API_BASE_URL = '/pantry-api';
+        </script>
+        <script type="module" src="/includes/pantry-finder/dist/pantry-finder.js"></script>
 
 		<!-- This Code ABOVE is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
@@ -2318,7 +2322,7 @@ button {
 
 			<!-- This Code BELOW is part of: "GitHub Quest#34's Part 1 of Z: (part of 'test001' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
-			<div id="emojiLineForGitHubQuest34onFrontPage">🎶🎶🎶🎶🎶🎶🎶</div>
+            <div id="emojiLineForGitHubQuest34onFrontPage"></div>
 
 
 
