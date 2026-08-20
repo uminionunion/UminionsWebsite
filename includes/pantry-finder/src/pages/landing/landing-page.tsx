@@ -15,7 +15,9 @@ export function LandingPage({ pantries, addPantry }: LandingPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-slate-900 text-foreground flex flex-col items-center justify-center p-4">
-      <Button size="lg" onClick={() => setIsModalOpen(true)}>Find a Pantry:</Button>
+      <Button className="pantry-finder-launch-button" size="lg" onClick={() => setIsModalOpen(true)}>
+        Find a Pantry:
+      </Button>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-none w-[90vw] h-[90vh] p-0 !rounded-lg overflow-hidden">
