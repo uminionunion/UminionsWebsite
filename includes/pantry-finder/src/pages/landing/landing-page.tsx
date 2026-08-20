@@ -14,7 +14,7 @@ export function LandingPage({ pantries, addPantry }: LandingPageProps) {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-slate-900 text-foreground flex flex-col items-center justify-center p-4">
+    <div className="pantry-finder-launcher flex w-full items-center justify-center p-4">
       <Button className="pantry-finder-launch-button" size="lg" onClick={() => setIsModalOpen(true)}>
         Find a Pantry:
       </Button>

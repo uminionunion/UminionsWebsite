@@ -15,6 +15,8 @@
   .pantry-finder-root {
     margin: 0;
     line-height: 1.5;
+    background: transparent;
+    color: hsl(var(--foreground));
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
     --card: 0 0% 100%;
@@ -61,6 +63,69 @@
 
   .pantry-finder-root .pantry-finder-dialog {
     z-index: 2147483001 !important;
+  }
+
+  .pantry-finder-root .pantry-finder-launcher button,
+  .pantry-finder-root .pantry-finder-dialog button {
+    appearance: none !important;
+    font-family: inherit;
+  }
+
+  .pantry-finder-root .pantry-finder-dialog [role='checkbox'] {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 1rem !important;
+    height: 1rem !important;
+    min-width: 1rem !important;
+    padding: 0 !important;
+    border: 1px solid hsl(var(--primary)) !important;
+    border-radius: 0.25rem !important;
+    background: transparent !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+
+  .pantry-finder-root .pantry-finder-dialog [role='checkbox'][data-state='checked'] {
+    background: hsl(var(--primary)) !important;
+  }
+
+  .pantry-finder-root .pantry-finder-dialog [role='radio'] {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 1rem !important;
+    height: 1rem !important;
+    min-width: 1rem !important;
+    padding: 0 !important;
+    border: 1px solid hsl(var(--primary)) !important;
+    border-radius: 9999px !important;
+    background: transparent !important;
+    color: hsl(var(--primary)) !important;
+  }
+
+  .pantry-finder-root .pantry-finder-dialog [role='radio'][data-state='checked'] {
+    background: hsl(var(--primary)) !important;
+  }
+
+  .pantry-finder-root .pantry-finder-dialog [role='radio'] svg {
+    width: 0.625rem !important;
+    height: 0.625rem !important;
+  }
+
+  .pantry-finder-root .pantry-finder-dialog button[aria-label='Close'],
+  .pantry-finder-root .pantry-finder-dialog button:not([aria-label]) {
+    box-sizing: border-box;
+  }
+
+  .pantry-finder-root .pantry-finder-dialog > button:last-child {
+    display: inline-flex !important;
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    min-width: 1.5rem !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: hsl(var(--foreground)) !important;
   }
   .pantry-finder-root.dark {
     --background: 240 10% 3.9%;
