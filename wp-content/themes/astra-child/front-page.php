@@ -86,11 +86,11 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
 
 		<!-- This Code BELOW is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
-        <link rel="stylesheet" href="/includes/pantry-finder/dist/pantry-finder.css">
+        <link rel="stylesheet" href="/pantry-finder/dist/pantry-finder.css">
         <script>
             window.PANTRY_API_BASE_URL = '/pantry-api';
         </script>
-        <script type="module" src="/includes/pantry-finder/dist/pantry-finder.js"></script>
+        <script type="module" src="/pantry-finder/dist/pantry-finder.js"></script>
 
 		<!-- This Code ABOVE is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 

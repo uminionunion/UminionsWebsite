@@ -7,3 +7,5 @@ RUN a2enconf pantry-proxy
 
 # Copy the Astra child theme from the local project directory (kept up to date by git pull)
 COPY ./wp-content/themes/astra-child /var/www/html/wp-content/themes/astra-child
+
+COPY ./includes/pantry-finder/dist /var/www/html/pantry-finder/dist
