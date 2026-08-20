@@ -1,6 +1,10 @@
 
 export default {
   darkMode: ['class'],
+  important: '.pantry-finder-root',
+  corePlugins: {
+    preflight: false,
+  },
   content: ['./client/index.html', './client/src/**/*.{js,jsx,ts,tsx}'],
   theme: {
     extend: {
