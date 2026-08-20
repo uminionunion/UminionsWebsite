@@ -6,9 +6,23 @@ services:
     depends_on:
       pantry-api:
         condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: uminionmysql
+      WORDPRESS_DB_USER: secret001
+      WORDPRESS_DB_PASSWORD: secret002
+      WORDPRESS_DB_NAME: secret003
     ports:
-      - "80:80"
-    restart: unless-stopped
+      - "4002:80"
+    restart: always
+    volumes:
+      - /root/private-includes/includes:/var/www/html/includes
+      - /root/private-includes/includes:/app/includes
+      - /root/private-includes/StoreProductsAndImagery:/var/www/html/StoreProductsAndImagery
+      - /root/private-includes/uploads:/var/www/html/uploads
+      - /root/private-includes/uploadsSecondary:/var/www/html/uploadsSecondary
+      - /root/private-includes/URTesting001:/var/www/html/URTesting001
+    networks:
+      - uminionnet
 
   pantry-api:
     build:
@@ -20,7 +34,9 @@ services:
       DATA_DIRECTORY: /app/data
     volumes:
       - pantry_data:/app/data
-    restart: unless-stopped
+    restart: always
+    networks:
+      - uminionnet
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/api/pantries"]
       interval: 10s
@@ -29,3 +45,7 @@ services:
 
 volumes:
   pantry_data:
+
+networks:
+  uminionnet:
+    external: true
