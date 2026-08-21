@@ -6,6 +6,8 @@ services:
     depends_on:
       pantry-api:
         condition: service_healthy
+      uhub-api:
+        condition: service_healthy
     environment:
       WORDPRESS_DB_HOST: uminionmysql
       WORDPRESS_DB_USER: secret001
@@ -43,6 +45,26 @@ services:
       timeout: 5s
       retries: 5
 
+  uhub-api:
+    build:
+      context: ./uhub-api
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 4001
+      DATA_DIRECTORY: /app/data
+      JWT_SECRET: secret004
+    volumes:
+      - uhub_data:/app/data
+    restart: always
+    networks:
+      - uminionnet
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4001/api/chat/rooms-with-messages"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   sqlite-web:
     image: python:3.12-slim
     command: >-
@@ -54,8 +76,20 @@ services:
       - pantry_data:/data
     restart: always
 
+  uhub-sqlite-web:
+    image: python:3.12-slim
+    command: >-
+      sh -c "pip install --no-cache-dir sqlite-web &&
+      sqlite_web --host 0.0.0.0 --port 8080 /data/database.sqlite"
+    ports:
+      - "127.0.0.1:8092:8080"
+    volumes:
+      - uhub_data:/data
+    restart: always
+
 volumes:
   pantry_data:
+  uhub_data:
 
 networks:
   uminionnet:

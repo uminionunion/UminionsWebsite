@@ -1,0 +1,30 @@
+{
+  "name": "uminions-uhub-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --project tsconfig.server.json || true",
+    "start": "node scripts/init-data.cjs && node dist/server/index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.4.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "16.4.7",
+    "express": "5.1.0",
+    "express-fileupload": "^1.5.2",
+    "jsonwebtoken": "^9.0.2",
+    "kysely": "^0.28.8",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "5.0.0",
+    "@types/express-fileupload": "^1.5.1",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "22.13.5",
+    "typescript": "5.8.2"
+  }
+}

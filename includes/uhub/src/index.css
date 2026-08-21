@@ -1,0 +1,155 @@
+
+/* Import Tailwind's base styles, components, and utilities. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Define a layer for base styles. */
+@layer base {
+  /* Define CSS variables for the light theme. */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 28 96% 61%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  /* Define CSS variables for the dark theme. These override the root variables when the .dark class is present. */
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 28 96% 61%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 28 96% 61%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+/* Another base layer for global element styles. */
+@layer base {
+  /* Apply the border color variable to all elements by default. */
+  * {
+    @apply border-border;
+  }
+  /* Apply background and text colors to the body element. */
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Scrollbar styling for all browsers */
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #1a1a1a;
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #333333;
+  }
+  
+  /* Firefox */
+  * {
+    scrollbar-color: #1a1a1a transparent;
+    scrollbar-width: thin;
+  }
+}
+
+
+
+
+
+/* Union Store Custom Scrollbar */
+.union-store-scrollable::-webkit-scrollbar {
+  width: 12px;
+}
+
+.union-store-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.union-store-scrollable::-webkit-scrollbar-thumb {
+  background: #facc15;
+  border-radius: 6px;
+}
+
+.union-store-scrollable::-webkit-scrollbar-thumb:hover {
+  background: #eab308;
+}
+
+/* Firefox scrollbar */
+.union-store-scrollable {
+  scrollbar-color: #facc15 transparent;
+  scrollbar-width: thin;
+}
+
+
+
+/* Everything Store Custom Scrollbar - StoreIntegration074 */
+.everything-store-scrollable::-webkit-scrollbar {
+  width: 12px;
+}
+
+.everything-store-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.everything-store-scrollable::-webkit-scrollbar-thumb {
+  background: #ff6b1a;
+  border-radius: 6px;
+}
+
+.everything-store-scrollable::-webkit-scrollbar-thumb:hover {
+  background: #ff5500;
+}
+
+/* Firefox scrollbar for everything-store-scrollable */
+.everything-store-scrollable {
+  scrollbar-color: #ff6b1a transparent;
+  scrollbar-width: thin;
+}
