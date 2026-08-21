@@ -91,14 +91,14 @@ export function HostPantryForm({ onSubmit, isDialog = true }: HostPantryFormProp
     <form onSubmit={handleSubmit}>
       <div className="grid gap-4 py-4">
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="name" className="text-right">
+          <Label htmlFor="name" className="pantry-finder-field-label text-right">
             Pantry Name
           </Label>
           <Input id="name" name="name" placeholder="e.g. Community Food Hub" className="col-span-3" required />
         </div>
         
         <div className="grid grid-cols-4 items-start gap-4">
-          <Label htmlFor="address-lookup" className="text-right pt-2">
+          <Label htmlFor="address-lookup" className="pantry-finder-field-label text-right pt-2">
             Address
           </Label>
           <div className="col-span-3">
@@ -122,7 +122,7 @@ export function HostPantryForm({ onSubmit, isDialog = true }: HostPantryFormProp
         </div>
 
         <div className="grid grid-cols-4 items-start gap-4">
-          <Label htmlFor="lat" className="text-right pt-2">
+          <Label htmlFor="lat" className="pantry-finder-field-label text-right pt-2">
             Latitude
           </Label>
           <div className="col-span-3">
@@ -133,7 +133,7 @@ export function HostPantryForm({ onSubmit, isDialog = true }: HostPantryFormProp
           </div>
         </div>
         <div className="grid grid-cols-4 items-start gap-4">
-          <Label htmlFor="lng" className="text-right pt-2">
+          <Label htmlFor="lng" className="pantry-finder-field-label text-right pt-2">
             Longitude
           </Label>
           <div className="col-span-3">
@@ -145,13 +145,13 @@ export function HostPantryForm({ onSubmit, isDialog = true }: HostPantryFormProp
         </div>
 
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="hours" className="text-right">
+          <Label htmlFor="hours" className="pantry-finder-field-label text-right">
             Hours
           </Label>
           <Input id="hours" name="hours" placeholder="e.g. M-F 9am-5pm" className="col-span-3" required />
         </div>
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="pantry-country" className="text-right">Country</Label>
+          <Label htmlFor="pantry-country" className="pantry-finder-field-label text-right">Country</Label>
           <select id="pantry-country" name="country" value={country} onChange={e => { setCountry(e.target.value); setState(''); }} className="col-span-3 h-10 rounded-md border bg-background px-3" required>
             <option value="">Select a country</option>
             {Object.keys(countries).sort().map(countryName => <option key={countryName} value={countryName}>{countryName}</option>)}
@@ -159,7 +159,7 @@ export function HostPantryForm({ onSubmit, isDialog = true }: HostPantryFormProp
         </div>
         {country && countries[country].length > 0 && (
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="pantry-state" className="text-right">State/Province</Label>
+            <Label htmlFor="pantry-state" className="pantry-finder-field-label text-right">State/Province</Label>
             <select id="pantry-state" name="state" value={state} onChange={e => setState(e.target.value)} className="col-span-3 h-10 rounded-md border bg-background px-3">
               <option value="">Select a state/province</option>
               {countries[country].map(stateName => <option key={stateName} value={stateName}>{stateName}</option>)}
@@ -167,7 +167,7 @@ export function HostPantryForm({ onSubmit, isDialog = true }: HostPantryFormProp
           </div>
         )}
         <div className="grid grid-cols-4 items-start gap-4">
-            <Label className="text-right pt-2">Type</Label>
+            <Label className="pantry-finder-field-label text-right pt-2">Type</Label>
             <RadioGroup name="type" className="col-span-3 grid grid-cols-2 gap-2" required>
                 {pantryTypes.map(type => (
                     <div key={type.id} className="flex items-center space-x-2">
@@ -179,7 +179,7 @@ export function HostPantryForm({ onSubmit, isDialog = true }: HostPantryFormProp
         </div>
         
         <div className="grid grid-cols-4 items-center gap-4">
-          <Label htmlFor="notes" className="text-right">
+          <Label htmlFor="notes" className="pantry-finder-field-label text-right">
             Notes
           </Label>
           <Textarea
@@ -191,7 +191,7 @@ export function HostPantryForm({ onSubmit, isDialog = true }: HostPantryFormProp
         </div>
 
         <div className="grid grid-cols-4 items-start gap-4">
-            <Label className="text-right pt-2">Repeating?</Label>
+            <Label className="pantry-finder-field-label text-right pt-2">Repeating?</Label>
             <RadioGroup name="repeating" className="col-span-3 grid grid-cols-3 gap-2" required>
                 {repeatingTypes.map(type => (
                     <div key={type.id} className="flex items-center space-x-2">

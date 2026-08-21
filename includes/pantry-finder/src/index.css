@@ -180,6 +180,29 @@
     color: #a1a1aa !important;
   }
 
+  .pantry-finder-root .pantry-finder-field-label,
+  .pantry-finder-root .pantry-finder-section-title,
+  .pantry-finder-root .pantry-finder-list-label {
+    color: #f8fafc !important;
+  }
+
+  .pantry-finder-root .pantry-finder-field-label + input,
+  .pantry-finder-root input.pantry-finder-field-input,
+  .pantry-finder-root textarea.pantry-finder-field-input,
+  .pantry-finder-root select.pantry-finder-field-input {
+    color: #a1a1aa !important;
+  }
+
+  .pantry-finder-root input.pantry-finder-field-input::placeholder,
+  .pantry-finder-root textarea.pantry-finder-field-input::placeholder {
+    color: #a1a1aa !important;
+    opacity: 1 !important;
+  }
+
+  .pantry-finder-root .pantry-finder-list-label.text-yellow-400 {
+    color: #facc15 !important;
+  }
+
   .pantry-finder-root select:focus,
   .pantry-finder-root select option:checked {
     background-color: #2563eb !important;
