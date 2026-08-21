@@ -1,6 +1,13 @@
 # UminionsWebsite
 
-This repository contains the page001 Uminion website deployment and the Pantry Finder feature integrated from page002. Page001 remains a WordPress/Astra child-theme site backed by MySQL. Pantry Finder is an isolated React frontend with its own Node/Express/SQLite service and its own persistent Docker volume.
+•This repository contains the page001 (uminionClassic's) Uminion website deployment,
+and, 
+•the Pantry Finder feature (of quest issue #54) integrated from page002 (which will be shutting down to be replaced with something else, (page002 that is)). 
+
+•While:
+Page001 remains a WordPress/Astra child-theme site backed by MySQL. 
+•While:
+Pantry Finder is an isolated React frontend with its own Node/Express/SQLite service and its own persistent Docker volume.
 
 ## Architecture
 
@@ -63,36 +70,13 @@ It is not published directly to the internet. Apache reaches it by the Docker se
 
 Runs the `sqlite-web` browser in a Python 3.12 container and mounts the same `pantry_data` volume at `/data`. It is bound only to VPS loopback port `8091`, because page002 already uses VPS port `8090`.
 
-From a local machine, create the SSH tunnel:
-
-```bash
-ssh -L 8095:localhost:8091 root@72.61.7.100
-```
-
-Then open `http://localhost:8095/`. This is an administrative database browser, not a public application endpoint.
-
 ### Compose and proxy files
 
 [docker-compose.yml](docker-compose.yml) defines the three-service stack, the persistent volume, the existing external network, health checks, ports, and legacy bind mounts.
 
 [apache-pantry-proxy.conf](apache-pantry-proxy.conf) maps `/pantry-api/` to the internal `pantry-api:4000` service. The browser therefore uses a same-origin API path and has no page002 dependency.
 
-Typical VPS deployment:
-
-```bash
-docker compose down
-docker compose build --no-cache
-docker compose up -d
-```
-
-Check the services with:
-
-```bash
-docker compose ps
-curl http://127.0.0.1:4002/pantry-api/api/pantries
-```
-
-Do not remove the `pantry_data` volume during routine deployments. It contains page001's pantry records. The repository intentionally does not ship a database seed. When importing page002's historical records, omit the `id` column so SQLite can assign IDs that do not collide with page001 records.
+Do not remove the `pantry_data` volume during routine deployments. It contains page001's pantry records. The repository intentionally does not ship a database seed. 
 
 ## WordPress page001
 
@@ -100,13 +84,13 @@ Do not remove the `pantry_data` volume during routine deployments. It contains p
 
 [wp-content/themes/astra-child/functions.php](wp-content/themes/astra-child/functions.php) is the child-theme hook file. It enqueues the Astra parent stylesheet, adds homepage head hooks, excludes or branches page-specific behavior, starts the PHP session, and creates the CSRF token.
 
-[wp-content/themes/astra-child/style.css](wp-content/themes/astra-child/style.css) is the Astra child-theme metadata stylesheet. Most page001 styling currently lives in `front-page.php` rather than here.
+[wp-content/themes/astra-child/style.css](wp-content/themes/astra-child/style.css) is the Astra child-theme metadata stylesheet. Most page001 styling currently lives in `front-page.php` rather than here. (This CSS is more for mounting)
 
 The root [Dockerfile](Dockerfile) is the WordPress image definition. It enables Apache modules/configuration and copies the child theme and Pantry Finder production assets into the image. It does not copy the legacy private includes because those remain runtime bind mounts.
 
 ## Pantry Finder frontend
 
-The frontend lives under `includes/pantry-finder`. Its source is page002's feature adapted into a standalone page001 bundle. It is built with Vite, React 18, TypeScript, Tailwind CSS, Radix UI, Lucide, and Leaflet.
+The frontend lives under `includes/pantry-finder`. Its source is page002's ("Find a Food Pantry") feature:> adapted into a standalone page001 bundle. <:It is built with Vite, React 18, TypeScript, Tailwind CSS, Radix UI, Lucide, and Leaflet.
 
 ### Entry and application
 
@@ -160,6 +144,7 @@ The files under [includes/pantry-finder/src/components/ui](includes/pantry-finde
 
 [includes/pantry-finder/vite.config.js](includes/pantry-finder/vite.config.js) builds the standalone bundle into `dist` with the stable filenames `pantry-finder.js` and `pantry-finder.css`.
 
+
 The frontend [package.json](includes/pantry-finder/package.json) defines the Vite build and runtime/UI dependencies. [package-lock.json](includes/pantry-finder/package-lock.json) locks those dependencies.
 
 `includes/pantry-finder/index.html` is the standalone development/build entry document. The generated `includes/pantry-finder/dist/index.html`, `pantry-finder.js`, and `pantry-finder.css` are deployment artifacts consumed by the WordPress image.
@@ -192,13 +177,42 @@ The backend's `data/` directory is runtime storage when running outside Docker. 
 
 These are recommendations for later organization, not current changes:
 
-- `wp-content/themes/astra-child/front-page.php` combines the complete page markup, a very large inline stylesheet, extensive inline JavaScript, PHP session/database setup, and Pantry Finder bootstrapping. It is the clearest future split candidate: template markup, page001 CSS, page001 JavaScript, and small integration partials could eventually become separate files.
-- `wp-content/themes/astra-child/functions.php` combines parent-theme setup, homepage hooks, page exclusions, session startup, and CSRF initialization. Session/security initialization could eventually move into a dedicated bootstrap/plugin boundary.
-- `pantry-api/server/index.ts` combines Express setup, environment/base-path normalization, diagnostics, route definitions, and server startup. Routes could eventually be separated into route modules, with startup/configuration kept in the entry point.
+- `wp-content/themes/astra-child/front-page.php` combines the complete page markup, 
+a very large inline stylesheet, 
+extensive inline JavaScript, 
+PHP session/database setup, 
+and Pantry Finder bootstrapping. 
+
+It is the clearest future split candidate: 
+template markup, 
+page001 CSS, 
+page001 JavaScript, 
+and small integration partials could eventually become separate files.
+
+- `wp-content/themes/astra-child/functions.php` combines parent-theme setup, 
+homepage hooks, 
+page exclusions, 
+session startup, 
+and CSRF initialization. 
+
+Session/security initialization could eventually move into a dedicated bootstrap/plugin boundary.
+
+- `pantry-api/server/index.ts` combines Express setup, 
+environment/base-path normalization, 
+diagnostics, 
+route definitions, 
+and server startup. 
+
+Routes could eventually be separated into route modules, with startup/configuration kept in the entry point.
+
 - `pantry-api/server/db.ts` combines database connection construction with all table schema interfaces. A later split could keep the connection in `db.ts` and shared table types in a schema/types module.
+
 - `pantry-api/scripts/backfill-pantry-locations.cjs` combines the country/state dataset, address parsing rules, coordinate disambiguation, and migration execution. The lookup dataset and classifier could eventually be separated from the migration runner.
+
 - `includes/pantry-finder/src/pages/pantry-feature/the-food-pantry-feature.tsx` combines API loading, filter state, derived filtering, and the three-column layout. A later split could extract hooks for data/filter state and leave the component focused on layout.
+
 - `includes/pantry-finder/src/index.css` combines Tailwind entry styles, isolation rules, form-control overrides, modal rules, dropdown rules, and Leaflet customization. These could later become separate scoped style modules if the feature grows.
+
 - `docker-compose.yml` combines the page001 web service, Pantry API, SQLite administration service, persistent storage, external networking, health checks, and legacy mounts. It is still an appropriate deployment manifest, but service-specific Compose fragments could help if more features are added.
 
 ## Adding the next feature
