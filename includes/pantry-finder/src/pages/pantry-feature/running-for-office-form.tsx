@@ -63,7 +63,7 @@ export function RunningForOfficeForm() {
       <h3 className="text-lg font-semibold text-yellow-400">Running for Office?</h3>
       <div className="space-y-2">
         <Label htmlFor="name">Name?</Label>
-        <Input id="name" name="name" required />
+        <Input id="name" name="name" placeholder="Enter the Arena: Whats Your Name?" required />
       </div>
       <div className="space-y-2">
         <Label htmlFor="country">Country?</Label>
@@ -110,11 +110,11 @@ export function RunningForOfficeForm() {
       </div>
       <div className="space-y-2">
         <Label htmlFor="website">Optional: Website</Label>
-        <Input id="website" name="website" />
+        <Input id="website" name="website" placeholder="We Can Help With This If You Don't Already Have A Website" />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="phone">Optional: Want Union Resources? Type in your Number:</Label>
-        <Input id="phone" name="phone" type="tel" />
+        <Label htmlFor="phone">Optional: Want Union Resources?</Label>
+        <Input id="phone" name="phone" type="tel" placeholder="Type in your Number:" />
         <p className="text-xs text-muted-foreground">
           The 12,000+ person uminion union Helps with: "Building a website/fundraising/advertising/and Helping you get on the Ballot" if you choose to provide a number for us to send you instructions on how to access these optional resources.
         </p>
