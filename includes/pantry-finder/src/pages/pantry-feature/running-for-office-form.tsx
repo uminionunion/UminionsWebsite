@@ -62,11 +62,11 @@ export function RunningForOfficeForm() {
     <form onSubmit={handleSubmit} className="space-y-6 p-1">
       <h3 className="text-lg font-semibold text-yellow-400">Running for Office?</h3>
       <div className="space-y-2">
-        <Label htmlFor="name">Name?</Label>
+        <Label htmlFor="name" className="pantry-finder-field-label">Name?</Label>
         <Input id="name" name="name" placeholder="Enter the Arena: Whats Your Name?" required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="country">Country?</Label>
+        <Label htmlFor="country" className="pantry-finder-field-label">Country?</Label>
         <select
           id="country"
           name="country"
@@ -83,7 +83,7 @@ export function RunningForOfficeForm() {
       </div>
       {states.length > 0 && (
         <div className="space-y-2">
-          <Label htmlFor="state">State?</Label>
+          <Label htmlFor="state" className="pantry-finder-field-label">State?</Label>
           <select
             id="state"
             name="state"
@@ -98,22 +98,22 @@ export function RunningForOfficeForm() {
         </div>
       )}
       <div className="space-y-2">
-        <Label>Office Type</Label>
+        <Label className="pantry-finder-field-label">Office Type</Label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {officeTypes.map(type => (
             <div key={type.id} className="flex items-center gap-2">
               <Checkbox id={`office-${type.id}`} name="office_type" value={type.id} />
-              <Label htmlFor={`office-${type.id}`}>{type.label}</Label>
+              <Label htmlFor={`office-${type.id}`} className="pantry-finder-list-label">{type.label}</Label>
             </div>
           ))}
         </div>
       </div>
       <div className="space-y-2">
-        <Label htmlFor="website">Optional: Website</Label>
+        <Label htmlFor="website" className="pantry-finder-field-label">Optional: Website</Label>
         <Input id="website" name="website" placeholder="We Can Help With This If You Don't Already Have A Website" />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="phone">Optional: Want Union Resources?</Label>
+        <Label htmlFor="phone" className="pantry-finder-field-label">Optional: Want Union Resources?</Label>
         <Input id="phone" name="phone" type="tel" placeholder="Type in your Number:" />
         <p className="text-xs text-muted-foreground">
           The 12,000+ person uminion union Helps with: "Building a website/fundraising/advertising/and Helping you get on the Ballot" if you choose to provide a number for us to send you instructions on how to access these optional resources.
