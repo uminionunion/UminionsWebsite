@@ -164,6 +164,22 @@
     opacity: 1 !important;
   }
 
+  .pantry-finder-root label,
+  .pantry-finder-root h3,
+  .pantry-finder-root h4 {
+    color: #f8fafc !important;
+  }
+
+  .pantry-finder-root .text-yellow-400 {
+    color: #facc15 !important;
+  }
+
+  .pantry-finder-root input,
+  .pantry-finder-root textarea,
+  .pantry-finder-root select {
+    color: #a1a1aa !important;
+  }
+
   .pantry-finder-root select:focus,
   .pantry-finder-root select option:checked {
     background-color: #2563eb !important;
