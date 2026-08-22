@@ -15,3 +15,6 @@ COPY ./includes/pantry-finder/dist /var/www/html/pantry-finder/dist
 
 COPY ./includes/uhub/dist /var/www/html/uhub/dist
 
+COPY ./includes/uhub/public/EmojisForUminionWebsite /var/www/html/EmojisForUminionWebsite
+COPY ./includes/uhub/public/defaultUminionUassets /var/www/html/defaultUminionUassets
+
