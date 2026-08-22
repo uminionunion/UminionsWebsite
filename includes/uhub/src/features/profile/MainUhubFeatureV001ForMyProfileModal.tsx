@@ -2755,9 +2755,9 @@ default:
     const currentBroadcast = broadcasts[broadcastView];
 return (
   <>
-   <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center justify-between mb-4">
   <div className="flex items-center gap-2">
-    <Button variant="ghost" size="icon" onClick={() => {
+    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => {
       const currentIndex = broadcastKeys.indexOf(broadcastView);
       const nextIndex = (currentIndex - 1 + broadcastKeys.length) % broadcastKeys.length;
       setBroadcastView(broadcastKeys[nextIndex]);
@@ -2765,7 +2765,7 @@ return (
       <ChevronLeft />
     </Button>
     <h3 className="text-center font-bold">{currentBroadcast?.title || 'MyBroadcasts'}</h3>
-    <Button variant="ghost" size="icon" onClick={() => {
+    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => {
       const currentIndex = broadcastKeys.indexOf(broadcastView);
       const nextIndex = (currentIndex + 1) % broadcastKeys.length;
       setBroadcastView(broadcastKeys[nextIndex]);
@@ -3219,9 +3219,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       borderTop: window.innerWidth < 768 ? '1px solid #374151' : 'none'
     }}>
       <div className="flex items-center justify-center mb-2 md:mb-4 bg-black">
-        <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white hover:bg-gray-700 hover:text-white" onClick={() => navigateCenterRight('left')}><ChevronLeft className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateCenterRight('left')}><ChevronLeft className="h-4 w-4" /></Button>
         <h3 className="text-center font-bold mx-1 md:mx-2 text-xs md:text-base text-white">{centerRightView.displayName}</h3>
-        <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white hover:bg-gray-700 hover:text-white" onClick={() => navigateCenterRight('right')}><ChevronRight className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateCenterRight('right')}><ChevronRight className="h-4 w-4" /></Button>
       </div>
       <div className="space-y-1 md:space-y-4">
         {renderCenterRightContent()}
