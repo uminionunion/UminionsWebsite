@@ -1727,6 +1727,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [isDraggingRight, setIsDraggingRight] = useState(false);
   const [isQuadrantsModalOpen, setIsQuadrantsModalOpen] = useState(false);
   const [isHomeModalOpen, setIsHomeModalOpen] = useState(false);
+  const [areProfileSurfacesOpaque, setAreProfileSurfacesOpaque] = useState(true);
   //i have an error. trying to find the error. is this whats causing the error? part000002 of X ***Update:> I think error is solved; cause this might be a repeat of a working code. aka i think safe maybe to delete as of 2/10/26+maybe yes
   // const [everythingProducts, setEverythingProducts] = useState<Product[]>([]);
   const [allProductsForAdmin, setAllProductsForAdmin] = useState<Product[]>([]);
@@ -2985,44 +2986,47 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
   return (
     <>
-      <div className="bg-black text-foreground w-full h-full flex flex-col relative">
+      <div className="text-foreground w-full h-full flex flex-col relative" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
         <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-50 h-8 w-8 p-1 text-white hover:bg-gray-700 hover:text-white" onClick={onClose}>
           <X className="h-5 w-5" />
           <span className="sr-only">Close</span>
         </Button>
          {/* Top Section */}
-         <div className="md:flex md:flex-row hidden md:p-4 md:border-b md:gap-2 bg-black">
-           <div id="MainUhubFeatureV001ForMyProfileSettingsTopLeftSection" className="md:w-1/5 grid grid-cols-4 md:grid-cols-2 grid-rows-1 md:grid-rows-2 gap-2 md:pr-4 bg-black">
-             <Button variant="outline" className="flex flex-col h-full items-center justify-center relative text-xs" title="Friends" onClick={() => handleTopLeftButtonClick('friends')} disabled={!user}>
+         <div className="md:flex md:flex-row hidden md:p-4 md:border-b md:gap-2" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+           <div id="MainUhubFeatureV001ForMyProfileSettingsTopLeftSection" className="md:w-1/5 grid grid-cols-4 md:grid-cols-2 grid-rows-1 md:grid-rows-2 gap-2 md:pr-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+             <Button variant="outline" className="flex flex-col h-full items-center justify-center relative text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Friends" onClick={() => handleTopLeftButtonClick('friends')} disabled={!user}>
                {pendingFriendRequests.length > 0 && <div className="absolute top-1 right-1 w-3 h-3 bg-orange-500 rounded-full"></div>}
                <Users className="h-4 w-4 mb-1" /> Friends
              </Button>
-             <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs" title="Broadcast" onClick={() => setCenterView('broadcasts')}><Megaphone className="h-4 w-4 mb-1" /> Broadcast</Button>
+             <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Broadcast" onClick={() => setCenterView('broadcasts')}><Megaphone className="h-4 w-4 mb-1" /> Broadcast</Button>
              <a href="https://github.com/uminionunion/UminionsWebsite/discussions/13" target="_blank" rel="noopener noreferrer" className="w-full h-full">
-               <Button variant="outline" className="w-full h-full flex flex-col items-center justify-center text-xs" title="Code" disabled={!user}><Code className="h-4 w-4 mb-1" /> Code</Button>
+               <Button variant="outline" className="w-full h-full flex flex-col items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Code" disabled={!user}><Code className="h-4 w-4 mb-1" /> Code</Button>
              </a>
-             <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs" title="Settings" onClick={() => handleTopLeftButtonClick('settings')} disabled={!user}><Settings className="h-4 w-4 mb-1" /> Settings</Button>
+             <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Settings" onClick={() => handleTopLeftButtonClick('settings')} disabled={!user}><Settings className="h-4 w-4 mb-1" /> Settings</Button>
            </div>
-           <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-black bg-cover bg-center rounded-md relative" style={{ backgroundImage: "url('/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg')" }}>
+           <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: "url('/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg')" }}>
              {user && <Button className="absolute bottom-2 right-2" size="sm">Change Cover</Button>}
            </div>
 
             {/* 8-Button Grid - SMALLER BUTTONS - HIDDEN ON MOBILE */}
-<div className="hidden md:flex md:w-1/4 justify-center items-center md:pl-4">
+<div className="hidden md:flex md:w-1/4 justify-center items-center md:pl-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div className="grid grid-cols-2 gap-1 w-fit">
     <Button
       variant="outline"
       size="sm"
-      className="flex flex-col items-center justify-center h-7 w-7 gap-0 text-xs"
+      className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
+      style={{ color: '#ffffff', backgroundColor: 'transparent' }}
       onClick={() => setIsQuadrantsModalOpen(true)}
       title="HikingToAllStores"
     >
       <Mountain className="h-3 w-3" />
+      <span>Stores</span>
     </Button>
     <Button
       variant="outline"
       size="sm"
-      className="flex flex-col items-center justify-center h-7 w-7 gap-0 text-xs"
+      className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
+      style={{ color: '#ffffff', backgroundColor: 'transparent' }}
       onClick={() => {
         if (!user) {
           alert("You must be logged in to use this feature.");
@@ -3034,14 +3038,16 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       disabled={!user}
     >
       <Home className="h-3 w-3" />
+      <span>Home</span>
     </Button>
     {Array.from({ length: 6 }, (_, i) => (
       <Button
         key={i + 3}
         variant="outline"
         size="sm"
-        className="flex flex-col items-center justify-center h-7 w-7 gap-0 text-xs"
-        onClick={() => setIsQuadrantsModalOpen(true)}
+        className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
+        style={{ color: '#ffffff', backgroundColor: 'transparent' }}
+        onClick={() => i === 0 ? setAreProfileSurfacesOpaque(prev => !prev) : setIsQuadrantsModalOpen(true)}
         title={`Custom ${i + 3}`}
       >
         {i + 3}
@@ -3051,7 +3057,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 </div>
 
           {/* Avatar (this is apparently how to modify avatar for users default image(? and then some? or thats it?) EXTRA EXTRA QUEST Do i want to remove avatar fallback)*/}
-<div id="MainUhubFeatureV001ForMyProfileSettingsTopRightSection" className="md:w-1/5 flex justify-center md:justify-end items-start md:pl-4 relative bg-black">
+<div id="MainUhubFeatureV001ForMyProfileSettingsTopRightSection" className="md:w-1/5 flex justify-center md:justify-end items-start md:pl-4 relative" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div onClick={handleProfileImageClick} className="cursor-pointer relative group">
     <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-orange-400 group-hover:border-orange-600 transition">
       <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="Profile" />
@@ -3154,11 +3160,11 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
 
         {/* Center Section */}
-  <div className="flex-grow flex overflow-hidden bg-black" data-profile-main-container style={{ flexDirection: window.innerWidth < 768 ? 'column' : 'row' }}>
+  <div className="flex-grow flex overflow-hidden" data-profile-main-container style={{ flexDirection: window.innerWidth < 768 ? 'column' : 'row', backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   {/* LEFT SECTION - ONLY SHOW IF NOT COLLAPSED */}
   {!isLeftSectionCollapsed && (
     <>
-      <div id="MainUhubFeatureV001ForMyProfileSettingsCenterLeftSection" className="md:border-r overflow-y-auto p-2 md:p-4 bg-black text-white" style={{ width: window.innerWidth < 768 ? '100%' : `${leftWidthDesktop}%`, height: window.innerWidth < 768 ? 'auto' : 'auto' }}>
+      <div id="MainUhubFeatureV001ForMyProfileSettingsCenterLeftSection" className="md:border-r overflow-y-auto p-2 md:p-4 text-white" style={{ width: window.innerWidth < 768 ? '100%' : `${leftWidthDesktop}%`, height: window.innerWidth < 768 ? 'auto' : 'auto', backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
         <h3 className="text-center font-bold mb-2 md:mb-4 text-xs md:text-base">uHome-Hub:</h3>
         <div className="grid grid-cols-2 gap-1 md:gap-2">
           {MainUhubFeatureV001ForUHomeHubButtons.map(num => (
@@ -3193,11 +3199,12 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
   )}
 
   {/* CENTER SECTION is it this one? */}
-  <div id="MainUhubFeatureV001ForMyProfileSettingsCenterSection" className="p-2 md:p-4 overflow-y-auto bg-black text-white" style={{ 
+  <div id="MainUhubFeatureV001ForMyProfileSettingsCenterSection" className="p-2 md:p-4 overflow-y-auto text-white" style={{ 
     width: window.innerWidth < 768 ? '100%' : `${centerWidthDesktop}%`,
        height: window.innerWidth < 768 ? 'auto' : 'auto', 
     display: 'flex',
-    flexDirection: 'column'
+    flexDirection: 'column',
+    backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent'
   }}>
     {renderCenterContent()}
   </div>
@@ -3213,10 +3220,11 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
   {/* RIGHT SECTION - ONLY SHOW IF NOT COLLAPSED */}
   {!isRightSectionCollapsed && (
-    <div id="MainUhubFeatureV001ForMyProfileSettingsCenterRightSection" className="md:border-l overflow-y-auto p-2 md:p-4 bg-black text-white" style={{ 
+    <div id="MainUhubFeatureV001ForMyProfileSettingsCenterRightSection" className="md:border-l overflow-y-auto p-2 md:p-4 text-white" style={{ 
       width: window.innerWidth < 768 ? '100%' : `${rightWidthDesktop}%`,
       height: window.innerWidth < 768 ? 'auto' : 'auto',
-      borderTop: window.innerWidth < 768 ? '1px solid #374151' : 'none'
+      borderTop: window.innerWidth < 768 ? '1px solid #374151' : 'none',
+      backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent'
     }}>
       <div className="flex items-center justify-center mb-2 md:mb-4 bg-black">
         <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateCenterRight('left')}><ChevronLeft className="h-4 w-4" /></Button>
@@ -3233,7 +3241,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
           {/* Bottom Section */}
           <div className="flex border-t md:h-auto h-12">
             <div id="MainUhubFeatureV001ForMyProfileSettingsBottomLeftSection" className="w-[20%] p-1 md:p-2 border-r flex items-center">
-              <Button variant="ghost" size="icon" className="h-6 w-6 md:h-6 md:w-6 p-1" onClick={() => handleSocialNavLeft('left')}><ChevronLeft className="h-3 w-3 md:h-2.5 md:w-2.5" /></Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => handleSocialNavLeft('left')}><ChevronLeft className="h-4 w-4" /></Button>
               <div className="flex-grow hidden md:grid grid-cols-3 gap-0.5 md:gap-2 place-items-center">
                 {socialLinkPagesLeft[socialPageLeft].map(link => (
                   <div key={link.id} className="text-xs md:text-xs">
@@ -3248,7 +3256,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                   </div>
                 ))}
               </div>
-              <Button variant="ghost" size="icon" className="h-6 w-6 md:h-6 md:w-6 p-1" onClick={() => handleSocialNavLeft('right')}><ChevronRight className="h-3 w-3 md:h-2.5 md:w-2.5" /></Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => handleSocialNavLeft('right')}><ChevronRight className="h-4 w-4" /></Button>
             </div>
             <div id="MainUhubFeatureV001ForMyProfileSettingsBottomCenterSection" className="w-[60%] p-1 md:p-2 flex items-center justify-center">
               <a href="https://page001.uminion.com/product/official-uminion-union-card/" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-xs md:text-sm">
@@ -3256,7 +3264,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               </a>
             </div>
             <div id="MainUhubFeatureV001ForMyProfileSettingsBottomRightSection" className="w-[20%] p-1 md:p-2 border-l flex items-center">
-               <Button variant="ghost" size="icon" className="h-6 w-6 md:h-6 md:w-6 p-1" onClick={() => handleSocialNavRight('left')}><ChevronLeft className="h-3 w-3 md:h-2.5 md:w-2.5" /></Button>
+               <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => handleSocialNavRight('left')}><ChevronLeft className="h-4 w-4" /></Button>
               <div className="flex-grow hidden md:grid grid-cols-3 gap-0.5 md:gap-2 place-items-center">
                 {socialLinkPagesRight[socialPageRight].map(link => (
                   <div key={link.id} className="text-xs md:text-xs">
@@ -3271,7 +3279,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                   </div>
                 ))}
               </div>
-              <Button variant="ghost" size="icon" className="h-6 w-6 md:h-6 md:w-6 p-1" onClick={() => handleSocialNavRight('right')}><ChevronRight className="h-3 w-3 md:h-2.5 md:w-2.5" /></Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => handleSocialNavRight('right')}><ChevronRight className="h-4 w-4" /></Button>
             </div>
           </div>
         </div>
