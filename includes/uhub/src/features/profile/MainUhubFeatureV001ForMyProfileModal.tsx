@@ -3049,7 +3049,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       <Home className="h-5 w-5" />
       <span>Home</span>
     </Button>
-    {[9, 10, 3, 4, 11, 12, 5, 6, 13, 14, 15, 8, 7, 16].map((buttonNumber) => (
+    {[9, 10, 3, 4, 11, 12, 5, 6, 13, 14, 7, 8, 15, 16].map((buttonNumber) => (
       <Button
         key={buttonNumber}
         variant="outline"
