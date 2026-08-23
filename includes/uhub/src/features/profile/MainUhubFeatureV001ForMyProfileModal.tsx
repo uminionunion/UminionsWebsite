@@ -1728,6 +1728,13 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [isQuadrantsModalOpen, setIsQuadrantsModalOpen] = useState(false);
   const [isHomeModalOpen, setIsHomeModalOpen] = useState(false);
   const [areProfileSurfacesOpaque, setAreProfileSurfacesOpaque] = useState(true);
+  const [areFeatureIconsActive, setAreFeatureIconsActive] = useState({
+    heart: false,
+    palm: false,
+    lion: false,
+    microphone: false,
+    steeringWheel: false,
+  });
   //i have an error. trying to find the error. is this whats causing the error? part000002 of X ***Update:> I think error is solved; cause this might be a repeat of a working code. aka i think safe maybe to delete as of 2/10/26+maybe yes
   // const [everythingProducts, setEverythingProducts] = useState<Product[]>([]);
   const [allProductsForAdmin, setAllProductsForAdmin] = useState<Product[]>([]);
@@ -2995,15 +3002,15 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
          {/* Top Section */}
          <div className="md:flex md:flex-row hidden md:p-4 md:border-b md:gap-2" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopLeftSection" className="md:w-1/5 grid grid-cols-4 md:grid-cols-2 grid-rows-1 md:grid-rows-2 gap-2 md:pr-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
-             <Button variant="outline" className="flex flex-col h-full items-center justify-center relative text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Friends" onClick={() => handleTopLeftButtonClick('friends')} disabled={!user}>
+             <Button variant="outline" className="flex flex-col h-full items-center justify-center relative text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent', opacity: 1 }} title="Friends" onClick={() => handleTopLeftButtonClick('friends')} disabled={!user}>
                {pendingFriendRequests.length > 0 && <div className="absolute top-1 right-1 w-3 h-3 bg-orange-500 rounded-full"></div>}
                <Users className="h-4 w-4 mb-1" /> Friends
              </Button>
              <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Broadcast" onClick={() => setCenterView('broadcasts')}><Megaphone className="h-4 w-4 mb-1" /> Broadcast</Button>
              <a href="https://github.com/uminionunion/UminionsWebsite/discussions/13" target="_blank" rel="noopener noreferrer" className="w-full h-full">
-               <Button variant="outline" className="w-full h-full flex flex-col items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Code" disabled={!user}><Code className="h-4 w-4 mb-1" /> Code</Button>
+               <Button variant="outline" className="w-full h-full flex flex-col items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent', opacity: 1 }} title="Code" disabled={!user}><Code className="h-4 w-4 mb-1" /> Code</Button>
              </a>
-             <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Settings" onClick={() => handleTopLeftButtonClick('settings')} disabled={!user}><Settings className="h-4 w-4 mb-1" /> Settings</Button>
+             <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent', opacity: 1 }} title="Settings" onClick={() => handleTopLeftButtonClick('settings')} disabled={!user}><Settings className="h-4 w-4 mb-1" /> Settings</Button>
            </div>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative overflow-hidden" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: 'none' }}>
              <img src="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg" alt="uHub cover" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: areProfileSurfacesOpaque ? 1 : 0.5 }} />
@@ -3049,10 +3056,30 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         size="sm"
         className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
         style={{ color: '#ffffff', backgroundColor: 'transparent' }}
-        onClick={() => i === 5 ? setAreProfileSurfacesOpaque(prev => !prev) : setIsQuadrantsModalOpen(true)}
+        onClick={() => {
+          if (i === 5) {
+            setAreProfileSurfacesOpaque(prev => !prev);
+            return;
+          }
+
+          setAreFeatureIconsActive(prev => ({
+            ...prev,
+            heart: i === 0 ? !prev.heart : prev.heart,
+            palm: i === 1 ? !prev.palm : prev.palm,
+            lion: i === 2 ? !prev.lion : prev.lion,
+            microphone: i === 3 ? !prev.microphone : prev.microphone,
+            steeringWheel: i === 4 ? !prev.steeringWheel : prev.steeringWheel,
+          }));
+          setIsQuadrantsModalOpen(true);
+        }}
         title={i === 5 ? 'Toggle transparency' : `Custom ${i + 3}`}
       >
-        {i === 5 ? (areProfileSurfacesOpaque ? '✩' : '★') : i + 3}
+        {i === 0 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
+          i === 1 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
+          i === 2 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
+          i === 3 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
+          i === 4 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
+          i === 5 ? (areProfileSurfacesOpaque ? '✩' : '★') : i + 3}
       </Button>
     ))}
   </div>
