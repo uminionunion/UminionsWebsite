@@ -1583,6 +1583,10 @@ const renderNavbar = () => {
   >
     {EMOJIS.DOWNVOTE_INITIAL} Downvote
   </button>
+</div>
+
+{/* ROW 2: Favorites, Comment, View Comments, Delete (if owner) */}
+<div style={styles.actionButtonsContainer}>
   <button
     style={{
       ...styles.actionButton,
@@ -1596,10 +1600,6 @@ const renderNavbar = () => {
     />{" "}
     Favorites
   </button>
-</div>
-
-{/* ROW 2: Comment, View Comments, Delete (if owner) */}
-<div style={styles.actionButtonsContainer}>
   <button style={styles.actionButton} onClick={openCommentDialog}>
     {EMOJIS.COMMENT_INITIAL} Comment
   </button>
