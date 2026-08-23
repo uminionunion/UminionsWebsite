@@ -1734,6 +1734,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
     lion: false,
     microphone: false,
     steeringWheel: false,
+    movie: false,
   });
   //i have an error. trying to find the error. is this whats causing the error? part000002 of X ***Update:> I think error is solved; cause this might be a repeat of a working code. aka i think safe maybe to delete as of 2/10/26+maybe yes
   // const [everythingProducts, setEverythingProducts] = useState<Product[]>([]);
@@ -3069,8 +3070,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             lion: buttonNumber === 5 ? !prev.lion : prev.lion,
             microphone: buttonNumber === 6 ? !prev.microphone : prev.microphone,
             steeringWheel: buttonNumber === 7 ? !prev.steeringWheel : prev.steeringWheel,
+            movie: buttonNumber === 15 ? !prev.movie : prev.movie,
           }));
-          if (buttonNumber !== 6) {
+          if (![3, 4, 5, 6, 7].includes(buttonNumber)) {
             setIsQuadrantsModalOpen(true);
           }
         }}
@@ -3083,6 +3085,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             buttonNumber === 6 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
             buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
             buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') :
+            buttonNumber === 15 ? (areFeatureIconsActive.movie ? '🖼' : '📽') :
             buttonNumber === 16 ? '⏭' : buttonNumber}
         </span>
       </Button>

@@ -8,6 +8,7 @@ import MainUhubFeatureV001ForMyProfileModal from '@/features/profile/MainUhubFea
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import MainUhubFeatureV001ForUserProfileModal from './features/profile/MainUhubFeatureV001ForUserProfileModal';
 import BadgeZoomToast from './features/profile/BadgeZoomToast';
+import { Pencil } from 'lucide-react';
 
 const MainUhubFeatureV001Layout = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -19,6 +20,7 @@ const MainUhubFeatureV001Layout = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [autoLaunch, setAutoLaunch] = useState(true);
   const [zoomedBadge, setZoomedBadge] = useState<{ url: string; name: string } | null>(null);
+  const [isLauncherImageUploadOpen, setLauncherImageUploadOpen] = useState(false);
 
   // Handler for badge zoom that works in ANY modal context
   const handleBadgeZoom = (badge: { url: string; name: string }) => {
@@ -107,6 +109,27 @@ useEffect(() => {
     }
   };
 
+  const handleLauncherImageUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('profileImage', file);
+
+    try {
+      const response = await fetch('/api/auth/profile-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Profile image upload failed');
+      }
+
+      setLauncherImageUploadOpen(false);
+      window.location.reload();
+    } catch (error) {
+      console.error('Profile image upload failed:', error);
+    }
+  };
+
   return (
     // Compact horizontal bar (instead of page007's full-page header/main/footer layout)
     // so the 5 buttons sit in a single row inside page001's "FrontPage001" mount div.
@@ -135,11 +158,24 @@ useEffect(() => {
         <Button>Find us on FB!</Button>
       </a>
 
-      <div onClick={handleProfileImageClick} className="cursor-pointer">
-        <Avatar className="h-10 w-10">
-          <AvatarImage src={user?.profile_image_url || "https://uminion.com/wp-content/uploads/2025/02/iArt06532.png"} alt="Profile" />
+      <div onClick={handleProfileImageClick} className="relative cursor-pointer group">
+        <Avatar className="h-[60px] w-[60px] border-2 border-orange-400 group-hover:border-orange-600 transition">
+          <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="Profile" />
           <AvatarFallback>U</AvatarFallback>
         </Avatar>
+        {user && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setLauncherImageUploadOpen(true);
+            }}
+            className="absolute bottom-0 right-0 rounded-full bg-orange-400 p-1 text-white shadow-lg hover:bg-orange-500"
+            title="Edit profile picture"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+        )}
       </div>
 
       <Routes>
@@ -176,6 +212,31 @@ useEffect(() => {
           altText={`${zoomedBadge.name} badge`}
           onClose={() => setZoomedBadge(null)}
         />
+      )}
+
+      {isLauncherImageUploadOpen && user && (
+        <div className="fixed inset-0 z-[1000002] flex items-center justify-center bg-black/70">
+          <div className="w-[90%] max-w-md rounded-lg border bg-black p-6 text-white">
+            <h2 className="mb-4 text-xl font-bold">Change Profile Picture</h2>
+            <input
+              type="file"
+              accept="image/*"
+              className="w-full"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void handleLauncherImageUpload(file);
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              className="mt-4 w-full text-white"
+              onClick={() => setLauncherImageUploadOpen(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       )}
 
       {authModal.isOpen && (
