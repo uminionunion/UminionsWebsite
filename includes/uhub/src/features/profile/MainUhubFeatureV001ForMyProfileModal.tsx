@@ -3068,7 +3068,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             palm: buttonNumber === 4 ? !prev.palm : prev.palm,
             lion: buttonNumber === 5 ? !prev.lion : prev.lion,
             microphone: buttonNumber === 6 ? !prev.microphone : prev.microphone,
-            steeringWheel: buttonNumber === 7 ? !prev.steeringWheel : prev.steeringWheel,
+            steeringWheel: buttonNumber === 15 ? !prev.steeringWheel : prev.steeringWheel,
           }));
           setIsQuadrantsModalOpen(true);
         }}
@@ -3079,7 +3079,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             buttonNumber === 4 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
             buttonNumber === 5 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
             buttonNumber === 6 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
-            buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
+            buttonNumber === 15 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
             buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') : buttonNumber}
         </span>
       </Button>

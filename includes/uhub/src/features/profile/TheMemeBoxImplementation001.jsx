@@ -26,6 +26,9 @@ export default function TheMemeBoxImplementation001() {
   const [uploadDescription, setUploadDescription] = useState("");
   const [currentUsername, setCurrentUsername] = useState("DemoUser");
   const [isMemeBoxHovered, setIsMemeBoxHovered] = useState(false);
+  const autoplayFreshPosts = useRef(new Set());
+  const filteredPostsRef = useRef([]);
+  const currentPostIndexRef = useRef(0);
 
   const [isCommentImageZoomOpen, setIsCommentImageZoomOpen] = useState(false);
   const [zoomedCommentImage, setZoomedCommentImage] = useState(null);
@@ -921,12 +924,44 @@ const submitComment = async () => {
   const favoritesPosts = allPosts.filter((p) => p.isFavorited);
 
   useEffect(() => {
+    filteredPostsRef.current = filteredPosts;
+    currentPostIndexRef.current = currentPostIndex;
+  }, [filteredPosts, currentPostIndex]);
+
+  useEffect(() => {
+    autoplayFreshPosts.current.clear();
+    setCurrentPostIndex(0);
+  }, [currentPage]);
+
+  useEffect(() => {
     if (isMemeBoxHovered || filteredPosts.length < 2 || isUploadDialogOpen || isCommentDialogOpen || isViewCommentsDialogOpen || isFavoritesGridOpen || isZoomModalOpen) {
       return;
     }
 
     const rotationInterval = window.setInterval(() => {
-      setCurrentPostIndex((previousIndex) => (previousIndex + 1) % filteredPosts.length);
+      const posts = filteredPostsRef.current;
+      const freshCutoff = Date.now() - (100 * 60 * 60 * 1000);
+      const freshPosts = posts.filter((post) => new Date(post.timestamp).getTime() >= freshCutoff);
+      const currentPost = posts[currentPostIndexRef.current];
+
+      if (currentPost && freshPosts.some((post) => post.id === currentPost.id)) {
+        autoplayFreshPosts.current.add(currentPost.id);
+      }
+
+      const unseenFreshPosts = freshPosts.filter((post) => !autoplayFreshPosts.current.has(post.id));
+      const nextPost = unseenFreshPosts[0];
+
+      if (nextPost) {
+        const nextIndex = posts.findIndex((post) => post.id === nextPost.id);
+        autoplayFreshPosts.current.add(nextPost.id);
+        currentPostIndexRef.current = nextIndex;
+        setCurrentPostIndex(nextIndex);
+        return;
+      }
+
+      const nextIndex = (currentPostIndexRef.current + 1) % posts.length;
+      currentPostIndexRef.current = nextIndex;
+      setCurrentPostIndex(nextIndex);
     }, 3000);
 
     return () => window.clearInterval(rotationInterval);
@@ -1552,7 +1587,6 @@ const renderNavbar = () => {
       </button>
     </div>
   )}
-  <p style={styles.postTime}>{getTimeElapsed(displayPost.timestamp)}</p>
 </div>
 
 <div style={styles.voteSection}>
