@@ -3068,19 +3068,22 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             palm: buttonNumber === 4 ? !prev.palm : prev.palm,
             lion: buttonNumber === 5 ? !prev.lion : prev.lion,
             microphone: buttonNumber === 6 ? !prev.microphone : prev.microphone,
-            steeringWheel: buttonNumber === 15 ? !prev.steeringWheel : prev.steeringWheel,
+            steeringWheel: buttonNumber === 7 ? !prev.steeringWheel : prev.steeringWheel,
           }));
-          setIsQuadrantsModalOpen(true);
+          if (buttonNumber !== 6) {
+            setIsQuadrantsModalOpen(true);
+          }
         }}
         title={buttonNumber === 8 ? 'Toggle transparency' : `Custom ${buttonNumber}`}
       >
-        <span className={[3, 4, 5, 6, 8, 15].includes(buttonNumber) ? 'text-[1.5625rem] leading-none' : 'text-xl leading-none'}>
+        <span className={[3, 4, 5, 6, 7, 8, 15, 16].includes(buttonNumber) ? 'text-[1.5625rem] leading-none' : 'text-xl leading-none'}>
           {buttonNumber === 3 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
             buttonNumber === 4 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
             buttonNumber === 5 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
             buttonNumber === 6 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
-            buttonNumber === 15 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
-            buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') : buttonNumber}
+            buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
+            buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') :
+            buttonNumber === 16 ? '⏭' : buttonNumber}
         </span>
       </Button>
     ))}
