@@ -1704,7 +1704,7 @@ const HomeModal = ({ isOpen, onClose, userProducts = [] }) => {
 const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyProfileModalProps> = ({ isOpen, onClose, onOpenAuthModal, onBadgeZoom }) => {
   const { user } = useAuth();
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
-  const [customizableButtonPage, setCustomizableButtonPage] = useState<1 | 2>(1);
+  const [customizableButtonPage, setCustomizableButtonPage] = useState<1 | 2 | 3>(1);
   const [activeChatModal, setActiveChatModal] = useState<number | null>(null);
   const [storeProducts, setStoreProducts] = useState<{ [key: number]: Product[] }>({});
   const [mainStoreProducts, setMainStoreProducts] = useState<Product[]>([]);
@@ -3055,7 +3055,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     </>}
     {(customizableButtonPage === 1
       ? [9, 10, 3, 4, 11, 12, 5, 6, 13, 14, 7, 8, 15, 16]
-      : [17, 18, 25, 26, 19, 20, 27, 28, 21, 22, 29, 30, 23, 24, 31, 32]
+      : customizableButtonPage === 2
+        ? [17, 18, 25, 26, 19, 20, 27, 28, 21, 22, 29, 30, 23, 24, 31, 32]
+        : [33, 34, 41, 42, 35, 36, 43, 44, 37, 38, 45, 46, 39, 40, 47, 48]
     ).map((buttonNumber) => (
       <Button
         key={buttonNumber}
@@ -3069,7 +3071,17 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             return;
           }
 
-          if (buttonNumber === 8) {
+          if (customizableButtonPage === 2 && buttonNumber === 23) {
+            setCustomizableButtonPage(1);
+            return;
+          }
+
+          if (customizableButtonPage === 2 && buttonNumber === 32) {
+            setCustomizableButtonPage(3);
+            return;
+          }
+
+          if (customizableButtonPage === 1 && buttonNumber === 8) {
             setAreProfileSurfacesOpaque(prev => !prev);
             return;
           }
@@ -3083,13 +3095,17 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             steeringWheel: buttonNumber === 7 ? !prev.steeringWheel : prev.steeringWheel,
             movie: buttonNumber === 15 ? !prev.movie : prev.movie,
           }));
-          if (customizableButtonPage === 2 || ![3, 4, 5, 6, 7, 15, 16].includes(buttonNumber)) {
+          if (customizableButtonPage !== 1 || ![3, 4, 5, 6, 7, 15, 16].includes(buttonNumber)) {
             setIsQuadrantsModalOpen(true);
           }
         }}
         title={customizableButtonPage === 1 && buttonNumber === 16
           ? 'Next button page'
-            : buttonNumber === 8
+            : customizableButtonPage === 2 && buttonNumber === 23
+              ? 'Previous button page'
+              : customizableButtonPage === 2 && buttonNumber === 32
+                ? 'Next button page'
+                : customizableButtonPage === 1 && buttonNumber === 8
               ? 'Toggle transparency'
               : `Custom ${buttonNumber}`}
       >
@@ -3101,7 +3117,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             customizableButtonPage === 1 && buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
             customizableButtonPage === 1 && buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') :
             customizableButtonPage === 1 && buttonNumber === 15 ? (areFeatureIconsActive.movie ? '🖼' : '📽') :
-            customizableButtonPage === 1 && buttonNumber === 16 ? '⏭' : buttonNumber}
+            customizableButtonPage === 1 && buttonNumber === 16 ? '⏭' :
+            customizableButtonPage === 2 && buttonNumber === 23 ? '⏮' :
+            customizableButtonPage === 2 && buttonNumber === 32 ? '⏭' : buttonNumber}
         </span>
       </Button>
     ))}
