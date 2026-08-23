@@ -3074,7 +3074,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         }}
         title={buttonNumber === 8 ? 'Toggle transparency' : `Custom ${buttonNumber}`}
       >
-        <span className="text-xl leading-none">
+        <span className={[3, 4, 5, 6, 8, 15].includes(buttonNumber) ? 'text-[1.5625rem] leading-none' : 'text-xl leading-none'}>
           {buttonNumber === 3 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
             buttonNumber === 4 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
             buttonNumber === 5 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
