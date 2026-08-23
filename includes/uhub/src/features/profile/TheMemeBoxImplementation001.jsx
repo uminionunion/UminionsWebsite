@@ -982,7 +982,7 @@ const submitComment = async () => {
       overflow: "auto",
     },
     navbar: {
-      backgroundColor: "#222222",
+      backgroundColor: "rgba(0, 0, 0, 0.6)",
       borderBottom: "2px solid #444444",
       padding: "16px 0",
       boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
@@ -1051,36 +1051,10 @@ const submitComment = async () => {
       display: "block",
       borderRadius: "12px",
     },
-    postVideo: {
-      width: "100%",
-      height: "auto",
-      borderRadius: "12px",
-    },
     playIcon: {
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      width: "60px",
-      height: "60px",
-      backgroundColor: "rgba(0, 0, 0, 0.6)",
       borderRadius: "50%",
       display: "flex",
-      alignItems: "center",
       justifyContent: "center",
-      fontSize: "30px",
-      color: "#00ff00",
-    },
-    zoomButton: {
-      position: "absolute",
-      top: "10px",
-      right: "10px",
-      backgroundColor: "rgba(0, 102, 255, 0.8)",
-      color: "#ffffff",
-      border: "none",
-      width: "36px",
-      height: "36px",
-      borderRadius: "50%",
       cursor: "pointer",
       fontSize: "18px",
       transition: "all 0.3s ease",
@@ -1137,7 +1111,7 @@ const submitComment = async () => {
       justifyContent: "center",
     },
     actionButton: {
-      backgroundColor: "#333333",
+      backgroundColor: "#222222",
       color: "#ffffff",
       border: "2px solid #666666",
       padding: "8px 10px",
@@ -1587,8 +1561,18 @@ const renderNavbar = () => {
   </button>
 </div>
 
-{/* ROW 2: Favorites, Comment, View Comments, Delete (if owner) */}
+{/* ROW 2: Comment, View Comments, Favorites, Delete (if owner) */}
 <div style={styles.actionButtonsContainer}>
+  <button style={styles.actionButton} onClick={openCommentDialog}>
+    {EMOJIS.COMMENT_INITIAL} Comment
+  </button>
+  <button style={styles.actionButton} onClick={openViewCommentsDialog}>
+    <img
+      src="/EmojisForUminionWebsite/GreenEmoji005CommentsChats.png"
+      width="24"
+    />{" "}
+    View Comments
+  </button>
   <button
     style={{
       ...styles.actionButton,
@@ -1601,16 +1585,6 @@ const renderNavbar = () => {
       width="24"
     />{" "}
     Favorites
-  </button>
-  <button style={styles.actionButton} onClick={openCommentDialog}>
-    {EMOJIS.COMMENT_INITIAL} Comment
-  </button>
-  <button style={styles.actionButton} onClick={openViewCommentsDialog}>
-    <img
-      src="/EmojisForUminionWebsite/GreenEmoji005CommentsChats.png"
-      width="24"
-    />{" "}
-    View Comments
   </button>
   {currentUsername === displayPost.username && (
     <button
