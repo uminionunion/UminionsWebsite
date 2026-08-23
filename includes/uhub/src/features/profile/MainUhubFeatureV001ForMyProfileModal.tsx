@@ -3055,7 +3055,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         key={buttonNumber}
         variant="outline"
         size="sm"
-        className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
+        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white ${[3, 4, 5, 6, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''}`}
         style={{ color: '#ffffff', backgroundColor: 'transparent' }}
         onClick={() => {
           if (buttonNumber === 8) {
@@ -3072,7 +3072,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             steeringWheel: buttonNumber === 7 ? !prev.steeringWheel : prev.steeringWheel,
             movie: buttonNumber === 15 ? !prev.movie : prev.movie,
           }));
-          if (![3, 4, 5, 6, 7].includes(buttonNumber)) {
+          if (![3, 4, 5, 6, 7, 15, 16].includes(buttonNumber)) {
             setIsQuadrantsModalOpen(true);
           }
         }}

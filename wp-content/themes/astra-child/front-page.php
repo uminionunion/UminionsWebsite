@@ -95,6 +95,29 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
         <link rel="stylesheet" href="/uhub/dist/uhub.css">
         <script type="module" src="/uhub/dist/uhub.js"></script>
 
+        <style>
+            #uhub-launcher-layout {
+                display: grid;
+                grid-template-columns: max-content max-content;
+                grid-template-rows: repeat(3, minmax(36px, auto));
+                align-items: center;
+                gap: 4px 6px;
+                width: max-content;
+            }
+            #uhub-launcher-layout #emojiLineForGitHubQuest54onFrontPage { grid-column: 1; grid-row: 1; }
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage001 { display: contents; }
+            #uhub-launcher-layout .uhub-app-root { display: contents; }
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage002,
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage003,
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage004,
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage005 { display: none; }
+            #uhub-launcher-layout .uhub-launcher-uhub { grid-column: 1; grid-row: 2; }
+            #uhub-launcher-layout .uhub-launcher-login { grid-column: 2; grid-row: 2; }
+            #uhub-launcher-layout .uhub-launcher-facebook { grid-column: 1; grid-row: 3; }
+            #uhub-launcher-layout .uhub-launcher-signup { grid-column: 2; grid-row: 3; }
+            #uhub-launcher-layout .uhub-launcher-avatar { grid-column: 2; grid-row: 1; }
+        </style>
+
 		<!-- This Code ABOVE is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
 
@@ -2325,12 +2348,14 @@ button {
 
 			<!-- This Code BELOW is part of: "GitHub Quest#34's Part 1 of Z: (part of 'test001' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
+            <div id="uhub-launcher-layout">
             <div id="emojiLineForGitHubQuest54onFrontPage"></div> <!-- Presently Completed (in merging in, from page002 and into page001) as of 8/21/26 --> 
-            <div id="emojiLineForGitHubQuest34onFrontPage001"></div> <!-- Page007's uHub bar (uHub, Sign Up?, Log In?/Log Out, Find us on FB!!, Avatar) mounts here as of 8/21/26 -->
+            <div id="emojiLineForGitHubQuest34onFrontPage001"></div> <!-- Page007's uHub controls share this launcher grid with Pantry Finder. -->
             <div id="emojiLineForGitHubQuest34onFrontPage002"></div>
             <div id="emojiLineForGitHubQuest34onFrontPage003"></div>
             <div id="emojiLineForGitHubQuest34onFrontPage004"></div>
             <div id="emojiLineForGitHubQuest34onFrontPage005"></div>
+            </div>
 
 
 
