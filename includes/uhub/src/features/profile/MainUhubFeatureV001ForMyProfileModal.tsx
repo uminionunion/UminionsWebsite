@@ -453,9 +453,9 @@ if (isMobile) {
             style={{ minHeight: '400px' }}
           />
           <div className="flex justify-between items-center">
-            <Button variant="ghost" size="icon" className="h-6 w-6"><ChevronLeft className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }}><ChevronLeft className="h-4 w-4" /></Button>
             <span className="text-xs text-muted-foreground">by {broadcast.creator}</span>
-            <Button variant="ghost" size="icon" className="h-6 w-6"><ChevronRight className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }}><ChevronRight className="h-4 w-4" /></Button>
           </div>
         </div>
       )}
@@ -1753,8 +1753,8 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [leftDividerDragging, setLeftDividerDragging] = useState(false);
   const [rightDividerDragging, setRightDividerDragging] = useState(false);
   const broadcasts = {
-      'UnionNews#14': { memeBoxId: 'TheReactMemeImplementationConnection001', title: 'UnionNews#14 & GEMMMS#25', creator: 'GEMMMS#25', subtitle: 'Got Memes? Share Memes. (Enjoy with No-Ads.)', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.15-Made-on-NC-JPEG.png', extraImages: ['https://page001.uminion.com/StoreProductsAndImagery/TapestryVersion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/Tshirtbatchversion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/UkraineLogo001.png'], description: 'Welcome to the Uminion Union! We have Rallies every 24th of the month, stores built by unionFolk, chats, voting, teach ppl how to code (for free) & even offer an ad-free- meme section below!', website: 'https://github.com/uminionunion/UminionsWebsite/discussions/13' },
-      'UnionRadio#15': { title: 'Broadcasts- UnionRadio#15', creator: 'StorytellingSalem', subtitle: 'Under Construction- Union Radio #15.', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.16-Made-on-NC-JPEG.png', extraImages: [], description: 'Union Radio #15 (along with uminionClassic) is still live, but now over at our SisterPage: \"https://page001.uminion.com/\"!', website: 'https://uminion.com' },
+      'UnionNews#14': { memeBoxId: 'TheReactMemeImplementationConnection001', title: 'UnionNews#14 & GEMMMS#25', creator: 'GEMMMS#25', subtitle: 'Got Memes? Share Memes. (Enjoy with No-Ads.)', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.15-Made-on-NC-JPEG.png', extraImages: ['https://page001.uminion.com/StoreProductsAndImagery/TapestryVersion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/Tshirtbatchversion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/UkraineLogo001.png'], description: 'Welcome to the Uminion Union! We have Rallies every 24th of the month, stores built by unionFolk, chats, news, voting, teach ppl how to code (for free) & even offer an ad-free- meme section below!', website: 'https://github.com/uminionunion/UminionsWebsite/discussions/13' },
+      'UnionRadio#15': { title: 'Broadcasts- UnionRadio#15', creator: 'StorytellingSalem', subtitle: 'Under Construction- Union Radio #15.', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.16-Made-on-NC-JPEG.png', extraImages: [], description: 'Union Radio #15 is presently underConstruction; & is expected to be live again, along with when we launch v3!', website: 'https://uminion.com' },
   };
   const broadcastKeys = ['MyBroadcasts', ...Object.keys(broadcasts)];
   const [selectedFriendForModal, setSelectedFriendForModal] = useState<any>(null);
@@ -2563,7 +2563,7 @@ const resetRightSection = () => {
         )}
       </div>
     </div>
-    <div id="MainUhubFeatureV001ForUsersStores" className="border rounded-md p-2 flex flex-col h-full">
+    <div id="MainUhubFeatureV001ForUsersStores" className="border rounded-md p-2 flex flex-col h-full" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div className="flex justify-between items-center mb-2 sticky top-0 z-10 uhub-users-stores-header" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
     <div className="flex items-center flex-1">
       <Button variant="outline" size="icon" className="bg-orange-400 hover:bg-orange-500 text-white mr-2" onClick={() => {
@@ -2671,7 +2671,7 @@ const resetRightSection = () => {
             )}
 
             {!isUnionSAM20 && !isUnionPolitic19 && (
-  <div id="MainUhubFeatureV001ForStoreColumn" className="border rounded-md p-2 flex flex-col h-full">
+  <div id="MainUhubFeatureV001ForStoreColumn" className="border rounded-md p-2 flex flex-col h-full" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
     <div className="flex justify-between items-center mb-2">
       <h4 className="font-semibold text-center flex-1">Store {String(centerRightView.number).padStart(2, '0')}</h4>
       <a href={getCartUrl(storeProducts[centerRightView.number]?.[0] || null)} target="_blank" rel="noopener noreferrer">
@@ -2723,8 +2723,8 @@ const resetRightSection = () => {
         <div className="text-center text-muted-foreground py-4">No products available</div>
       )}
     </div>
-    <div className="border-t pt-2 mt-auto">
-      <div className="grid grid-cols-2 gap-1">
+    <div className="border-t pt-2 mt-auto" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+      <div className="grid grid-cols-2 gap-1" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
         {ALL_STORES.slice(1, 31).map((store) => (
           <Button
             key={store.id}
@@ -3005,7 +3005,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
              </a>
              <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Settings" onClick={() => handleTopLeftButtonClick('settings')} disabled={!user}><Settings className="h-4 w-4 mb-1" /> Settings</Button>
            </div>
-           <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: areProfileSurfacesOpaque ? "url('/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg')" : 'none' }}>
+           <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative overflow-hidden" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: 'none' }}>
+             <img src="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg" alt="uHub cover" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: areProfileSurfacesOpaque ? 1 : 0.5 }} />
              {user && <Button className="absolute bottom-2 right-2" size="sm">Change Cover</Button>}
            </div>
 
@@ -3061,7 +3062,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 <div id="MainUhubFeatureV001ForMyProfileSettingsTopRightSection" className="md:w-1/5 flex justify-center md:justify-end items-start md:pl-4 relative" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div onClick={handleProfileImageClick} className="cursor-pointer relative group">
     <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-orange-400 group-hover:border-orange-600 transition">
-      <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="Profile" style={{ opacity: areProfileSurfacesOpaque ? 1 : 0 }} />
+      <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="Profile" style={{ opacity: areProfileSurfacesOpaque ? 1 : 0.5 }} />
       <AvatarFallback>U</AvatarFallback>
     </Avatar>
     {user && (
