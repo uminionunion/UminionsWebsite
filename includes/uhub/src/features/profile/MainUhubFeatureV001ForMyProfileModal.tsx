@@ -1704,7 +1704,7 @@ const HomeModal = ({ isOpen, onClose, userProducts = [] }) => {
 const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyProfileModalProps> = ({ isOpen, onClose, onOpenAuthModal, onBadgeZoom }) => {
   const { user } = useAuth();
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
-  const [customizableButtonPage, setCustomizableButtonPage] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
+  const [customizableButtonPage, setCustomizableButtonPage] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
   const [activeChatModal, setActiveChatModal] = useState<number | null>(null);
   const [storeProducts, setStoreProducts] = useState<{ [key: number]: Product[] }>({});
   const [mainStoreProducts, setMainStoreProducts] = useState<Product[]>([]);
@@ -3063,7 +3063,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             ? [49, 50, 57, 58, 51, 52, 59, 60, 53, 54, 61, 62, 55, 56, 63, 64]
             : customizableButtonPage === 5
               ? [65, 66, 73, 74, 67, 68, 75, 76, 69, 70, 77, 78, 71, 72, 79, 80]
-              : [81, 82, 89, 90, 83, 84, 91, 92, 85, 86, 93, 94, 87, 88, 95, 96]
+              : customizableButtonPage === 6
+                ? [81, 82, 89, 90, 83, 84, 91, 92, 85, 86, 93, 94, 87, 88, 95, 96]
+                : [97, 98, 105, 106, 99, 100, 107, 108, 101, 102, 109, 110, 103, 104, 111, 112]
     ).map((buttonNumber) => (
       <Button
         key={buttonNumber}
@@ -3117,6 +3119,16 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             return;
           }
 
+          if (customizableButtonPage === 6 && buttonNumber === 87) {
+            setCustomizableButtonPage(5);
+            return;
+          }
+
+          if (customizableButtonPage === 6 && buttonNumber === 96) {
+            setCustomizableButtonPage(7);
+            return;
+          }
+
           if (customizableButtonPage === 1 && buttonNumber === 8) {
             setAreProfileSurfacesOpaque(prev => !prev);
             return;
@@ -3153,6 +3165,10 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                     ? 'Previous button page'
                   : customizableButtonPage === 5 && buttonNumber === 80
                     ? 'Next button page'
+                  : customizableButtonPage === 6 && buttonNumber === 87
+                    ? 'Previous button page'
+                  : customizableButtonPage === 6 && buttonNumber === 96
+                    ? 'Next button page'
                 : customizableButtonPage === 1 && buttonNumber === 8
               ? 'Toggle transparency'
               : `Custom ${buttonNumber}`}
@@ -3173,7 +3189,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             customizableButtonPage === 4 && buttonNumber === 55 ? '⏮' :
             customizableButtonPage === 4 && buttonNumber === 64 ? '⏭' :
             customizableButtonPage === 5 && buttonNumber === 71 ? '⏮' :
-            customizableButtonPage === 5 && buttonNumber === 80 ? '⏭' : buttonNumber}
+            customizableButtonPage === 5 && buttonNumber === 80 ? '⏭' :
+            customizableButtonPage === 6 && buttonNumber === 87 ? '⏮' :
+            customizableButtonPage === 6 && buttonNumber === 96 ? '⏭' : buttonNumber}
         </span>
       </Button>
     ))}
