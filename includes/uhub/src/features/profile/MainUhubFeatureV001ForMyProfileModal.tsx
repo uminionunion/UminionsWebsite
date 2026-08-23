@@ -1704,6 +1704,7 @@ const HomeModal = ({ isOpen, onClose, userProducts = [] }) => {
 const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyProfileModalProps> = ({ isOpen, onClose, onOpenAuthModal, onBadgeZoom }) => {
   const { user } = useAuth();
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
+  const [customizableButtonPage, setCustomizableButtonPage] = useState<1 | 2>(1);
   const [activeChatModal, setActiveChatModal] = useState<number | null>(null);
   const [storeProducts, setStoreProducts] = useState<{ [key: number]: Product[] }>({});
   const [mainStoreProducts, setMainStoreProducts] = useState<Product[]>([]);
@@ -3021,6 +3022,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             {/* 8-Button Grid - SMALLER BUTTONS - HIDDEN ON MOBILE */}
 <div className="hidden md:flex md:w-1/4 justify-center items-center md:pl-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div className="grid grid-cols-4 gap-1 w-fit">
+    {customizableButtonPage === 1 && <>
     <Button
       variant="outline"
       size="sm"
@@ -3050,14 +3052,23 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       <Home className="h-5 w-5" />
       <span>Home</span>
     </Button>
-    {[9, 10, 3, 4, 11, 12, 5, 6, 13, 14, 7, 8, 15, 16].map((buttonNumber) => (
+    </>}
+    {(customizableButtonPage === 1
+      ? [9, 10, 3, 4, 11, 12, 5, 6, 13, 14, 7, 8, 15, 16]
+      : [17, 18, 25, 26, 19, 20, 27, 28, 21, 22, 29, 30, 23, 24, 31, 32]
+    ).map((buttonNumber) => (
       <Button
         key={buttonNumber}
         variant="outline"
         size="sm"
-        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white ${[3, 4, 5, 6, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [3, 4, 5, 6, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''}`}
         style={{ color: '#ffffff', backgroundColor: 'transparent' }}
         onClick={() => {
+          if (customizableButtonPage === 1 && buttonNumber === 16) {
+            setCustomizableButtonPage(2);
+            return;
+          }
+
           if (buttonNumber === 8) {
             setAreProfileSurfacesOpaque(prev => !prev);
             return;
@@ -3072,21 +3083,25 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             steeringWheel: buttonNumber === 7 ? !prev.steeringWheel : prev.steeringWheel,
             movie: buttonNumber === 15 ? !prev.movie : prev.movie,
           }));
-          if (![3, 4, 5, 6, 7, 15, 16].includes(buttonNumber)) {
+          if (customizableButtonPage === 2 || ![3, 4, 5, 6, 7, 15, 16].includes(buttonNumber)) {
             setIsQuadrantsModalOpen(true);
           }
         }}
-        title={buttonNumber === 8 ? 'Toggle transparency' : `Custom ${buttonNumber}`}
+        title={customizableButtonPage === 1 && buttonNumber === 16
+          ? 'Next button page'
+            : buttonNumber === 8
+              ? 'Toggle transparency'
+              : `Custom ${buttonNumber}`}
       >
-        <span className={[3, 4, 5, 6, 7, 8, 15, 16].includes(buttonNumber) ? 'text-[1.5625rem] leading-none' : 'text-xl leading-none'}>
-          {buttonNumber === 3 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
-            buttonNumber === 4 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
-            buttonNumber === 5 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
-            buttonNumber === 6 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
-            buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
-            buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') :
-            buttonNumber === 15 ? (areFeatureIconsActive.movie ? '🖼' : '📽') :
-            buttonNumber === 16 ? '⏭' : buttonNumber}
+        <span className={customizableButtonPage === 1 && [3, 4, 5, 6, 7, 8, 15, 16].includes(buttonNumber) ? 'text-[1.5625rem] leading-none' : 'text-xl leading-none'}>
+          {customizableButtonPage === 1 && buttonNumber === 3 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
+            customizableButtonPage === 1 && buttonNumber === 4 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
+            customizableButtonPage === 1 && buttonNumber === 5 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
+            customizableButtonPage === 1 && buttonNumber === 6 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
+            customizableButtonPage === 1 && buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
+            customizableButtonPage === 1 && buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') :
+            customizableButtonPage === 1 && buttonNumber === 15 ? (areFeatureIconsActive.movie ? '🖼' : '📽') :
+            customizableButtonPage === 1 && buttonNumber === 16 ? '⏭' : buttonNumber}
         </span>
       </Button>
     ))}
