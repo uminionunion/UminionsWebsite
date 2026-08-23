@@ -927,7 +927,7 @@ const submitComment = async () => {
 
     const rotationInterval = window.setInterval(() => {
       setCurrentPostIndex((previousIndex) => (previousIndex + 1) % filteredPosts.length);
-    }, 5000);
+    }, 3000);
 
     return () => window.clearInterval(rotationInterval);
   }, [filteredPosts.length, isMemeBoxHovered, isUploadDialogOpen, isCommentDialogOpen, isViewCommentsDialogOpen, isFavoritesGridOpen, isZoomModalOpen]);
@@ -1394,27 +1394,27 @@ const renderNavbar = () => {
         alignItems: "center"
       }}
     >
-      <button style={{ ...styles.navArrowButton, flex: 1, minWidth: 0 }} onClick={showPreviousPost}>
+      <button style={{ ...styles.navArrowButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); showPreviousPost(); }}>
         <img src="/EmojisForUminionWebsite/GreenEmoji013ArrowPreviousPagePost.png" width="24" />
         Prev
       </button>
 
-      <button style={{ ...styles.navArrowButton, flex: 1, minWidth: 0 }} onClick={showNextPost}>
+      <button style={{ ...styles.navArrowButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); showNextPost(); }}>
         <img src="/EmojisForUminionWebsite/GreenEmoji012ArrowNextPagePost.png" width="24" />
         Next
       </button>
 
-      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={openUploadDialog}>
+      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); openUploadDialog(); }}>
         <img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" width="24" />
         Upload
       </button>
 
-      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={handlePageNavigation}>
+      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
         <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" />
         {getPageTitle()}
       </button>
 
-      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={showFavoritesGrid}>
+      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); showFavoritesGrid(); }}>
         <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" />
         Favs ({favoritesPosts.length})
       </button>
@@ -1430,7 +1430,7 @@ const renderNavbar = () => {
         {/* your original 2‑row layout */}
         {/* B.) TOP LINE — PREVIOUS / NEXT */}
         <div style={styles.navigationButtons}>
-          <button style={styles.navArrowButton} onClick={showPreviousPost}>
+          <button style={styles.navArrowButton} onClick={(event) => { event.stopPropagation(); showPreviousPost(); }}>
             <img
               src="/EmojisForUminionWebsite/GreenEmoji013ArrowPreviousPagePost.png"
               width="24"
@@ -1439,7 +1439,7 @@ const renderNavbar = () => {
             Previous Post
           </button>
 
-          <button style={styles.navArrowButton} onClick={showNextPost}>
+          <button style={styles.navArrowButton} onClick={(event) => { event.stopPropagation(); showNextPost(); }}>
             <img
               src="/EmojisForUminionWebsite/GreenEmoji012ArrowNextPagePost.png"
               width="24"
@@ -1451,7 +1451,7 @@ const renderNavbar = () => {
 
         {/* C.) SECOND LINE — UPLOAD / USER POSTS / FAVORITES */}
         <div style={styles.navbarButtons}>
-          <button style={styles.navButton} onClick={openUploadDialog}>
+          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); openUploadDialog(); }}>
             <img
               src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png"
               width="24"
@@ -1460,7 +1460,7 @@ const renderNavbar = () => {
             Upload
           </button>
 
-          <button style={styles.navButton} onClick={handlePageNavigation}>
+          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
             <img
               src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png"
               width="24"
@@ -1469,7 +1469,7 @@ const renderNavbar = () => {
             {getPageTitle()}
           </button>
 
-          <button style={styles.navButton} onClick={showFavoritesGrid}>
+          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); showFavoritesGrid(); }}>
             <img
               src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png"
               width="24"
