@@ -344,9 +344,9 @@ const BroadcastView = ({
             <h4 className="font-semibold whitespace-pre-line text-center">{broadcast.subtitle}</h4>
             <div className="aspect-square bg-muted rounded-md my-2 bg-cover bg-center" style={{ backgroundImage: `url(${broadcast.logo})` }}></div>
             <div className="flex justify-between items-center">
-              <Button variant="ghost" size="icon"><ChevronLeft /></Button>
+              <Button variant="ghost" size="icon" className="uhub-broadcast-footer-arrow" style={{ backgroundColor: 'transparent', color: '#ffffff', border: '0', boxShadow: 'none' }}><ChevronLeft className="h-4 w-4" /></Button>
               <span className="text-xs text-muted-foreground">by {broadcast.creator}</span>
-              <Button variant="ghost" size="icon"><ChevronRight /></Button>
+              <Button variant="ghost" size="icon" className="uhub-broadcast-footer-arrow" style={{ backgroundColor: 'transparent', color: '#ffffff', border: '0', boxShadow: 'none' }}><ChevronRight className="h-4 w-4" /></Button>
             </div>
           </div>
           <div className="w-2/3 flex flex-col">
@@ -3049,10 +3049,10 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         size="sm"
         className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
         style={{ color: '#ffffff', backgroundColor: 'transparent' }}
-        onClick={() => i === 0 ? setAreProfileSurfacesOpaque(prev => !prev) : setIsQuadrantsModalOpen(true)}
-        title={i === 0 ? 'Toggle transparency' : `Custom ${i + 3}`}
+        onClick={() => i === 5 ? setAreProfileSurfacesOpaque(prev => !prev) : setIsQuadrantsModalOpen(true)}
+        title={i === 5 ? 'Toggle transparency' : `Custom ${i + 3}`}
       >
-        {i === 0 ? (areProfileSurfacesOpaque ? '✩' : '★') : i + 3}
+        {i === 5 ? (areProfileSurfacesOpaque ? '✩' : '★') : i + 3}
       </Button>
     ))}
   </div>
