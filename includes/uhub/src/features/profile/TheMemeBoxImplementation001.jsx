@@ -1439,20 +1439,6 @@ const renderNavbar = () => {
         Next
       </button>
 
-      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); openUploadDialog(); }}>
-        <img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" width="24" />
-        Upload
-      </button>
-
-      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
-        <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" />
-        {getPageTitle()}
-      </button>
-
-      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); showFavoritesGrid(); }}>
-        <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" />
-        Favs ({favoritesPosts.length})
-      </button>
     </div>
   );
 }
@@ -1484,35 +1470,6 @@ const renderNavbar = () => {
           </button>
         </div>
 
-        {/* C.) SECOND LINE — UPLOAD / USER POSTS / FAVORITES */}
-        <div style={styles.navbarButtons}>
-          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); openUploadDialog(); }}>
-            <img
-              src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png"
-              width="24"
-              style={{ marginBottom: 4 }}
-            />
-            Upload
-          </button>
-
-          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
-            <img
-              src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png"
-              width="24"
-              style={{ marginBottom: 4 }}
-            />
-            {getPageTitle()}
-          </button>
-
-          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); showFavoritesGrid(); }}>
-            <img
-              src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png"
-              width="24"
-              style={{ marginBottom: 4 }}
-            />
-            Favorites ({favoritesPosts.length})
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -1663,7 +1620,21 @@ const renderNavbar = () => {
   )}
 </div>
 
-       
+<div style={styles.navbarButtons}>
+  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); openUploadDialog(); }}>
+    <img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" width="24" style={{ marginBottom: 4 }} />
+    Upload
+  </button>
+  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
+    <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" style={{ marginBottom: 4 }} />
+    {getPageTitle()}
+  </button>
+  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); showFavoritesGrid(); }}>
+    <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ marginBottom: 4 }} />
+    Favorites ({favoritesPosts.length})
+  </button>
+</div>
+
       </div>
     );
   };
