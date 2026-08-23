@@ -2986,8 +2986,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
   return (
     <>
-      <div className="text-foreground w-full h-full flex flex-col relative" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
-        <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-50 h-8 w-8 p-1 text-white hover:bg-gray-700 hover:text-white" onClick={onClose}>
+      <div className={areProfileSurfacesOpaque ? 'uhub-profile-surfaces text-foreground w-full h-full flex flex-col relative' : 'uhub-profile-surfaces uhub-transparent-mode text-foreground w-full h-full flex flex-col relative'} style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+        <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-50 h-8 w-8 p-1 text-white hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff', border: '0', boxShadow: 'none' }} onClick={onClose}>
           <X className="h-5 w-5" />
           <span className="sr-only">Close</span>
         </Button>
@@ -3048,9 +3048,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
         style={{ color: '#ffffff', backgroundColor: 'transparent' }}
         onClick={() => i === 0 ? setAreProfileSurfacesOpaque(prev => !prev) : setIsQuadrantsModalOpen(true)}
-        title={`Custom ${i + 3}`}
+        title={i === 0 ? 'Toggle transparency' : `Custom ${i + 3}`}
       >
-        {i + 3}
+        {i === 0 ? (areProfileSurfacesOpaque ? '✩' : '★') : i + 3}
       </Button>
     ))}
   </div>
@@ -3172,7 +3172,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="md:h-auto h-6 text-xs w-full" 
+                className="md:h-auto h-6 text-xs w-full text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" 
+                style={{ color: '#ffffff', backgroundColor: 'transparent' }}
                 onClick={() => handleUHomeHubClick(num)}
               >
                 #{String(num).padStart(2, '0')}
@@ -3226,7 +3227,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       borderTop: window.innerWidth < 768 ? '1px solid #374151' : 'none',
       backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent'
     }}>
-      <div className="flex items-center justify-center mb-2 md:mb-4 bg-black">
+      <div className="flex items-center justify-center mb-2 md:mb-4 bg-black uhub-right-store-header">
         <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateCenterRight('left')}><ChevronLeft className="h-4 w-4" /></Button>
         <h3 className="text-center font-bold mx-1 md:mx-2 text-xs md:text-base text-white">{centerRightView.displayName}</h3>
         <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateCenterRight('right')}><ChevronRight className="h-4 w-4" /></Button>
