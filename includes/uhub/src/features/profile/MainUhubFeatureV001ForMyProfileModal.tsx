@@ -516,9 +516,9 @@ if (isMobile) {
                 style={{ minHeight: '200px' }}
               />
               <div className="flex justify-between items-center">
-                <Button variant="ghost" size="icon" className="h-6 w-6"><ChevronLeft className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }}><ChevronLeft className="h-4 w-4" /></Button>
                 <span className="text-xs text-muted-foreground">by {broadcast.creator}</span>
-                <Button variant="ghost" size="icon" className="h-6 w-6"><ChevronRight className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }}><ChevronRight className="h-4 w-4" /></Button>
               </div>
             </div>
 
@@ -2731,7 +2731,7 @@ const resetRightSection = () => {
             variant={store.id === centerRightView.id ? "default" : "outline"}
             size="sm"
             onClick={() => setCenterRightView(store)}
-            className="text-xs h-8 text-white border-gray-700 hover:text-black"
+            className="uhub-store-selector-button text-xs h-8 text-white border-gray-700 hover:text-black"
             style={{ color: store.id === centerRightView.id ? '#000000' : '#ffffff' }}
             title={store.name}
           >
