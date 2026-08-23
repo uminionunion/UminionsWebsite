@@ -177,6 +177,31 @@
   scrollbar-width: thin;
 }
 
+.uhub-transparent-mode .uhub-users-stores-header,
+.uhub-transparent-mode .uhub-play-button,
+.uhub-transparent-mode #MainUhubFeatureV001ForUsersStores,
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 .mediaItem,
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 .voteSection,
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 .actionButtonsContainer,
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 .footer {
+  background-color: transparent !important;
+}
+
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 .postImage,
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 .postVideo {
+  opacity: 0 !important;
+}
+
+.uhub-transparent-mode #TheReactMemeImplementationConnection001,
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 * {
+  background-color: transparent !important;
+}
+
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 img,
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 video {
+  opacity: 0 !important;
+}
+
 .uhub-transparent-mode .bg-black,
 .uhub-transparent-mode .bg-muted,
 .uhub-transparent-mode .uhub-right-store-header,

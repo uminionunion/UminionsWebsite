@@ -351,7 +351,7 @@ const BroadcastView = ({
           </div>
           <div className="w-2/3 flex flex-col">
             <div className="flex items-center gap-2 mb-2">
-              <Button variant="outline" size="icon"><Play /></Button>
+              <Button variant="outline" size="icon" className="uhub-play-button" style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }}><Play className="h-4 w-4" /></Button>
               <p className="text-sm text-muted-foreground flex-grow text-center">{broadcast.description}</p>
             </div>
             <div className="flex items-center gap-2 mb-4">
@@ -390,7 +390,7 @@ if (isMobile) {
       {!isBroadcastCarouselCollapsed && (
         <div className="flex-shrink-0 flex flex-col w-[100%] mx-auto py-4">
           <div className="flex items-center gap-2 mb-2">
-            <Button variant="outline" size="icon" className="h-8 w-8"><Play className="h-4 w-4" /></Button>
+            <Button variant="outline" size="icon" className="h-8 w-8 uhub-play-button" style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }}><Play className="h-4 w-4" /></Button>
             <p className="text-xs text-muted-foreground flex-grow text-center">{broadcast.description}</p>
           </div>
           <div className="flex items-center gap-2 mb-2">
@@ -535,7 +535,7 @@ if (isMobile) {
         {!isBroadcastCarouselCollapsed && (
           <div style={{ width: `${broadcastRightWidth}%` }} className="flex flex-col overflow-hidden">
             <div className="flex items-center gap-2 mb-2">
-              <Button variant="outline" size="icon" className="h-8 w-8"><Play className="h-4 w-4" /></Button>
+              <Button variant="outline" size="icon" className="h-8 w-8 uhub-play-button" style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }}><Play className="h-4 w-4" /></Button>
               <p className="text-xs text-muted-foreground flex-grow text-center">{broadcast.description}</p>
             </div>
             <div className="flex items-center gap-2 mb-2">
@@ -2564,7 +2564,7 @@ const resetRightSection = () => {
       </div>
     </div>
     <div id="MainUhubFeatureV001ForUsersStores" className="border rounded-md p-2 flex flex-col h-full">
-  <div className="flex justify-between items-center mb-2 sticky top-0 bg-background z-10">
+  <div className="flex justify-between items-center mb-2 sticky top-0 z-10 uhub-users-stores-header" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
     <div className="flex items-center flex-1">
       <Button variant="outline" size="icon" className="bg-orange-400 hover:bg-orange-500 text-white mr-2" onClick={() => {
         if (!user) {
@@ -2731,7 +2731,8 @@ const resetRightSection = () => {
             variant={store.id === centerRightView.id ? "default" : "outline"}
             size="sm"
             onClick={() => setCenterRightView(store)}
-            className="text-xs h-8"
+            className="text-xs h-8 text-white border-gray-700 hover:text-black"
+            style={{ color: store.id === centerRightView.id ? '#000000' : '#ffffff' }}
             title={store.name}
           >
             #{String(store.number).padStart(2, '0')}
@@ -3004,7 +3005,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
              </a>
              <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Settings" onClick={() => handleTopLeftButtonClick('settings')} disabled={!user}><Settings className="h-4 w-4 mb-1" /> Settings</Button>
            </div>
-           <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: "url('/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg')" }}>
+           <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: areProfileSurfacesOpaque ? "url('/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg')" : 'none' }}>
              {user && <Button className="absolute bottom-2 right-2" size="sm">Change Cover</Button>}
            </div>
 
@@ -3060,7 +3061,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 <div id="MainUhubFeatureV001ForMyProfileSettingsTopRightSection" className="md:w-1/5 flex justify-center md:justify-end items-start md:pl-4 relative" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div onClick={handleProfileImageClick} className="cursor-pointer relative group">
     <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-orange-400 group-hover:border-orange-600 transition">
-      <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="Profile" />
+      <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="Profile" style={{ opacity: areProfileSurfacesOpaque ? 1 : 0 }} />
       <AvatarFallback>U</AvatarFallback>
     </Avatar>
     {user && (
