@@ -176,3 +176,15 @@
   scrollbar-color: #ff6b1a transparent;
   scrollbar-width: thin;
 }
+
+.uhub-transparent-mode .bg-black,
+.uhub-transparent-mode .bg-muted,
+.uhub-transparent-mode .uhub-right-store-header,
+.uhub-transparent-mode [style*="background-color: rgb(26, 26, 26)"],
+.uhub-transparent-mode [style*="background-color: rgb(34, 34, 34)"],
+.uhub-transparent-mode [style*="background-color: rgb(51, 51, 51)"],
+.uhub-transparent-mode [style*="background-color: #1a1a1a"],
+.uhub-transparent-mode [style*="background-color: #222222"],
+.uhub-transparent-mode [style*="background-color: #333333"] {
+  background-color: transparent !important;
+}
