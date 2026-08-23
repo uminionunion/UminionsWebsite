@@ -17,7 +17,7 @@ if (!mountPoint) {
 }
 
 mountPoint.classList.add('uhub-root', 'dark');
-mountPoint.style.setProperty('display', 'inline-flex', 'important');
+mountPoint.style.setProperty('display', mountPoint.id === 'emojiLineForGitHubQuest34onFrontPage001' ? 'contents' : 'inline-flex', 'important');
 mountPoint.style.setProperty('align-items', 'center', 'important');
 mountPoint.style.setProperty('width', 'fit-content', 'important');
 mountPoint.style.setProperty('height', 'auto', 'important');

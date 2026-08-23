@@ -133,8 +133,8 @@ useEffect(() => {
   return (
     // Compact horizontal bar (instead of page007's full-page header/main/footer layout)
     // so the 5 buttons sit in a single row inside page001's "FrontPage001" mount div.
-    <div className="relative inline-flex flex-wrap items-center gap-3">
-      <Button onClick={handleOpenModalManually} className="relative">
+    <div className="uhub-app-root relative inline-flex flex-wrap items-center gap-3">
+      <Button onClick={handleOpenModalManually} className="relative uhub-launcher-uhub">
         uHub
         {countdown !== null && (
           <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
@@ -147,18 +147,18 @@ useEffect(() => {
         <span id="loading-text">loading...</span>
       ) : !user ? (
         <>
-          <Button onClick={() => handleOpenAuthModal('signup')} className="bg-orange-400 hover:bg-orange-500 text-black">Sign Up?</Button>
-          <Button onClick={() => handleOpenAuthModal('login')}>Log In?</Button>
+          <Button onClick={() => handleOpenAuthModal('signup')} className="bg-orange-400 hover:bg-orange-500 text-black uhub-launcher-signup">Sign Up?</Button>
+          <Button onClick={() => handleOpenAuthModal('login')} className="uhub-launcher-login">Log In?</Button>
         </>
       ) : (
         <Button onClick={handleLogout} variant="destructive">Log Out</Button>
       )}
 
-      <a href="https://www.facebook.com/groups/uminion/" target="_blank" rel="noopener noreferrer">
+      <a href="https://www.facebook.com/groups/uminion/" target="_blank" rel="noopener noreferrer" className="uhub-launcher-facebook">
         <Button>Find us on FB!</Button>
       </a>
 
-      <div onClick={handleProfileImageClick} className="relative cursor-pointer group">
+      <div onClick={handleProfileImageClick} className="relative cursor-pointer group uhub-launcher-avatar">
         <Avatar className="h-[60px] w-[60px] border-2 border-orange-400 group-hover:border-orange-600 transition">
           <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="Profile" />
           <AvatarFallback>U</AvatarFallback>
