@@ -3019,7 +3019,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
             {/* 8-Button Grid - SMALLER BUTTONS - HIDDEN ON MOBILE */}
 <div className="hidden md:flex md:w-1/4 justify-center items-center md:pl-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
-  <div className="grid grid-cols-2 gap-1 w-fit">
+  <div className="grid grid-cols-4 gap-1 w-fit">
     <Button
       variant="outline"
       size="sm"
@@ -3049,38 +3049,38 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       <Home className="h-5 w-5" />
       <span>Home</span>
     </Button>
-    {Array.from({ length: 6 }, (_, i) => (
+    {[3, 4, 9, 10, 5, 6, 11, 12, 7, 8, 13, 14, 15, 16].map((buttonNumber) => (
       <Button
-        key={i + 3}
+        key={buttonNumber}
         variant="outline"
         size="sm"
         className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
         style={{ color: '#ffffff', backgroundColor: 'transparent' }}
         onClick={() => {
-          if (i === 5) {
+          if (buttonNumber === 8) {
             setAreProfileSurfacesOpaque(prev => !prev);
             return;
           }
 
           setAreFeatureIconsActive(prev => ({
             ...prev,
-            heart: i === 0 ? !prev.heart : prev.heart,
-            palm: i === 1 ? !prev.palm : prev.palm,
-            lion: i === 2 ? !prev.lion : prev.lion,
-            microphone: i === 3 ? !prev.microphone : prev.microphone,
-            steeringWheel: i === 4 ? !prev.steeringWheel : prev.steeringWheel,
+            heart: buttonNumber === 3 ? !prev.heart : prev.heart,
+            palm: buttonNumber === 4 ? !prev.palm : prev.palm,
+            lion: buttonNumber === 5 ? !prev.lion : prev.lion,
+            microphone: buttonNumber === 6 ? !prev.microphone : prev.microphone,
+            steeringWheel: buttonNumber === 7 ? !prev.steeringWheel : prev.steeringWheel,
           }));
           setIsQuadrantsModalOpen(true);
         }}
-        title={i === 5 ? 'Toggle transparency' : `Custom ${i + 3}`}
+        title={buttonNumber === 8 ? 'Toggle transparency' : `Custom ${buttonNumber}`}
       >
         <span className="text-xl leading-none">
-          {i === 0 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
-            i === 1 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
-            i === 2 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
-            i === 3 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
-            i === 4 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
-            i === 5 ? (areProfileSurfacesOpaque ? '✩' : '★') : i + 3}
+          {buttonNumber === 3 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
+            buttonNumber === 4 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
+            buttonNumber === 5 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
+            buttonNumber === 6 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
+            buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
+            buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') : buttonNumber}
         </span>
       </Button>
     ))}

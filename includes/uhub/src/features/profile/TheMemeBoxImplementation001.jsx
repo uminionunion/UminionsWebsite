@@ -25,6 +25,7 @@ export default function TheMemeBoxImplementation001() {
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadDescription, setUploadDescription] = useState("");
   const [currentUsername, setCurrentUsername] = useState("DemoUser");
+  const [isMemeBoxHovered, setIsMemeBoxHovered] = useState(false);
 
   const [isCommentImageZoomOpen, setIsCommentImageZoomOpen] = useState(false);
   const [zoomedCommentImage, setZoomedCommentImage] = useState(null);
@@ -918,6 +919,18 @@ const submitComment = async () => {
   const filteredPosts = getFilteredPosts();
   const displayPost = filteredPosts[currentPostIndex];
   const favoritesPosts = allPosts.filter((p) => p.isFavorited);
+
+  useEffect(() => {
+    if (isMemeBoxHovered || filteredPosts.length < 2 || isUploadDialogOpen || isCommentDialogOpen || isViewCommentsDialogOpen || isFavoritesGridOpen || isZoomModalOpen) {
+      return;
+    }
+
+    const rotationInterval = window.setInterval(() => {
+      setCurrentPostIndex((previousIndex) => (previousIndex + 1) % filteredPosts.length);
+    }, 5000);
+
+    return () => window.clearInterval(rotationInterval);
+  }, [filteredPosts.length, isMemeBoxHovered, isUploadDialogOpen, isCommentDialogOpen, isViewCommentsDialogOpen, isFavoritesGridOpen, isZoomModalOpen]);
 
   // =====================================================
   // STYLES
@@ -2295,7 +2308,11 @@ const renderUserProfileModal = () => {
   // =====================================================
 
   return (
-    <div style={styles.container}>
+    <div
+      style={styles.container}
+      onMouseEnter={() => setIsMemeBoxHovered(true)}
+      onMouseLeave={() => setIsMemeBoxHovered(false)}
+    >
       {renderNavbar()}
       {renderPostViewer()}
       {renderZoomModal()}
