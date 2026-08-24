@@ -1,4 +1,5 @@
 
+// Update: As of this moment, this entire section may potentially be outdated/legacyCodeToMAYBEcompareWith. If this code is not outdated, please update this comment with what got used; or else it is on path to get deleted and/or archived in the future. - 5:27pm on 8/24/26
 import React, { useState, useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
