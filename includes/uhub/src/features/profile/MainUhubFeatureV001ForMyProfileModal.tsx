@@ -3183,7 +3183,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         key={buttonNumber}
         variant="outline"
         size="sm"
-        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [3, 4, 5, 6, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [3, 4, 5, 6, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''} ${typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 ? 'text-[0.65rem] text-gray-500 opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
         style={{ color: '#ffffff', backgroundColor: 'transparent' }}
         onClick={() => {
           if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')) {
@@ -3193,6 +3193,41 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
           if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')) {
             setCustomizableButtonPage(page => Math.min(715, page + 1));
+            return;
+          }
+
+          if (customizableButtonPage === 1 && buttonNumber === 9) {
+            window.open('https://whatsYORstory.com', '_blank', 'noopener,noreferrer');
+            return;
+          }
+
+          if (customizableButtonPage === 1 && buttonNumber === 10) {
+            window.open('https://www.facebook.com/share/g/1FMa6xWVmQ/', '_blank', 'noopener,noreferrer');
+            return;
+          }
+
+          if (customizableButtonPage === 1 && buttonNumber === 11) {
+            window.open('https://www.facebook.com/share/g/1EfPw4uW8k/', '_blank', 'noopener,noreferrer');
+            return;
+          }
+
+          if (customizableButtonPage === 1 && buttonNumber === 12) {
+            window.open('https://www.facebook.com/share/g/1PD9kge6ZL/', '_blank', 'noopener,noreferrer');
+            return;
+          }
+
+          if (customizableButtonPage === 1 && buttonNumber === 13) {
+            window.open('https://github.com/uminionunion/UminionsWebsite/discussions/13', '_blank', 'noopener,noreferrer');
+            return;
+          }
+
+          if (customizableButtonPage === 1 && buttonNumber === 14) {
+            window.open('https://github.com/uminionunion/UminionsWebsite', '_blank', 'noopener,noreferrer');
+            return;
+          }
+
+          if (customizableButtonPage === 715 && buttonNumber === 10000) {
+            window.open('https://www.uminion.com', '_blank', 'noopener,noreferrer');
             return;
           }
 
@@ -3279,6 +3314,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             setIsQuadrantsModalOpen(true);
           }
         }}
+        disabled={typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012}
         title={typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')
           ? 'Previous button page'
           : typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')
@@ -3320,6 +3356,12 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             customizableButtonPage === 1 && buttonNumber === 6 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
             customizableButtonPage === 1 && buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
             customizableButtonPage === 1 && buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') :
+            customizableButtonPage === 1 && buttonNumber === 9 ? '🕮' :
+            customizableButtonPage === 1 && buttonNumber === 10 ? '🐃' :
+            customizableButtonPage === 1 && buttonNumber === 11 ? '🦬' :
+            customizableButtonPage === 1 && buttonNumber === 12 ? '🦣' :
+            customizableButtonPage === 1 && buttonNumber === 13 ? '🗝' :
+            customizableButtonPage === 1 && buttonNumber === 14 ? '🛠' :
             customizableButtonPage === 1 && buttonNumber === 15 ? (areFeatureIconsActive.movie ? '🖼' : '📽') :
             customizableButtonPage === 1 && buttonNumber === CustomButtonsPage001sNextPageButton ? '⏭' :
             customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sPreviousPageButton ? '⏮' :
@@ -3335,7 +3377,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton ? '⏮' :
             customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton ? '⏭' :
             typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton') ? '⏮' :
-            typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton') ? '⏭' : buttonNumber}
+            typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton') ? '⏭' :
+            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton ? '⏭' :
+            customizableButtonPage === 715 && buttonNumber === 10000 ? '🐾' : buttonNumber}
         </span>
       </Button>
       )
