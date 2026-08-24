@@ -1705,6 +1705,18 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const { user } = useAuth();
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
   const [customizableButtonPage, setCustomizableButtonPage] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
+  const CustomButtonsPage001sNextPageButton = 16;
+  const CustomButtonsPage002sPreviousPageButton = 23;
+  const CustomButtonsPage002sNextPageButton = 32;
+  const CustomButtonsPage003sPreviousPageButton = 39;
+  const CustomButtonsPage003sNextPageButton = 48;
+  const CustomButtonsPage004sPreviousPageButton = 55;
+  const CustomButtonsPage004sNextPageButton = 64;
+  const CustomButtonsPage005sPreviousPageButton = 71;
+  const CustomButtonsPage005sNextPageButton = 80;
+  const CustomButtonsPage006sPreviousPageButton = 87;
+  const CustomButtonsPage006sNextPageButton = 96;
+  const CustomButtonsPage007sPreviousPageButton = 103;
   const [activeChatModal, setActiveChatModal] = useState<number | null>(null);
   const [storeProducts, setStoreProducts] = useState<{ [key: number]: Product[] }>({});
   const [mainStoreProducts, setMainStoreProducts] = useState<Product[]>([]);
@@ -3074,62 +3086,62 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [3, 4, 5, 6, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''}`}
         style={{ color: '#ffffff', backgroundColor: 'transparent' }}
         onClick={() => {
-          if (customizableButtonPage === 1 && buttonNumber === 16) {
+          if (customizableButtonPage === 1 && buttonNumber === CustomButtonsPage001sNextPageButton) {
             setCustomizableButtonPage(2);
             return;
           }
 
-          if (customizableButtonPage === 2 && buttonNumber === 23) {
+          if (customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sPreviousPageButton) {
             setCustomizableButtonPage(1);
             return;
           }
 
-          if (customizableButtonPage === 2 && buttonNumber === 32) {
+          if (customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sNextPageButton) {
             setCustomizableButtonPage(3);
             return;
           }
 
-          if (customizableButtonPage === 3 && buttonNumber === 39) {
+          if (customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sPreviousPageButton) {
             setCustomizableButtonPage(2);
             return;
           }
 
-          if (customizableButtonPage === 3 && buttonNumber === 48) {
+          if (customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sNextPageButton) {
             setCustomizableButtonPage(4);
             return;
           }
 
-          if (customizableButtonPage === 4 && buttonNumber === 55) {
+          if (customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sPreviousPageButton) {
             setCustomizableButtonPage(3);
             return;
           }
 
-          if (customizableButtonPage === 4 && buttonNumber === 64) {
+          if (customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sNextPageButton) {
             setCustomizableButtonPage(5);
             return;
           }
 
-          if (customizableButtonPage === 5 && buttonNumber === 71) {
+          if (customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sPreviousPageButton) {
             setCustomizableButtonPage(4);
             return;
           }
 
-          if (customizableButtonPage === 5 && buttonNumber === 80) {
+          if (customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sNextPageButton) {
             setCustomizableButtonPage(6);
             return;
           }
 
-          if (customizableButtonPage === 6 && buttonNumber === 87) {
+          if (customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sPreviousPageButton) {
             setCustomizableButtonPage(5);
             return;
           }
 
-          if (customizableButtonPage === 6 && buttonNumber === 96) {
+          if (customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sNextPageButton) {
             setCustomizableButtonPage(7);
             return;
           }
 
-          if (customizableButtonPage === 7 && buttonNumber === 103) {
+          if (customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton) {
             setCustomizableButtonPage(6);
             return;
           }
@@ -3152,29 +3164,29 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             setIsQuadrantsModalOpen(true);
           }
         }}
-        title={customizableButtonPage === 1 && buttonNumber === 16
+        title={customizableButtonPage === 1 && buttonNumber === CustomButtonsPage001sNextPageButton
           ? 'Next button page'
-            : customizableButtonPage === 2 && buttonNumber === 23
+            : customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sPreviousPageButton
               ? 'Previous button page'
-              : customizableButtonPage === 2 && buttonNumber === 32
+              : customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sNextPageButton
                 ? 'Next button page'
-                : customizableButtonPage === 3 && buttonNumber === 39
+                : customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sPreviousPageButton
                   ? 'Previous button page'
-                  : customizableButtonPage === 3 && buttonNumber === 48
+                  : customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sNextPageButton
                     ? 'Next button page'
-                  : customizableButtonPage === 4 && buttonNumber === 55
+                  : customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sPreviousPageButton
                     ? 'Previous button page'
-                  : customizableButtonPage === 4 && buttonNumber === 64
+                  : customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sNextPageButton
                     ? 'Next button page'
-                  : customizableButtonPage === 5 && buttonNumber === 71
+                  : customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sPreviousPageButton
                     ? 'Previous button page'
-                  : customizableButtonPage === 5 && buttonNumber === 80
+                  : customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sNextPageButton
                     ? 'Next button page'
-                  : customizableButtonPage === 6 && buttonNumber === 87
+                  : customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sPreviousPageButton
                     ? 'Previous button page'
-                  : customizableButtonPage === 6 && buttonNumber === 96
+                  : customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sNextPageButton
                     ? 'Next button page'
-                  : customizableButtonPage === 7 && buttonNumber === 103
+                  : customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton
                     ? 'Previous button page'
                 : customizableButtonPage === 1 && buttonNumber === 8
               ? 'Toggle transparency'
@@ -3188,18 +3200,18 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             customizableButtonPage === 1 && buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
             customizableButtonPage === 1 && buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') :
             customizableButtonPage === 1 && buttonNumber === 15 ? (areFeatureIconsActive.movie ? '🖼' : '📽') :
-            customizableButtonPage === 1 && buttonNumber === 16 ? '⏭' :
-            customizableButtonPage === 2 && buttonNumber === 23 ? '⏮' :
-            customizableButtonPage === 2 && buttonNumber === 32 ? '⏭' :
-            customizableButtonPage === 3 && buttonNumber === 39 ? '⏮' :
-            customizableButtonPage === 3 && buttonNumber === 48 ? '⏭' :
-            customizableButtonPage === 4 && buttonNumber === 55 ? '⏮' :
-            customizableButtonPage === 4 && buttonNumber === 64 ? '⏭' :
-            customizableButtonPage === 5 && buttonNumber === 71 ? '⏮' :
-            customizableButtonPage === 5 && buttonNumber === 80 ? '⏭' :
-            customizableButtonPage === 6 && buttonNumber === 87 ? '⏮' :
-            customizableButtonPage === 6 && buttonNumber === 96 ? '⏭' :
-            customizableButtonPage === 7 && buttonNumber === 103 ? '⏮' : buttonNumber}
+            customizableButtonPage === 1 && buttonNumber === CustomButtonsPage001sNextPageButton ? '⏭' :
+            customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sPreviousPageButton ? '⏮' :
+            customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sNextPageButton ? '⏭' :
+            customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sPreviousPageButton ? '⏮' :
+            customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sNextPageButton ? '⏭' :
+            customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sPreviousPageButton ? '⏮' :
+            customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sNextPageButton ? '⏭' :
+            customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sPreviousPageButton ? '⏮' :
+            customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sNextPageButton ? '⏭' :
+            customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sPreviousPageButton ? '⏮' :
+            customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sNextPageButton ? '⏭' :
+            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton ? '⏮' : buttonNumber}
         </span>
       </Button>
     ))}
