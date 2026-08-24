@@ -199,6 +199,14 @@
   flex-direction: column;
   width: 100%;
 }
+.uhub-root [data-meme-box-layout='8'] .uhub-meme-box-stack {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.uhub-root [data-meme-box-layout='6'] .uhub-meme-box-stack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
 
 .uhub-root .uhub-meme-box-shared-footer {
   padding: 12px 20px;
@@ -207,6 +215,7 @@
   color: #cccccc;
   text-align: center;
   font-size: 12px;
+  grid-column: 1 / -1;
 }
 
 .uhub-transparent-mode .uhub-users-stores-header,

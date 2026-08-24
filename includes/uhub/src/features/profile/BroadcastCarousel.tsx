@@ -12,6 +12,7 @@ interface BroadcastItem {
 
 interface BroadcastCarouselProps {
   items?: BroadcastItem[];
+  visibleItemCount?: number;
   isAdmin?: boolean;
   onReorderLeft?: (itemId: number) => Promise<void>;
   onReorderRight?: (itemId: number) => Promise<void>;
@@ -20,6 +21,7 @@ interface BroadcastCarouselProps {
 
 export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({ 
   items = [], 
+  visibleItemCount = 9,
   isAdmin = false,
   onReorderLeft,
   onReorderRight,
@@ -27,8 +29,13 @@ export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isReordering, setIsReordering] = useState(false);
-  const itemsPerPage = 3;
+  const itemsPerPage = visibleItemCount;
+  const gridColumns = visibleItemCount === 9 ? 3 : visibleItemCount === 8 ? 2 : 1;
   const totalPages = Math.ceil(items.length / itemsPerPage);
+
+  React.useEffect(() => {
+    setCurrentPage(page => Math.min(page, Math.max(0, totalPages - 1)));
+  }, [totalPages]);
 
   const getCurrentItems = () => {
     const start = currentPage * itemsPerPage;
@@ -141,7 +148,10 @@ export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({
     
 
       {/* Images with Admin Controls */}
-      <div className="flex gap-4 flex-1 justify-center">
+      <div
+        className="grid gap-2 flex-1 justify-center"
+        style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
+      >
         {currentItems.map((item, index) => (
           <div
             key={item.id}
