@@ -3159,6 +3159,16 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [3, 4, 5, 6, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''}`}
         style={{ color: '#ffffff', backgroundColor: 'transparent' }}
         onClick={() => {
+          if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')) {
+            setCustomizableButtonPage(page => Math.max(1, page - 1));
+            return;
+          }
+
+          if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')) {
+            setCustomizableButtonPage(page => Math.min(72, page + 1));
+            return;
+          }
+
           if (customizableButtonPage === 1 && buttonNumber === CustomButtonsPage001sNextPageButton) {
             setCustomizableButtonPage(2);
             return;
@@ -3224,16 +3234,6 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             return;
           }
 
-          if (customizableButtonPage >= 8 && typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')) {
-            setCustomizableButtonPage(page => Math.max(8, page - 1));
-            return;
-          }
-
-          if (customizableButtonPage >= 8 && typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')) {
-            setCustomizableButtonPage(page => Math.min(72, page + 1));
-            return;
-          }
-
           if (customizableButtonPage === 1 && buttonNumber === 8) {
             setAreProfileSurfacesOpaque(prev => !prev);
             return;
@@ -3252,7 +3252,11 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             setIsQuadrantsModalOpen(true);
           }
         }}
-        title={customizableButtonPage === 1 && buttonNumber === CustomButtonsPage001sNextPageButton
+        title={typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')
+          ? 'Previous button page'
+          : typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')
+            ? 'Next button page'
+            : customizableButtonPage === 1 && buttonNumber === CustomButtonsPage001sNextPageButton
           ? 'Next button page'
             : customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sPreviousPageButton
               ? 'Previous button page'
@@ -3302,7 +3306,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sPreviousPageButton ? '⏮' :
             customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sNextPageButton ? '⏭' :
             customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton ? '⏮' :
-            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton ? '⏭' : buttonNumber}
+            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton ? '⏭' :
+            typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton') ? '⏮' :
+            typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton') ? '⏭' : buttonNumber}
         </span>
       </Button>
       )
