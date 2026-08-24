@@ -194,6 +194,21 @@
   background: #9ca3af;
 }
 
+.uhub-root .uhub-meme-box-stack {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.uhub-root .uhub-meme-box-shared-footer {
+  padding: 12px 20px;
+  border-top: 2px solid #444444;
+  background: #222222;
+  color: #cccccc;
+  text-align: center;
+  font-size: 12px;
+}
+
 .uhub-transparent-mode .uhub-users-stores-header,
 .uhub-transparent-mode .uhub-play-button,
 .uhub-transparent-mode .uhub-broadcast-footer-arrow,

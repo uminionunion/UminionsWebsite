@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import MainUhubFeatureV001ForUserProfileModal from "./MainUhubFeatureV001ForUserProfileModal";
 
-export default function TheMemeBoxImplementation001({ postSource = "all" }) {
+export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, hideFooter = false }) {
   // =====================================================
   // STATE VARIABLES
   // =====================================================
@@ -126,7 +126,37 @@ const EMOJIS = {
       comments: [],
       isFavorited: false,
     },
+    {
+      id: 3,
+      title: "Sunset Meme",
+      description: "A user-submitted sample post for the second Meme Box.",
+      images: [
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23f6b73c' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='42' fill='white' text-anchor='middle' dominant-baseline='middle'%3EUser Meme 3%3C/text%3E%3C/svg%3E",
+      ],
+      upvotes: 5,
+      downvotes: 0,
+      userVote: null,
+      timestamp: new Date(Date.now() - 3600000),
+      comments: [],
+      isFavorited: false,
+    },
+    {
+      id: 4,
+      title: "Cosmic Meme",
+      description: "Another user-submitted sample post for autoplay testing.",
+      images: [
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%237b61ff' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='42' fill='white' text-anchor='middle' dominant-baseline='middle'%3EUser Meme 4%3C/text%3E%3C/svg%3E",
+      ],
+      upvotes: 3,
+      downvotes: 1,
+      userVote: null,
+      timestamp: new Date(Date.now() - 1800000),
+      comments: [],
+      isFavorited: false,
+    },
   ];
+
+  const userSubmittedSamplePosts = samplePosts.filter((post) => post.id === 3 || post.id === 4);
 
   // =====================================================
   // INITIALIZATION - FETCH POSTS FROM DATABASE
@@ -204,11 +234,11 @@ const EMOJIS = {
          setAllPosts(samplePosts);
        } else {
          console.log("[MEMEBOX] No user-submitted posts available");
-         setAllPosts([]);
+         setAllPosts(userSubmittedSamplePosts);
        }
      } catch (error) {
        console.error("[MEMEBOX] Error fetching posts:", error);
-       setAllPosts(postSource === "all" ? samplePosts : []);
+      setAllPosts(postSource === "all" ? samplePosts : userSubmittedSamplePosts);
      }
    };
 
@@ -985,7 +1015,7 @@ const submitComment = async () => {
     container: {
       display: "flex",
       flexDirection: "column",
-      minHeight: "100vh",
+      minHeight: embedded ? "auto" : "100vh",
       backgroundColor: "#1a1a1a",
       color: "#ffffff",
       fontFamily: "inherit",
@@ -2321,7 +2351,7 @@ const renderUserProfileModal = () => {
       {renderNavbar()}
       {renderPostViewer()}
       {renderZoomModal()}
-      {renderFooter()}
+      {!hideFooter && renderFooter()}
       {renderUploadDialog()}
       {renderCommentDialog()}
       {renderViewCommentsDialog()}
