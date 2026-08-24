@@ -154,9 +154,65 @@ const EMOJIS = {
       comments: [],
       isFavorited: false,
     },
+    {
+      id: 5,
+      title: "Green Room Meme",
+      description: "A sample user-submitted post with a different score.",
+      images: ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%2352b788' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='42' fill='white' text-anchor='middle' dominant-baseline='middle'%3EUser Meme 5%3C/text%3E%3C/svg%3E"],
+      upvotes: 21, downvotes: 3, userVote: null, timestamp: new Date(Date.now() - 900000), comments: [], isFavorited: false,
+    },
+    {
+      id: 6,
+      title: "Orange Room Meme",
+      description: "A sample post for testing randomized rotation.",
+      images: ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23f9844a' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='42' fill='white' text-anchor='middle' dominant-baseline='middle'%3EUser Meme 6%3C/text%3E%3C/svg%3E"],
+      upvotes: 12, downvotes: 4, userVote: null, timestamp: new Date(Date.now() - 1200000), comments: [], isFavorited: false,
+    },
+    {
+      id: 7,
+      title: "Blue Room Meme",
+      description: "Another sample user-submitted post.",
+      images: ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%234ea8de' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='42' fill='white' text-anchor='middle' dominant-baseline='middle'%3EUser Meme 7%3C/text%3E%3C/svg%3E"],
+      upvotes: 7, downvotes: 2, userVote: null, timestamp: new Date(Date.now() - 1500000), comments: [], isFavorited: false,
+    },
+    {
+      id: 8,
+      title: "Purple Room Meme",
+      description: "A sample post with another vote count.",
+      images: ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%239b5de5' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='42' fill='white' text-anchor='middle' dominant-baseline='middle'%3EUser Meme 8%3C/text%3E%3C/svg%3E"],
+      upvotes: 30, downvotes: 5, userVote: null, timestamp: new Date(Date.now() - 1800000), comments: [], isFavorited: false,
+    },
+    {
+      id: 9,
+      title: "Pink Room Meme",
+      description: "A sample post for the six-box test.",
+      images: ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23f15bb5' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='42' fill='white' text-anchor='middle' dominant-baseline='middle'%3EUser Meme 9%3C/text%3E%3C/svg%3E"],
+      upvotes: 2, downvotes: 0, userVote: null, timestamp: new Date(Date.now() - 2100000), comments: [], isFavorited: false,
+    },
+    {
+      id: 10,
+      title: "Teal Room Meme",
+      description: "A sample post with a high score.",
+      images: ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%2300b4d8' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='42' fill='white' text-anchor='middle' dominant-baseline='middle'%3EUser Meme 10%3C/text%3E%3C/svg%3E"],
+      upvotes: 44, downvotes: 6, userVote: null, timestamp: new Date(Date.now() - 2400000), comments: [], isFavorited: false,
+    },
+    {
+      id: 11,
+      title: "Red Room Meme",
+      description: "A sample post with a low score.",
+      images: ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23e63946' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='42' fill='white' text-anchor='middle' dominant-baseline='middle'%3EUser Meme 11%3C/text%3E%3C/svg%3E"],
+      upvotes: 9, downvotes: 1, userVote: null, timestamp: new Date(Date.now() - 2700000), comments: [], isFavorited: false,
+    },
+    {
+      id: 12,
+      title: "Gold Room Meme",
+      description: "A final sample post for autoplay testing.",
+      images: ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23e9c46a' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' font-size='42' fill='white' text-anchor='middle' dominant-baseline='middle'%3EUser Meme 12%3C/text%3E%3C/svg%3E"],
+      upvotes: 18, downvotes: 2, userVote: null, timestamp: new Date(Date.now() - 3000000), comments: [], isFavorited: false,
+    },
   ];
 
-  const userSubmittedSamplePosts = samplePosts.filter((post) => post.id === 3 || post.id === 4);
+  const userSubmittedSamplePosts = samplePosts.filter((post) => post.id >= 3);
 
   // =====================================================
   // INITIALIZATION - FETCH POSTS FROM DATABASE
@@ -989,7 +1045,9 @@ const submitComment = async () => {
       }
 
       const unseenFreshPosts = freshPosts.filter((post) => !autoplayFreshPosts.current.has(post.id));
-      const nextPost = unseenFreshPosts[0];
+      const unseenPosts = posts.filter((post) => !autoplayFreshPosts.current.has(post.id));
+      const candidates = unseenFreshPosts.length > 0 ? unseenFreshPosts : unseenPosts;
+      const nextPost = candidates[Math.floor(Math.random() * candidates.length)];
 
       if (nextPost) {
         const nextIndex = posts.findIndex((post) => post.id === nextPost.id);
@@ -999,7 +1057,8 @@ const submitComment = async () => {
         return;
       }
 
-      const nextIndex = (currentPostIndexRef.current + 1) % posts.length;
+      autoplayFreshPosts.current.clear();
+      const nextIndex = Math.floor(Math.random() * posts.length);
       currentPostIndexRef.current = nextIndex;
       setCurrentPostIndex(nextIndex);
     }, 3000);
