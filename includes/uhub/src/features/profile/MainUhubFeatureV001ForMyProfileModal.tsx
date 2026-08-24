@@ -1783,7 +1783,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
     69: [954, 955, 961, 962, 956, 957, 963, 964, 958, 959, 965, 966, 'CustomButtonsPage069sPreviousPageButton', 960, 967, 'CustomButtonsPage069sNextPageButton'],
     70: [968, 969, 975, 976, 970, 971, 977, 978, 972, 973, 979, 980, 'CustomButtonsPage070sPreviousPageButton', 974, 981, 'CustomButtonsPage070sNextPageButton'],
     71: [982, 983, 989, 990, 984, 985, 991, 992, 986, 987, 993, 994, 'CustomButtonsPage071sPreviousPageButton', 988, 995, 'CustomButtonsPage071sNextPageButton'],
-    72: [996, 997, null, null, 998, 999, null, null, 1000, null, null, null, 'CustomButtonsPage072sPreviousPageButton', null, null, null],
+    72: [996, 997, 1003, 1004, 998, 999, 1005, 1006, 1000, 1001, 1007, 1008, 'CustomButtonsPage072sPreviousPageButton', 1002, 1009, 'CustomButtonsPage072sNextPageButton'],
   };
   const [activeChatModal, setActiveChatModal] = useState<number | null>(null);
   const [storeProducts, setStoreProducts] = useState<{ [key: number]: Product[] }>({});
