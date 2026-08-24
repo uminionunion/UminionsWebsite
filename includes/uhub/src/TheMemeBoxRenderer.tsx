@@ -2,29 +2,25 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import TheMemeBoxImplementation001 from './features/profile/TheMemeBoxImplementation001';
 
-const memeBoxRoots = new Map<string, ReactDOM.Root>();
+let memeBoxRoot: ReactDOM.Root | null = null;
 
 export function renderTheMemeBox(data: any) {
-  const boxes = [
-    { id: 'TheReactMemeImplementationConnection001', postSource: 'all' as const },
-    { id: 'TheReactMemeImplementationConnection002', postSource: 'user-submitted' as const },
-  ];
+  const container = document.getElementById('TheReactMemeImplementationConnection001');
+  if (!container) return;
 
-  boxes.forEach(({ id, postSource }) => {
-    const container = document.getElementById(id);
-    if (!container) return;
-
-    const root = memeBoxRoots.get(id) || ReactDOM.createRoot(container);
-    memeBoxRoots.set(id, root);
-    root.render(
-      <React.StrictMode>
-        <TheMemeBoxImplementation001 data={data} postSource={postSource} />
-      </React.StrictMode>
-    );
-  });
+  memeBoxRoot ||= ReactDOM.createRoot(container);
+  memeBoxRoot.render(
+    <React.StrictMode>
+      <div className="uhub-meme-box-stack">
+        <TheMemeBoxImplementation001 data={data} postSource="all" embedded hideFooter />
+        <TheMemeBoxImplementation001 data={data} postSource="user-submitted" embedded hideFooter />
+        <div className="uhub-meme-box-shared-footer">A GEMMMS#25 Creation: "The MemeBox"</div>
+      </div>
+    </React.StrictMode>
+  );
 }
 
 export function unmountTheMemeBox() {
-  memeBoxRoots.forEach(root => root.unmount());
-  memeBoxRoots.clear();
+  memeBoxRoot?.unmount();
+  memeBoxRoot = null;
 }

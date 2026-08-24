@@ -453,11 +453,6 @@ if (isMobile) {
             className="bg-muted rounded-md my-2"
             style={{ minHeight: '400px' }}
           />
-          <div
-            id="TheReactMemeImplementationConnection002"
-            className="bg-muted rounded-md my-2"
-            style={{ minHeight: '400px' }}
-          />
           <div className="flex justify-between items-center">
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }}><ChevronLeft className="h-4 w-4" /></Button>
             <span className="text-xs text-muted-foreground">by {broadcast.creator}</span>
@@ -518,11 +513,6 @@ if (isMobile) {
               <h4 className="font-semibold whitespace-pre-line text-center text-sm">{broadcast.subtitle}</h4>
               <div
                 id="TheReactMemeImplementationConnection001"
-                className="flex-1 bg-muted rounded-md my-2 overflow-hidden"
-                style={{ minHeight: '200px' }}
-              />
-              <div
-                id="TheReactMemeImplementationConnection002"
                 className="flex-1 bg-muted rounded-md my-2 overflow-hidden"
                 style={{ minHeight: '200px' }}
               />
