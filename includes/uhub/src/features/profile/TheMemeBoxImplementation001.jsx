@@ -1636,15 +1636,15 @@ const renderNavbar = () => {
 </div>
 
 <div style={styles.voteSection}>
-  <div style={styles.voteCount}>
+  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={handleUpvote} role="button" tabIndex={0}>
     <div style={styles.voteNumber}>{EMOJIS.UPVOTE_INITIAL} {displayPost.upvotes}</div>
     <div style={styles.voteLabel}>Upvotes</div>
   </div>
-  <div style={styles.voteCount}> 
+  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={handleDownvote} role="button" tabIndex={0}> 
     <div style={styles.voteNumber}>{EMOJIS.DOWNVOTE_INITIAL} {displayPost.downvotes}</div>
     <div style={styles.voteLabel}>Downvotes</div>
   </div>
-  <div style={styles.voteCount}>
+  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={openViewCommentsDialog} role="button" tabIndex={0}>
     <div style={styles.voteNumber}> 
       {EMOJIS.COMMENT_INITIAL} {displayPost.comments.length}
     </div>
