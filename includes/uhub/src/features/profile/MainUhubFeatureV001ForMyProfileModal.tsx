@@ -1785,6 +1785,15 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
     71: [982, 983, 989, 990, 984, 985, 991, 992, 986, 987, 993, 994, 'CustomButtonsPage071sPreviousPageButton', 988, 995, 'CustomButtonsPage071sNextPageButton'],
     72: [996, 997, 1003, 1004, 998, 999, 1005, 1006, 1000, 1001, 1007, 1008, 'CustomButtonsPage072sPreviousPageButton', 1002, 1009, 'CustomButtonsPage072sNextPageButton'],
   };
+  const customButtonPageScrollRef = useRef<HTMLDivElement>(null);
+  const customButtonPageHeight = 140;
+
+  useEffect(() => {
+    customButtonPageScrollRef.current?.scrollTo({
+      top: (customizableButtonPage - 1) * customButtonPageHeight,
+      behavior: 'smooth',
+    });
+  }, [customizableButtonPage]);
   const [activeChatModal, setActiveChatModal] = useState<number | null>(null);
   const [storeProducts, setStoreProducts] = useState<{ [key: number]: Product[] }>({});
   const [mainStoreProducts, setMainStoreProducts] = useState<Product[]>([]);
@@ -3101,7 +3110,18 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
             {/* 8-Button Grid - SMALLER BUTTONS - HIDDEN ON MOBILE */}
 <div className="hidden md:flex md:w-1/4 justify-center items-center md:pl-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
-  <div className="grid grid-cols-4 gap-1 w-fit">
+  <div
+    ref={customButtonPageScrollRef}
+    onScroll={(event) => {
+      const scrollPage = Math.round(event.currentTarget.scrollTop / customButtonPageHeight) + 1;
+      setCustomizableButtonPage(Math.max(1, Math.min(72, scrollPage)));
+    }}
+    className="w-fit overflow-y-auto overflow-x-hidden"
+    style={{ maxHeight: `${customButtonPageHeight}px`, scrollSnapType: 'y mandatory' }}
+    aria-label="Custom button pages"
+  >
+    <div style={{ height: `${customButtonPageHeight * 72}px`, position: 'relative' }}>
+  <div className="grid grid-cols-4 gap-1 w-fit" style={{ position: 'sticky', top: 0, scrollSnapAlign: 'start' }}>
     {customizableButtonPage === 1 && <>
     <Button
       variant="outline"
@@ -3313,6 +3333,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       </Button>
       )
     ))}
+  </div>
+    </div>
   </div>
 </div>
 
