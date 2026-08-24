@@ -641,5 +641,5 @@ export const additionalHardCodedCustomButtonPages: Record<number, Array<number |
   712: [9956,9957,9963,9964,9958,9959,9965,9966,9960,9961,9967,9968,"CustomButtonsPage712sPreviousPageButton",9962,9969,"CustomButtonsPage712sNextPageButton"],
   713: [9970,9971,9977,9978,9972,9973,9979,9980,9974,9975,9981,9982,"CustomButtonsPage713sPreviousPageButton",9976,9983,"CustomButtonsPage713sNextPageButton"],
   714: [9984,9985,9991,9992,9986,9987,9993,9994,9988,9989,9995,9996,"CustomButtonsPage714sPreviousPageButton",9990,9997,"CustomButtonsPage714sNextPageButton"],
-  715: [9998,9999,null,null,10000,null,null,null,null,null,null,null,"CustomButtonsPage715sPreviousPageButton",null,null,null],
+  715: [9998,9999,10005,10006,10000,10001,10007,10008,10002,10003,10009,10010,"CustomButtonsPage715sPreviousPageButton",10004,10011,10012],
 };
