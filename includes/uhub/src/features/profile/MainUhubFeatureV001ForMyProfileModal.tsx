@@ -1705,18 +1705,18 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const { user } = useAuth();
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
   const [customizableButtonPage, setCustomizableButtonPage] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
-  const CustomButtonsPage001sNextPageButton = 16;
-  const CustomButtonsPage002sPreviousPageButton = 23;
-  const CustomButtonsPage002sNextPageButton = 32;
-  const CustomButtonsPage003sPreviousPageButton = 39;
-  const CustomButtonsPage003sNextPageButton = 48;
-  const CustomButtonsPage004sPreviousPageButton = 55;
-  const CustomButtonsPage004sNextPageButton = 64;
-  const CustomButtonsPage005sPreviousPageButton = 71;
-  const CustomButtonsPage005sNextPageButton = 80;
-  const CustomButtonsPage006sPreviousPageButton = 87;
-  const CustomButtonsPage006sNextPageButton = 96;
-  const CustomButtonsPage007sPreviousPageButton = 103;
+  const CustomButtonsPage001sNextPageButton = 'CustomButtonsPage001sNextPageButton';
+  const CustomButtonsPage002sPreviousPageButton = 'CustomButtonsPage002sPreviousPageButton';
+  const CustomButtonsPage002sNextPageButton = 'CustomButtonsPage002sNextPageButton';
+  const CustomButtonsPage003sPreviousPageButton = 'CustomButtonsPage003sPreviousPageButton';
+  const CustomButtonsPage003sNextPageButton = 'CustomButtonsPage003sNextPageButton';
+  const CustomButtonsPage004sPreviousPageButton = 'CustomButtonsPage004sPreviousPageButton';
+  const CustomButtonsPage004sNextPageButton = 'CustomButtonsPage004sNextPageButton';
+  const CustomButtonsPage005sPreviousPageButton = 'CustomButtonsPage005sPreviousPageButton';
+  const CustomButtonsPage005sNextPageButton = 'CustomButtonsPage005sNextPageButton';
+  const CustomButtonsPage006sPreviousPageButton = 'CustomButtonsPage006sPreviousPageButton';
+  const CustomButtonsPage006sNextPageButton = 'CustomButtonsPage006sNextPageButton';
+  const CustomButtonsPage007sPreviousPageButton = 'CustomButtonsPage007sPreviousPageButton';
   const [activeChatModal, setActiveChatModal] = useState<number | null>(null);
   const [storeProducts, setStoreProducts] = useState<{ [key: number]: Product[] }>({});
   const [mainStoreProducts, setMainStoreProducts] = useState<Product[]>([]);
@@ -3066,18 +3066,18 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     </Button>
     </>}
     {(customizableButtonPage === 1
-      ? [9, 10, 3, 4, 11, 12, 5, 6, 13, 14, 7, 8, 15, 16]
+      ? [9, 10, 3, 4, 11, 12, 5, 6, 13, 14, 7, 8, 15, CustomButtonsPage001sNextPageButton]
       : customizableButtonPage === 2
-        ? [17, 18, 25, 26, 19, 20, 27, 28, 21, 22, 29, 30, 23, 24, 31, 32]
+        ? [16, 17, 23, 24, 18, 19, 25, 26, 20, 21, 27, 28, CustomButtonsPage002sPreviousPageButton, 22, 29, CustomButtonsPage002sNextPageButton]
         : customizableButtonPage === 3
-          ? [33, 34, 41, 42, 35, 36, 43, 44, 37, 38, 45, 46, 39, 40, 47, 48]
+          ? [30, 31, 37, 38, 32, 33, 39, 40, 34, 35, 41, 42, CustomButtonsPage003sPreviousPageButton, 36, 43, CustomButtonsPage003sNextPageButton]
           : customizableButtonPage === 4
-            ? [49, 50, 57, 58, 51, 52, 59, 60, 53, 54, 61, 62, 55, 56, 63, 64]
+            ? [44, 45, 51, 52, 46, 47, 53, 54, 48, 49, 55, 56, CustomButtonsPage004sPreviousPageButton, 50, 57, CustomButtonsPage004sNextPageButton]
             : customizableButtonPage === 5
-              ? [65, 66, 73, 74, 67, 68, 75, 76, 69, 70, 77, 78, 71, 72, 79, 80]
+              ? [58, 59, 65, 66, 60, 61, 67, 68, 62, 63, 69, 70, CustomButtonsPage005sPreviousPageButton, 64, 71, CustomButtonsPage005sNextPageButton]
               : customizableButtonPage === 6
-                ? [81, 82, 89, 90, 83, 84, 91, 92, 85, 86, 93, 94, 87, 88, 95, 96]
-                : [97, 98, 105, 106, 99, 100, 107, 108, 101, 102, 109, 110, 103, 104, 111, 112]
+                ? [72, 73, 79, 80, 74, 75, 81, 82, 76, 77, 83, 84, CustomButtonsPage006sPreviousPageButton, 78, 85, CustomButtonsPage006sNextPageButton]
+                : [86, 87, 93, 94, 88, 89, 95, 96, 90, 91, 97, 98, CustomButtonsPage007sPreviousPageButton, 92, 99, 100]
     ).map((buttonNumber) => (
       <Button
         key={buttonNumber}
