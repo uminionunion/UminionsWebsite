@@ -116,9 +116,8 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             #uhub-launcher-layout .uhub-launcher-facebook { grid-column: 1; grid-row: 3; }
             #uhub-launcher-layout .uhub-launcher-signup { grid-column: 2; grid-row: 3; }
             #uhub-launcher-layout .uhub-launcher-avatar { grid-column: 2; grid-row: 1; }
-            #uhub-launcher-layout .uhub-launcher-uhub,
-            #uhub-launcher-layout .uhub-launcher-facebook { width: 100px; }
-            #uhub-launcher-layout .uhub-launcher-facebook > button { width: 100%; }
+            #uhub-launcher-layout .uhub-launcher-facebook,
+            #uhub-launcher-layout .uhub-launcher-facebook > button { width: 64px; }
         </style>
 
 		<!-- This Code ABOVE is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->

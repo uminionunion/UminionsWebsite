@@ -29,6 +29,7 @@ export default function TheMemeBoxImplementation001({ postSource = "all", embedd
   const autoplayFreshPosts = useRef(new Set());
   const filteredPostsRef = useRef([]);
   const currentPostIndexRef = useRef(0);
+  const favoriteClickTimer = useRef(null);
 
   const [isCommentImageZoomOpen, setIsCommentImageZoomOpen] = useState(false);
   const [zoomedCommentImage, setZoomedCommentImage] = useState(null);
@@ -577,6 +578,25 @@ const handleFavorite = useCallback(async () => {
     alert("Failed to toggle favorite: " + error.message);
   }
 }, [allPosts, currentPostIndex]);
+
+const handleFavoriteButtonClick = useCallback(() => {
+  if (favoriteClickTimer.current) {
+    window.clearTimeout(favoriteClickTimer.current);
+  }
+
+  favoriteClickTimer.current = window.setTimeout(() => {
+    handleFavorite();
+    favoriteClickTimer.current = null;
+  }, 250);
+}, [handleFavorite]);
+
+const handleFavoriteButtonDoubleClick = useCallback(() => {
+  if (favoriteClickTimer.current) {
+    window.clearTimeout(favoriteClickTimer.current);
+    favoriteClickTimer.current = null;
+  }
+  showFavoritesGrid();
+}, []);
 
 
 
@@ -1661,16 +1681,13 @@ const renderNavbar = () => {
     <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" style={{ marginBottom: 4 }} />
     {getPageTitle()}
   </button>
-  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); showFavoritesGrid(); }}>
-    <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ marginBottom: 4 }} />
-    Favorites ({favoritesPosts.length})
-  </button>
   <button
     style={{
       ...styles.navButton,
       ...(displayPost.isFavorited ? styles.actionButtonActive : {}),
     }}
-    onClick={(event) => { event.stopPropagation(); handleFavorite(); }}
+    onClick={(event) => { event.stopPropagation(); handleFavoriteButtonClick(); }}
+    onDoubleClick={(event) => { event.stopPropagation(); handleFavoriteButtonDoubleClick(); }}
   >
     <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ marginBottom: 4 }} />
     Favorites
