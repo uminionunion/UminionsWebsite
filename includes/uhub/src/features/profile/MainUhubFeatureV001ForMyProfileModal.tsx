@@ -242,10 +242,9 @@ const BroadcastView = ({
 
   // Calculate how many images carousel can show based on width
   const calculateCarouselImageCount = (rightWidth: number): number => {
-    if (rightWidth >= 67) return 3;
-    if (rightWidth >= 60) return 3;
-    if (rightWidth >= 50) return 2;
-    if (rightWidth >= 40) return 1;
+    if (rightWidth >= 67) return 9;
+    if (rightWidth >= 50) return 8;
+    if (rightWidth >= 40) return 6;
     return 0;
   };
 
@@ -323,15 +322,13 @@ const BroadcastView = ({
   const resetToDefaultPosition = () => {
     setBroadcastLeftWidth(33);
     setBroadcastRightWidth(67);
-    setBroadcastCarouselImageCount(3);
-    setIsBroadcastLeftCollapsed(false);
-    setIsBroadcastCarouselCollapsed(false);
+    setBroadcastCarouselImageCount(9);
   };
 
   const resetToPosition002 = () => {
     setBroadcastLeftWidth(65);
     setBroadcastRightWidth(35);
-    setBroadcastCarouselImageCount(1);
+    setBroadcastCarouselImageCount(6);
     setIsBroadcastLeftCollapsed(false);
     setIsBroadcastCarouselCollapsed(false);
   };
@@ -369,6 +366,7 @@ const BroadcastView = ({
             <div className="flex-1 overflow-hidden">
               <BroadcastCarousel 
                 items={broadcast.extraImages || []} 
+                visibleItemCount={broadcastCarouselImageCount}
                 isAdmin={user?.is_high_high_high_admin === 1}
                 onImageZoom={handleCarouselImageZoom}
               />
@@ -421,6 +419,7 @@ if (isMobile) {
 >
   <BroadcastCarousel 
     items={broadcastView === 'UnionNews#14' ? unionNews14Images : (broadcast.extraImages || [])}
+    visibleItemCount={broadcastCarouselImageCount}
     isAdmin={broadcastView === 'UnionNews#14' && user?.is_high_high_high_admin === 1}
     onReorderLeft={broadcastView === 'UnionNews#14' ? handleReorderLeft : undefined}
     onReorderRight={broadcastView === 'UnionNews#14' ? handleReorderRight : undefined}
@@ -435,7 +434,7 @@ if (isMobile) {
         <button
           onClick={() => {
             setIsBroadcastCarouselCollapsed(false);
-            setBroadcastCarouselImageCount(3);
+            setBroadcastCarouselImageCount(9);
           }}
           className="flex items-center gap-1 bg-green-700 hover:bg-green-800 text-white text-xs px-2 py-1 rounded transition m-4"
         >
@@ -450,6 +449,7 @@ if (isMobile) {
           <h4 className="font-semibold whitespace-pre-line text-center text-sm">{broadcast.subtitle}</h4>
           <div
             id="TheReactMemeImplementationConnection001"
+            data-meme-box-layout={broadcastCarouselImageCount}
             className="bg-muted rounded-md my-2"
             style={{ minHeight: '400px' }}
           />
@@ -555,6 +555,7 @@ if (isMobile) {
             <div className="flex-1 overflow-hidden">
               <BroadcastCarousel 
   items={broadcastView === 'UnionNews#14' ? unionNews14Images : (broadcast.extraImages || [])}
+  visibleItemCount={broadcastCarouselImageCount}
   isAdmin={broadcastView === 'UnionNews#14' && user?.is_high_high_high_admin === 1}
   onReorderLeft={broadcastView === 'UnionNews#14' ? handleReorderLeft : undefined}
   onReorderRight={broadcastView === 'UnionNews#14' ? handleReorderRight : undefined}
@@ -1843,7 +1844,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [broadcastView, setBroadcastView] = useState('UnionNews#14');
   const [broadcastLeftWidth, setBroadcastLeftWidth] = useState(33);
   const [broadcastRightWidth, setBroadcastRightWidth] = useState(67);
-  const [broadcastCarouselImageCount, setBroadcastCarouselImageCount] = useState(3);
+  const [broadcastCarouselImageCount, setBroadcastCarouselImageCount] = useState<number>(9);
   const [isBroadcastLeftCollapsed, setIsBroadcastLeftCollapsed] = useState(false);
   const [isBroadcastCarouselCollapsed, setIsBroadcastCarouselCollapsed] = useState(false);
   const [broadcastDividerDragging, setBroadcastDividerDragging] = useState(false);
