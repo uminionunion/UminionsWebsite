@@ -1636,77 +1636,20 @@ const renderNavbar = () => {
 </div>
 
 <div style={styles.voteSection}>
-  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={handleUpvote} role="button" tabIndex={0}>
-    <div style={styles.voteNumber}>{EMOJIS.UPVOTE_INITIAL} {displayPost.upvotes}</div>
+  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); handleUpvote(); }} role="button" tabIndex={0}>
+    <div style={{ ...styles.voteNumber, pointerEvents: "none" }}>{EMOJIS.UPVOTE_INITIAL} {displayPost.upvotes}</div>
     <div style={styles.voteLabel}>Upvotes</div>
   </div>
-  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={handleDownvote} role="button" tabIndex={0}> 
-    <div style={styles.voteNumber}>{EMOJIS.DOWNVOTE_INITIAL} {displayPost.downvotes}</div>
+  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); handleDownvote(); }} role="button" tabIndex={0}> 
+    <div style={{ ...styles.voteNumber, pointerEvents: "none" }}>{EMOJIS.DOWNVOTE_INITIAL} {displayPost.downvotes}</div>
     <div style={styles.voteLabel}>Downvotes</div>
   </div>
-  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={openViewCommentsDialog} role="button" tabIndex={0}>
-    <div style={styles.voteNumber}> 
+  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); openViewCommentsDialog(); }} role="button" tabIndex={0}>
+    <div style={{ ...styles.voteNumber, pointerEvents: "none" }}> 
       {EMOJIS.COMMENT_INITIAL} {displayPost.comments.length}
     </div>
     <div style={styles.voteLabel}>Comments</div>
   </div>
-</div>
-
-        {/* ROW 1: Upvote, Downvote, Favorites */}
-<div style={styles.actionButtonsContainer}>
-  <button
-    style={{
-      ...styles.actionButton,
-      ...(displayPost.userVote === 1 ? styles.actionButtonActive : {}),
-    }}
-    onClick={handleUpvote}
-  >
-    {EMOJIS.UPVOTE_INITIAL} Upvote
-  </button>
-  <button
-    style={{
-      ...styles.actionButton,
-      ...(displayPost.userVote === -1 ? styles.actionButtonActive : {}),
-    }}
-    onClick={handleDownvote}
-  >
-    {EMOJIS.DOWNVOTE_INITIAL} Downvote
-  </button>
-</div>
-
-{/* ROW 2: Comment, View Comments, Favorites, Delete (if owner) */}
-<div style={styles.actionButtonsContainer}>
-  <button style={styles.actionButton} onClick={openCommentDialog}>
-    {EMOJIS.COMMENT_INITIAL} Comment
-  </button>
-  <button style={styles.actionButton} onClick={openViewCommentsDialog}>
-    <img
-      src="/EmojisForUminionWebsite/GreenEmoji005CommentsChats.png"
-      width="24"
-    />{" "}
-    View Comments
-  </button>
-  <button
-    style={{
-      ...styles.actionButton,
-      ...(displayPost.isFavorited ? styles.actionButtonActive : {}),
-    }}
-    onClick={handleFavorite}
-  >
-    <img
-      src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png"
-      width="24"
-    />{" "}
-    Favorites
-  </button>
-  {currentUsername === displayPost.username && (
-    <button
-      style={{ ...styles.actionButton, backgroundColor: "#ff6666" }}
-      onClick={handleDeletePost}
-    >
-      🗑️ Delete Post
-    </button>
-  )}
 </div>
 
 <div style={styles.navbarButtons}>
@@ -1721,6 +1664,16 @@ const renderNavbar = () => {
   <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); showFavoritesGrid(); }}>
     <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ marginBottom: 4 }} />
     Favorites ({favoritesPosts.length})
+  </button>
+  <button
+    style={{
+      ...styles.navButton,
+      ...(displayPost.isFavorited ? styles.actionButtonActive : {}),
+    }}
+    onClick={(event) => { event.stopPropagation(); handleFavorite(); }}
+  >
+    <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ marginBottom: 4 }} />
+    Favorites
   </button>
 </div>
 
