@@ -199,6 +199,9 @@
   flex-direction: column;
   width: 100%;
 }
+.uhub-root .uhub-meme-box-stack > * {
+  min-width: 0;
+}
 .uhub-root [data-meme-box-layout='8'] .uhub-meme-box-stack {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

@@ -513,6 +513,7 @@ if (isMobile) {
               <h4 className="font-semibold whitespace-pre-line text-center text-sm">{broadcast.subtitle}</h4>
               <div
                 id="TheReactMemeImplementationConnection001"
+                data-meme-box-layout={broadcastCarouselImageCount}
                 className="flex-1 bg-muted rounded-md my-2 overflow-hidden"
                 style={{ minHeight: '200px' }}
               />
