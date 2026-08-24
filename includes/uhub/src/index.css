@@ -177,6 +177,23 @@
   scrollbar-width: thin;
 }
 
+.uhub-root [aria-label='Custom button pages']::-webkit-scrollbar {
+  width: 10px;
+}
+
+.uhub-root [aria-label='Custom button pages']::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.uhub-root [aria-label='Custom button pages']::-webkit-scrollbar-thumb {
+  background: #6b7280;
+  border-radius: 4px;
+}
+
+.uhub-root [aria-label='Custom button pages']::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
 .uhub-transparent-mode .uhub-users-stores-header,
 .uhub-transparent-mode .uhub-play-button,
 .uhub-transparent-mode .uhub-broadcast-footer-arrow,
