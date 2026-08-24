@@ -21,6 +21,7 @@ import UnionNews14FrontPageAdminModal from './UnionNews14FrontPageAdminModal';
 import BroadcastCarouselZoomModal from './BroadcastCarouselZoomModal';
 import TheMemeBoxImplementation001 from './TheMemeBoxImplementation001';
 import { renderTheMemeBox, unmountTheMemeBox } from '@/TheMemeBoxRenderer';
+import { additionalHardCodedCustomButtonPages } from './additional-hard-coded-custom-button-pages';
 
 
 
@@ -1784,6 +1785,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
     70: [968, 969, 975, 976, 970, 971, 977, 978, 972, 973, 979, 980, 'CustomButtonsPage070sPreviousPageButton', 974, 981, 'CustomButtonsPage070sNextPageButton'],
     71: [982, 983, 989, 990, 984, 985, 991, 992, 986, 987, 993, 994, 'CustomButtonsPage071sPreviousPageButton', 988, 995, 'CustomButtonsPage071sNextPageButton'],
     72: [996, 997, 1003, 1004, 998, 999, 1005, 1006, 1000, 1001, 1007, 1008, 'CustomButtonsPage072sPreviousPageButton', 1002, 1009, 'CustomButtonsPage072sNextPageButton'],
+    ...additionalHardCodedCustomButtonPages,
   };
   const customButtonPageScrollRef = useRef<HTMLDivElement>(null);
   const customButtonPageHeight = 140;
@@ -3114,13 +3116,18 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     ref={customButtonPageScrollRef}
     onScroll={(event) => {
       const scrollPage = Math.round(event.currentTarget.scrollTop / customButtonPageHeight) + 1;
-      setCustomizableButtonPage(Math.max(1, Math.min(72, scrollPage)));
+      setCustomizableButtonPage(Math.max(1, Math.min(715, scrollPage)));
     }}
     className="w-fit overflow-y-auto overflow-x-hidden"
-    style={{ maxHeight: `${customButtonPageHeight}px`, scrollSnapType: 'y mandatory' }}
+    style={{
+      maxHeight: `${customButtonPageHeight}px`,
+      scrollSnapType: 'y mandatory',
+      scrollbarColor: '#6b7280 transparent',
+      scrollbarWidth: 'auto',
+    }}
     aria-label="Custom button pages"
   >
-    <div style={{ height: `${customButtonPageHeight * 72}px`, position: 'relative' }}>
+    <div style={{ height: `${customButtonPageHeight * 715}px`, position: 'relative' }}>
   <div className="grid grid-cols-4 gap-1 w-fit" style={{ position: 'sticky', top: 0, scrollSnapAlign: 'start' }}>
     {customizableButtonPage === 1 && <>
     <Button
@@ -3185,7 +3192,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
           }
 
           if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')) {
-            setCustomizableButtonPage(page => Math.min(72, page + 1));
+            setCustomizableButtonPage(page => Math.min(715, page + 1));
             return;
           }
 
