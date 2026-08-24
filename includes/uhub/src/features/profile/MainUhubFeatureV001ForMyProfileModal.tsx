@@ -1704,7 +1704,7 @@ const HomeModal = ({ isOpen, onClose, userProducts = [] }) => {
 const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyProfileModalProps> = ({ isOpen, onClose, onOpenAuthModal, onBadgeZoom }) => {
   const { user } = useAuth();
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
-  const [customizableButtonPage, setCustomizableButtonPage] = useState<1 | 2 | 3 | 4 | 5 | 6 | 7>(1);
+  const [customizableButtonPage, setCustomizableButtonPage] = useState(1);
   const CustomButtonsPage001sNextPageButton = 'CustomButtonsPage001sNextPageButton';
   const CustomButtonsPage002sPreviousPageButton = 'CustomButtonsPage002sPreviousPageButton';
   const CustomButtonsPage002sNextPageButton = 'CustomButtonsPage002sNextPageButton';
@@ -1717,6 +1717,74 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const CustomButtonsPage006sPreviousPageButton = 'CustomButtonsPage006sPreviousPageButton';
   const CustomButtonsPage006sNextPageButton = 'CustomButtonsPage006sNextPageButton';
   const CustomButtonsPage007sPreviousPageButton = 'CustomButtonsPage007sPreviousPageButton';
+  const CustomButtonsPage007sNextPageButton = 'CustomButtonsPage007sNextPageButton';
+  const hardCodedCustomButtonPages: Record<number, Array<number | string | null>> = {
+    8: [100, 101, 107, 108, 102, 103, 109, 110, 104, 105, 111, 112, 'CustomButtonsPage008sPreviousPageButton', 106, 113, 'CustomButtonsPage008sNextPageButton'],
+    9: [114, 115, 121, 122, 116, 117, 123, 124, 118, 119, 125, 126, 'CustomButtonsPage009sPreviousPageButton', 120, 127, 'CustomButtonsPage009sNextPageButton'],
+    10: [128, 129, 135, 136, 130, 131, 137, 138, 132, 133, 139, 140, 'CustomButtonsPage010sPreviousPageButton', 134, 141, 'CustomButtonsPage010sNextPageButton'],
+    11: [142, 143, 149, 150, 144, 145, 151, 152, 146, 147, 153, 154, 'CustomButtonsPage011sPreviousPageButton', 148, 155, 'CustomButtonsPage011sNextPageButton'],
+    12: [156, 157, 163, 164, 158, 159, 165, 166, 160, 161, 167, 168, 'CustomButtonsPage012sPreviousPageButton', 162, 169, 'CustomButtonsPage012sNextPageButton'],
+    13: [170, 171, 177, 178, 172, 173, 179, 180, 174, 175, 181, 182, 'CustomButtonsPage013sPreviousPageButton', 176, 183, 'CustomButtonsPage013sNextPageButton'],
+    14: [184, 185, 191, 192, 186, 187, 193, 194, 188, 189, 195, 196, 'CustomButtonsPage014sPreviousPageButton', 190, 197, 'CustomButtonsPage014sNextPageButton'],
+    15: [198, 199, 205, 206, 200, 201, 207, 208, 202, 203, 209, 210, 'CustomButtonsPage015sPreviousPageButton', 204, 211, 'CustomButtonsPage015sNextPageButton'],
+    16: [212, 213, 219, 220, 214, 215, 221, 222, 216, 217, 223, 224, 'CustomButtonsPage016sPreviousPageButton', 218, 225, 'CustomButtonsPage016sNextPageButton'],
+    17: [226, 227, 233, 234, 228, 229, 235, 236, 230, 231, 237, 238, 'CustomButtonsPage017sPreviousPageButton', 232, 239, 'CustomButtonsPage017sNextPageButton'],
+    18: [240, 241, 247, 248, 242, 243, 249, 250, 244, 245, 251, 252, 'CustomButtonsPage018sPreviousPageButton', 246, 253, 'CustomButtonsPage018sNextPageButton'],
+    19: [254, 255, 261, 262, 256, 257, 263, 264, 258, 259, 265, 266, 'CustomButtonsPage019sPreviousPageButton', 260, 267, 'CustomButtonsPage019sNextPageButton'],
+    20: [268, 269, 275, 276, 270, 271, 277, 278, 272, 273, 279, 280, 'CustomButtonsPage020sPreviousPageButton', 274, 281, 'CustomButtonsPage020sNextPageButton'],
+    21: [282, 283, 289, 290, 284, 285, 291, 292, 286, 287, 293, 294, 'CustomButtonsPage021sPreviousPageButton', 288, 295, 'CustomButtonsPage021sNextPageButton'],
+    22: [296, 297, 303, 304, 298, 299, 305, 306, 300, 301, 307, 308, 'CustomButtonsPage022sPreviousPageButton', 302, 309, 'CustomButtonsPage022sNextPageButton'],
+    23: [310, 311, 317, 318, 312, 313, 319, 320, 314, 315, 321, 322, 'CustomButtonsPage023sPreviousPageButton', 316, 323, 'CustomButtonsPage023sNextPageButton'],
+    24: [324, 325, 331, 332, 326, 327, 333, 334, 328, 329, 335, 336, 'CustomButtonsPage024sPreviousPageButton', 330, 337, 'CustomButtonsPage024sNextPageButton'],
+    25: [338, 339, 345, 346, 340, 341, 347, 348, 342, 343, 349, 350, 'CustomButtonsPage025sPreviousPageButton', 344, 351, 'CustomButtonsPage025sNextPageButton'],
+    26: [352, 353, 359, 360, 354, 355, 361, 362, 356, 357, 363, 364, 'CustomButtonsPage026sPreviousPageButton', 358, 365, 'CustomButtonsPage026sNextPageButton'],
+    27: [366, 367, 373, 374, 368, 369, 375, 376, 370, 371, 377, 378, 'CustomButtonsPage027sPreviousPageButton', 372, 379, 'CustomButtonsPage027sNextPageButton'],
+    28: [380, 381, 387, 388, 382, 383, 389, 390, 384, 385, 391, 392, 'CustomButtonsPage028sPreviousPageButton', 386, 393, 'CustomButtonsPage028sNextPageButton'],
+    29: [394, 395, 401, 402, 396, 397, 403, 404, 398, 399, 405, 406, 'CustomButtonsPage029sPreviousPageButton', 400, 407, 'CustomButtonsPage029sNextPageButton'],
+    30: [408, 409, 415, 416, 410, 411, 417, 418, 412, 413, 419, 420, 'CustomButtonsPage030sPreviousPageButton', 414, 421, 'CustomButtonsPage030sNextPageButton'],
+    31: [422, 423, 429, 430, 424, 425, 431, 432, 426, 427, 433, 434, 'CustomButtonsPage031sPreviousPageButton', 428, 435, 'CustomButtonsPage031sNextPageButton'],
+    32: [436, 437, 443, 444, 438, 439, 445, 446, 440, 441, 447, 448, 'CustomButtonsPage032sPreviousPageButton', 442, 449, 'CustomButtonsPage032sNextPageButton'],
+    33: [450, 451, 457, 458, 452, 453, 459, 460, 454, 455, 461, 462, 'CustomButtonsPage033sPreviousPageButton', 456, 463, 'CustomButtonsPage033sNextPageButton'],
+    34: [464, 465, 471, 472, 466, 467, 473, 474, 468, 469, 475, 476, 'CustomButtonsPage034sPreviousPageButton', 470, 477, 'CustomButtonsPage034sNextPageButton'],
+    35: [478, 479, 485, 486, 480, 481, 487, 488, 482, 483, 489, 490, 'CustomButtonsPage035sPreviousPageButton', 484, 491, 'CustomButtonsPage035sNextPageButton'],
+    36: [492, 493, 499, 500, 494, 495, 501, 502, 496, 497, 503, 504, 'CustomButtonsPage036sPreviousPageButton', 498, 505, 'CustomButtonsPage036sNextPageButton'],
+    37: [506, 507, 513, 514, 508, 509, 515, 516, 510, 511, 517, 518, 'CustomButtonsPage037sPreviousPageButton', 512, 519, 'CustomButtonsPage037sNextPageButton'],
+    38: [520, 521, 527, 528, 522, 523, 529, 530, 524, 525, 531, 532, 'CustomButtonsPage038sPreviousPageButton', 526, 533, 'CustomButtonsPage038sNextPageButton'],
+    39: [534, 535, 541, 542, 536, 537, 543, 544, 538, 539, 545, 546, 'CustomButtonsPage039sPreviousPageButton', 540, 547, 'CustomButtonsPage039sNextPageButton'],
+    40: [548, 549, 555, 556, 550, 551, 557, 558, 552, 553, 559, 560, 'CustomButtonsPage040sPreviousPageButton', 554, 561, 'CustomButtonsPage040sNextPageButton'],
+    41: [562, 563, 569, 570, 564, 565, 571, 572, 566, 567, 573, 574, 'CustomButtonsPage041sPreviousPageButton', 568, 575, 'CustomButtonsPage041sNextPageButton'],
+    42: [576, 577, 583, 584, 578, 579, 585, 586, 580, 581, 587, 588, 'CustomButtonsPage042sPreviousPageButton', 582, 589, 'CustomButtonsPage042sNextPageButton'],
+    43: [590, 591, 597, 598, 592, 593, 599, 600, 594, 595, 601, 602, 'CustomButtonsPage043sPreviousPageButton', 596, 603, 'CustomButtonsPage043sNextPageButton'],
+    44: [604, 605, 611, 612, 606, 607, 613, 614, 608, 609, 615, 616, 'CustomButtonsPage044sPreviousPageButton', 610, 617, 'CustomButtonsPage044sNextPageButton'],
+    45: [618, 619, 625, 626, 620, 621, 627, 628, 622, 623, 629, 630, 'CustomButtonsPage045sPreviousPageButton', 624, 631, 'CustomButtonsPage045sNextPageButton'],
+    46: [632, 633, 639, 640, 634, 635, 641, 642, 636, 637, 643, 644, 'CustomButtonsPage046sPreviousPageButton', 638, 645, 'CustomButtonsPage046sNextPageButton'],
+    47: [646, 647, 653, 654, 648, 649, 655, 656, 650, 651, 657, 658, 'CustomButtonsPage047sPreviousPageButton', 652, 659, 'CustomButtonsPage047sNextPageButton'],
+    48: [660, 661, 667, 668, 662, 663, 669, 670, 664, 665, 671, 672, 'CustomButtonsPage048sPreviousPageButton', 666, 673, 'CustomButtonsPage048sNextPageButton'],
+    49: [674, 675, 681, 682, 676, 677, 683, 684, 678, 679, 685, 686, 'CustomButtonsPage049sPreviousPageButton', 680, 687, 'CustomButtonsPage049sNextPageButton'],
+    50: [688, 689, 695, 696, 690, 691, 697, 698, 692, 693, 699, 700, 'CustomButtonsPage050sPreviousPageButton', 694, 701, 'CustomButtonsPage050sNextPageButton'],
+    51: [702, 703, 709, 710, 704, 705, 711, 712, 706, 707, 713, 714, 'CustomButtonsPage051sPreviousPageButton', 708, 715, 'CustomButtonsPage051sNextPageButton'],
+    52: [716, 717, 723, 724, 718, 719, 725, 726, 720, 721, 727, 728, 'CustomButtonsPage052sPreviousPageButton', 722, 729, 'CustomButtonsPage052sNextPageButton'],
+    53: [730, 731, 737, 738, 732, 733, 739, 740, 734, 735, 741, 742, 'CustomButtonsPage053sPreviousPageButton', 736, 743, 'CustomButtonsPage053sNextPageButton'],
+    54: [744, 745, 751, 752, 746, 747, 753, 754, 748, 749, 755, 756, 'CustomButtonsPage054sPreviousPageButton', 750, 757, 'CustomButtonsPage054sNextPageButton'],
+    55: [758, 759, 765, 766, 760, 761, 767, 768, 762, 763, 769, 770, 'CustomButtonsPage055sPreviousPageButton', 764, 771, 'CustomButtonsPage055sNextPageButton'],
+    56: [772, 773, 779, 780, 774, 775, 781, 782, 776, 777, 783, 784, 'CustomButtonsPage056sPreviousPageButton', 778, 785, 'CustomButtonsPage056sNextPageButton'],
+    57: [786, 787, 793, 794, 788, 789, 795, 796, 790, 791, 797, 798, 'CustomButtonsPage057sPreviousPageButton', 792, 799, 'CustomButtonsPage057sNextPageButton'],
+    58: [800, 801, 807, 808, 802, 803, 809, 810, 804, 805, 811, 812, 'CustomButtonsPage058sPreviousPageButton', 806, 813, 'CustomButtonsPage058sNextPageButton'],
+    59: [814, 815, 821, 822, 816, 817, 823, 824, 818, 819, 825, 826, 'CustomButtonsPage059sPreviousPageButton', 820, 827, 'CustomButtonsPage059sNextPageButton'],
+    60: [828, 829, 835, 836, 830, 831, 837, 838, 832, 833, 839, 840, 'CustomButtonsPage060sPreviousPageButton', 834, 841, 'CustomButtonsPage060sNextPageButton'],
+    61: [842, 843, 849, 850, 844, 845, 851, 852, 846, 847, 853, 854, 'CustomButtonsPage061sPreviousPageButton', 848, 855, 'CustomButtonsPage061sNextPageButton'],
+    62: [856, 857, 863, 864, 858, 859, 865, 866, 860, 861, 867, 868, 'CustomButtonsPage062sPreviousPageButton', 862, 869, 'CustomButtonsPage062sNextPageButton'],
+    63: [870, 871, 877, 878, 872, 873, 879, 880, 874, 875, 881, 882, 'CustomButtonsPage063sPreviousPageButton', 876, 883, 'CustomButtonsPage063sNextPageButton'],
+    64: [884, 885, 891, 892, 886, 887, 893, 894, 888, 889, 895, 896, 'CustomButtonsPage064sPreviousPageButton', 890, 897, 'CustomButtonsPage064sNextPageButton'],
+    65: [898, 899, 905, 906, 900, 901, 907, 908, 902, 903, 909, 910, 'CustomButtonsPage065sPreviousPageButton', 904, 911, 'CustomButtonsPage065sNextPageButton'],
+    66: [912, 913, 919, 920, 914, 915, 921, 922, 916, 917, 923, 924, 'CustomButtonsPage066sPreviousPageButton', 918, 925, 'CustomButtonsPage066sNextPageButton'],
+    67: [926, 927, 933, 934, 928, 929, 935, 936, 930, 931, 937, 938, 'CustomButtonsPage067sPreviousPageButton', 932, 939, 'CustomButtonsPage067sNextPageButton'],
+    68: [940, 941, 947, 948, 942, 943, 949, 950, 944, 945, 951, 952, 'CustomButtonsPage068sPreviousPageButton', 946, 953, 'CustomButtonsPage068sNextPageButton'],
+    69: [954, 955, 961, 962, 956, 957, 963, 964, 958, 959, 965, 966, 'CustomButtonsPage069sPreviousPageButton', 960, 967, 'CustomButtonsPage069sNextPageButton'],
+    70: [968, 969, 975, 976, 970, 971, 977, 978, 972, 973, 979, 980, 'CustomButtonsPage070sPreviousPageButton', 974, 981, 'CustomButtonsPage070sNextPageButton'],
+    71: [982, 983, 989, 990, 984, 985, 991, 992, 986, 987, 993, 994, 'CustomButtonsPage071sPreviousPageButton', 988, 995, 'CustomButtonsPage071sNextPageButton'],
+    72: [996, 997, null, null, 998, 999, null, null, 1000, null, null, null, 'CustomButtonsPage072sPreviousPageButton', null, null, null],
+  };
   const [activeChatModal, setActiveChatModal] = useState<number | null>(null);
   const [storeProducts, setStoreProducts] = useState<{ [key: number]: Product[] }>({});
   const [mainStoreProducts, setMainStoreProducts] = useState<Product[]>([]);
@@ -3077,8 +3145,13 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               ? [58, 59, 65, 66, 60, 61, 67, 68, 62, 63, 69, 70, CustomButtonsPage005sPreviousPageButton, 64, 71, CustomButtonsPage005sNextPageButton]
               : customizableButtonPage === 6
                 ? [72, 73, 79, 80, 74, 75, 81, 82, 76, 77, 83, 84, CustomButtonsPage006sPreviousPageButton, 78, 85, CustomButtonsPage006sNextPageButton]
-                : [86, 87, 93, 94, 88, 89, 95, 96, 90, 91, 97, 98, CustomButtonsPage007sPreviousPageButton, 92, 99, 100]
+                : customizableButtonPage === 7
+                  ? [86, 87, 93, 94, 88, 89, 95, 96, 90, 91, 97, 98, CustomButtonsPage007sPreviousPageButton, 92, 99, CustomButtonsPage007sNextPageButton]
+                  : hardCodedCustomButtonPages[customizableButtonPage]
     ).map((buttonNumber) => (
+      buttonNumber === null ? (
+        <span key={`empty-custom-button-${customizableButtonPage}`} className="h-8 w-12" />
+      ) : (
       <Button
         key={buttonNumber}
         variant="outline"
@@ -3146,6 +3219,21 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             return;
           }
 
+          if (customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton) {
+            setCustomizableButtonPage(8);
+            return;
+          }
+
+          if (customizableButtonPage >= 8 && typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')) {
+            setCustomizableButtonPage(page => Math.max(8, page - 1));
+            return;
+          }
+
+          if (customizableButtonPage >= 8 && typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')) {
+            setCustomizableButtonPage(page => Math.min(72, page + 1));
+            return;
+          }
+
           if (customizableButtonPage === 1 && buttonNumber === 8) {
             setAreProfileSurfacesOpaque(prev => !prev);
             return;
@@ -3188,6 +3276,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                     ? 'Next button page'
                   : customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton
                     ? 'Previous button page'
+                  : customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton
+                    ? 'Next button page'
                 : customizableButtonPage === 1 && buttonNumber === 8
               ? 'Toggle transparency'
               : `Custom ${buttonNumber}`}
@@ -3211,9 +3301,11 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sNextPageButton ? '⏭' :
             customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sPreviousPageButton ? '⏮' :
             customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sNextPageButton ? '⏭' :
-            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton ? '⏮' : buttonNumber}
+            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton ? '⏮' :
+            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton ? '⏭' : buttonNumber}
         </span>
       </Button>
+      )
     ))}
   </div>
 </div>
