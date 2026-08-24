@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import MainUhubFeatureV001ForUserProfileModal from "./MainUhubFeatureV001ForUserProfileModal";
 
-export default function TheMemeBoxImplementation001() {
+export default function TheMemeBoxImplementation001({ postSource = "all" }) {
   // =====================================================
   // STATE VARIABLES
   // =====================================================
@@ -150,7 +150,9 @@ const EMOJIS = {
        console.log("[MEMEBOX] ✅ Fetched", viralPosts.length, "viral posts");
        console.log("[MEMEBOX] ✅ Fetched", userSubmittedPosts.length, "user posts");
 
-       const allDbPosts = [...viralPosts, ...userSubmittedPosts];
+       const allDbPosts = postSource === "user-submitted"
+         ? userSubmittedPosts
+         : [...viralPosts, ...userSubmittedPosts];
 
        if (allDbPosts.length > 0) {
          // ✅ FIXED: Fetch comments for each post during initial load
@@ -197,18 +199,21 @@ const EMOJIS = {
          );
 
          setAllPosts(formattedPosts);
-       } else {
+       } else if (postSource === "all") {
          console.log("[MEMEBOX] No posts in database, using sample posts");
          setAllPosts(samplePosts);
+       } else {
+         console.log("[MEMEBOX] No user-submitted posts available");
+         setAllPosts([]);
        }
      } catch (error) {
        console.error("[MEMEBOX] Error fetching posts:", error);
-       setAllPosts(samplePosts);
+       setAllPosts(postSource === "all" ? samplePosts : []);
      }
    };
 
    fetchPostsFromDatabase();
- }, []);
+ }, [postSource]);
 
 
   
@@ -869,6 +874,7 @@ const submitComment = async () => {
   };
 
   const getPageTitle = () => {
+    if (postSource === "user-submitted") return "All Posts";
     if (currentPage === 1) return "User Posts";
     if (currentPage === 2) return "All Posts";
     if (currentPage === 3) return "Favorites";

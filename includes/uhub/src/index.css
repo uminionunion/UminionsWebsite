@@ -202,22 +202,32 @@
 .uhub-transparent-mode #TheReactMemeImplementationConnection001 .mediaItem,
 .uhub-transparent-mode #TheReactMemeImplementationConnection001 .voteSection,
 .uhub-transparent-mode #TheReactMemeImplementationConnection001 .actionButtonsContainer,
-.uhub-transparent-mode #TheReactMemeImplementationConnection001 .footer {
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 .footer,
+.uhub-transparent-mode #TheReactMemeImplementationConnection002 .mediaItem,
+.uhub-transparent-mode #TheReactMemeImplementationConnection002 .voteSection,
+.uhub-transparent-mode #TheReactMemeImplementationConnection002 .actionButtonsContainer,
+.uhub-transparent-mode #TheReactMemeImplementationConnection002 .footer {
   background-color: transparent !important;
 }
 
 .uhub-transparent-mode #TheReactMemeImplementationConnection001 .postImage,
-.uhub-transparent-mode #TheReactMemeImplementationConnection001 .postVideo {
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 .postVideo,
+.uhub-transparent-mode #TheReactMemeImplementationConnection002 .postImage,
+.uhub-transparent-mode #TheReactMemeImplementationConnection002 .postVideo {
   opacity: 0.5 !important;
 }
 
 .uhub-transparent-mode #TheReactMemeImplementationConnection001,
-.uhub-transparent-mode #TheReactMemeImplementationConnection001 * {
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 *,
+.uhub-transparent-mode #TheReactMemeImplementationConnection002,
+.uhub-transparent-mode #TheReactMemeImplementationConnection002 * {
   background-color: transparent !important;
 }
 
 .uhub-transparent-mode #TheReactMemeImplementationConnection001 img,
-.uhub-transparent-mode #TheReactMemeImplementationConnection001 video {
+.uhub-transparent-mode #TheReactMemeImplementationConnection001 video,
+.uhub-transparent-mode #TheReactMemeImplementationConnection002 img,
+.uhub-transparent-mode #TheReactMemeImplementationConnection002 video {
   opacity: 0.5 !important;
 }
 

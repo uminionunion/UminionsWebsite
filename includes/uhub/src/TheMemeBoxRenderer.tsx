@@ -2,26 +2,29 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import TheMemeBoxImplementation001 from './features/profile/TheMemeBoxImplementation001';
 
-export function renderTheMemeBox(data: any) {
-  const container = document.getElementById('TheReactMemeImplementationConnection001');
-  if (!container) {
-    console.error('Container TheReactMemeImplementationConnection001 not found');
-    return;
-  }
+const memeBoxRoots = new Map<string, ReactDOM.Root>();
 
-  const root = ReactDOM.createRoot(container);
-  root.render(
-    <React.StrictMode>
-      {/* Pass broadcast data to component - currently uses sample data */}
-      <TheMemeBoxImplementation001 data={data} />
-    </React.StrictMode>
-  );
+export function renderTheMemeBox(data: any) {
+  const boxes = [
+    { id: 'TheReactMemeImplementationConnection001', postSource: 'all' as const },
+    { id: 'TheReactMemeImplementationConnection002', postSource: 'user-submitted' as const },
+  ];
+
+  boxes.forEach(({ id, postSource }) => {
+    const container = document.getElementById(id);
+    if (!container) return;
+
+    const root = memeBoxRoots.get(id) || ReactDOM.createRoot(container);
+    memeBoxRoots.set(id, root);
+    root.render(
+      <React.StrictMode>
+        <TheMemeBoxImplementation001 data={data} postSource={postSource} />
+      </React.StrictMode>
+    );
+  });
 }
 
 export function unmountTheMemeBox() {
-  const container = document.getElementById('TheReactMemeImplementationConnection001');
-  if (container) {
-    const root = (container as any)._reactRootContainer;
-    if (root) root.unmount();
-  }
+  memeBoxRoots.forEach(root => root.unmount());
+  memeBoxRoots.clear();
 }
