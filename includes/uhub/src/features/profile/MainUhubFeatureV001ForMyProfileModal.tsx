@@ -3129,6 +3129,11 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             return;
           }
 
+          if (customizableButtonPage === 7 && buttonNumber === 103) {
+            setCustomizableButtonPage(6);
+            return;
+          }
+
           if (customizableButtonPage === 1 && buttonNumber === 8) {
             setAreProfileSurfacesOpaque(prev => !prev);
             return;
@@ -3169,6 +3174,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                     ? 'Previous button page'
                   : customizableButtonPage === 6 && buttonNumber === 96
                     ? 'Next button page'
+                  : customizableButtonPage === 7 && buttonNumber === 103
+                    ? 'Previous button page'
                 : customizableButtonPage === 1 && buttonNumber === 8
               ? 'Toggle transparency'
               : `Custom ${buttonNumber}`}
@@ -3191,7 +3198,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             customizableButtonPage === 5 && buttonNumber === 71 ? '⏮' :
             customizableButtonPage === 5 && buttonNumber === 80 ? '⏭' :
             customizableButtonPage === 6 && buttonNumber === 87 ? '⏮' :
-            customizableButtonPage === 6 && buttonNumber === 96 ? '⏭' : buttonNumber}
+            customizableButtonPage === 6 && buttonNumber === 96 ? '⏭' :
+            customizableButtonPage === 7 && buttonNumber === 103 ? '⏮' : buttonNumber}
         </span>
       </Button>
     ))}

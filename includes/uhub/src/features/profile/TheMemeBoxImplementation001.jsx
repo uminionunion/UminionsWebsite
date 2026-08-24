@@ -1113,7 +1113,7 @@ const submitComment = async () => {
     actionButton: {
       backgroundColor: "#222222",
       color: "#ffffff",
-      border: "2px solid #666666",
+      border: "none",
       padding: "8px 10px",
       borderRadius: "6px",
       cursor: "pointer",
