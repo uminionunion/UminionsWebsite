@@ -910,10 +910,14 @@ const submitComment = async () => {
 
   const getFilteredPosts = useCallback(() => {
     if (currentPage === 1) {
+      // Page 1 tab: Represents the AllPostsFolder, containing viral and user-submitted posts together.
       return allPosts;
     } else if (currentPage === 2) {
+      // Page 2 tab: Represents the UserSubPostsFolder by name for future work.
+      // Current behavior remains the low-downvote filter; user-submitted posts are already merged into allPosts.
       return allPosts.filter((p) => p.downvotes < 5);
     } else if (currentPage === 3) {
+      // Page 3 tab: Represents the current user's FavoritesPostsFolder.
       return allPosts.filter((p) => p.isFavorited);
     }
     return allPosts;
@@ -1410,7 +1414,12 @@ const renderNavbar = () => {
         Prev
       </button>
 
-      <button style={{ ...styles.navArrowButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); showNextPost(); }}>
+      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
+        <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" />
+        {getPageTitle()}
+      </button>
+
+      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); showNextPost(); }}>
         <img src="/EmojisForUminionWebsite/GreenEmoji012ArrowNextPagePost.png" width="24" />
         Next
       </button>
@@ -1427,7 +1436,7 @@ const renderNavbar = () => {
         {/* your original 2‑row layout */}
         {/* B.) TOP LINE — PREVIOUS / NEXT */}
         <div style={styles.navigationButtons}>
-          <button style={styles.navArrowButton} onClick={(event) => { event.stopPropagation(); showPreviousPost(); }}>
+          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); showPreviousPost(); }}>
             <img
               src="/EmojisForUminionWebsite/GreenEmoji013ArrowPreviousPagePost.png"
               width="24"
@@ -1436,7 +1445,16 @@ const renderNavbar = () => {
             Previous Post
           </button>
 
-          <button style={styles.navArrowButton} onClick={(event) => { event.stopPropagation(); showNextPost(); }}>
+          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
+            <img
+              src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png"
+              width="24"
+              style={{ marginBottom: 4 }}
+            />
+            {getPageTitle()}
+          </button>
+
+          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); showNextPost(); }}>
             <img
               src="/EmojisForUminionWebsite/GreenEmoji012ArrowNextPagePost.png"
               width="24"

@@ -3148,7 +3148,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             steeringWheel: buttonNumber === 7 ? !prev.steeringWheel : prev.steeringWheel,
             movie: buttonNumber === 15 ? !prev.movie : prev.movie,
           }));
-          if (customizableButtonPage !== 1 || ![3, 4, 5, 6, 7, 15, 16].includes(buttonNumber)) {
+          if (customizableButtonPage === 1 && ![3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(buttonNumber)) {
             setIsQuadrantsModalOpen(true);
           }
         }}
