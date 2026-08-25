@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import MainUhubFeatureV001ForUserProfileModal from "./MainUhubFeatureV001ForUserProfileModal";
 
-export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, hideFooter = false }) {
+export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, showExternalUploadButton = false, hideFooter = false }) {
   // =====================================================
   // STATE VARIABLES
   // =====================================================
@@ -104,6 +104,13 @@ const EMOJIS = {
 
     checkAuthStatus();
   }, []);
+
+  useEffect(() => {
+    if (!showExternalUploadButton) return;
+    const handleExternalUpload = () => openUploadDialog();
+    document.addEventListener("uhub-memebox-upload", handleExternalUpload);
+    return () => document.removeEventListener("uhub-memebox-upload", handleExternalUpload);
+  }, [showExternalUploadButton]);
 
   // =====================================================
   // SAMPLE DATA
@@ -1691,14 +1698,18 @@ const renderNavbar = () => {
 </div>
 
 <div style={styles.navbarButtons}>
-  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); openUploadDialog(); }}>
-    <img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" width="24" style={{ marginBottom: 4 }} />
-    Upload
-  </button>
-  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
-    <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" style={{ marginBottom: 4 }} />
-    {getPageTitle()}
-  </button>
+  {!embedded && (
+    <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); openUploadDialog(); }}>
+      <img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" width="24" style={{ marginBottom: 4 }} />
+      Upload
+    </button>
+  )}
+  {isMultiColumnLayout && (
+    <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
+      <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" style={{ marginBottom: 4 }} />
+      {getPageTitle()}
+    </button>
+  )}
   <button
     style={{
       ...styles.navButton,
