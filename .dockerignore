@@ -1,0 +1,5 @@
+**/node_modules
+**/*.sqlite-shm
+**/*.sqlite-wal
+pantry-api/data/*.sqlite
+uhub-api/data/*.sqlite

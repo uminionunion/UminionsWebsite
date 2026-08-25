@@ -1,1 +1,8 @@
-
+# Local dependency and runtime data directories
+**/node_modules/
+pantry-api/data/*.sqlite
+pantry-api/data/*.sqlite-shm
+pantry-api/data/*.sqlite-wal
+uhub-api/data/*.sqlite
+uhub-api/data/*.sqlite-shm
+uhub-api/data/*.sqlite-wal
