@@ -510,7 +510,18 @@ if (isMobile) {
         {!isBroadcastLeftCollapsed && (
           <>
             <div style={{ width: `${broadcastLeftWidth}%` }} className="flex flex-col overflow-hidden">
-              <h4 className="font-semibold whitespace-pre-line text-center text-sm">{broadcast.subtitle}</h4>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  title="Upload meme"
+                  onClick={() => document.dispatchEvent(new Event('uhub-memebox-upload'))}
+                >
+                  <img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" width="24" alt="" />
+                </Button>
+                <h4 className="font-semibold whitespace-pre-line text-center text-sm flex-1">{broadcast.subtitle}</h4>
+              </div>
               <div
                 id="TheReactMemeImplementationConnection001"
                 data-meme-box-layout={broadcastCarouselImageCount}
@@ -1855,7 +1866,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [leftDividerDragging, setLeftDividerDragging] = useState(false);
   const [rightDividerDragging, setRightDividerDragging] = useState(false);
   const broadcasts = {
-      'UnionNews#14': { memeBoxId: 'TheReactMemeImplementationConnection001', title: 'UnionNews#14 & GEMMMS#25', creator: 'GEMMMS#25', subtitle: 'Got Memes? Share Memes:', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.15-Made-on-NC-JPEG.png', extraImages: ['https://page001.uminion.com/StoreProductsAndImagery/TapestryVersion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/Tshirtbatchversion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/UkraineLogo001.png'], description: 'Welcome to the Uminion Union! We have Rallies every 24th of the month, stores built by unionFolk, chats, news, voting, teach ppl how to code (for free) & even offer an ad-free- meme section below!', website: 'https://github.com/uminionunion/UminionsWebsite/discussions/13' },
+      'UnionNews#14': { memeBoxId: 'TheReactMemeImplementationConnection001', title: 'UnionNews#14 & GEMMMS#25', creator: 'GEMMMS#25', subtitle: 'Got Memes? Share Memes.', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.15-Made-on-NC-JPEG.png', extraImages: ['https://page001.uminion.com/StoreProductsAndImagery/TapestryVersion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/Tshirtbatchversion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/UkraineLogo001.png'], description: 'Welcome to the Uminion Union! We have Rallies every 24th of the month, stores built by unionFolk, chats, news, voting, teach ppl how to code (for free) & even offer an ad-free- meme section below!', website: 'https://github.com/uminionunion/UminionsWebsite/discussions/13' },
       'UnionRadio#15': { title: 'Broadcasts- UnionRadio#15', creator: 'StorytellingSalem', subtitle: 'Under Construction- Union Radio #15.', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.16-Made-on-NC-JPEG.png', extraImages: [], description: 'Union Radio #15 is presently underConstruction; & is expected to be live again, along with when we launch v3!', website: 'https://uminion.com' },
   };
   const broadcastKeys = ['MyBroadcasts', ...Object.keys(broadcasts)];
