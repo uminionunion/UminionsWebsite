@@ -99,7 +99,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             #uhub-launcher-layout {
                 display: grid;
                 grid-template-columns: max-content max-content;
-                grid-template-rows: repeat(3, minmax(36px, auto));
+                grid-template-rows: repeat(4, minmax(36px, auto));
                 align-items: center;
                 gap: 4px 6px;
                 width: max-content;
@@ -112,12 +112,10 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage004,
             #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage005 { display: none; }
             #uhub-launcher-layout .uhub-launcher-uhub { grid-column: 1; grid-row: 2; }
-            #uhub-launcher-layout .uhub-launcher-login { grid-column: 2; grid-row: 2; }
+            #uhub-launcher-layout .uhub-launcher-login { grid-column: 1; grid-row: 4; }
             #uhub-launcher-layout .uhub-launcher-facebook { grid-column: 1; grid-row: 3; }
-            #uhub-launcher-layout .uhub-launcher-signup { grid-column: 2; grid-row: 3; }
+            #uhub-launcher-layout .uhub-launcher-signup { grid-column: 2; grid-row: 4; }
             #uhub-launcher-layout .uhub-launcher-avatar { grid-column: 2; grid-row: 1; }
-            #uhub-launcher-layout .uhub-launcher-facebook,
-            #uhub-launcher-layout .uhub-launcher-facebook > button { width: 64px; }
         </style>
 
 		<!-- This Code ABOVE is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
@@ -411,6 +409,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
 
 
 
+            /* Commented out on 6:50pm on 8/24/26 cause its pretty outdated i think; but saving code just in case. */
             /* Creating a Menu Icon- contents, found below*/
 
             .menu-icon {
@@ -448,6 +447,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             }
 
             /* Creating a Menu Icon, contents, found above */
+            /* End of legacy menu styles. */
 
             /* this somehow hides the signup below, found below*/
             .hidden {
@@ -3466,6 +3466,8 @@ button {
             <div id="headerRightContainer000" style="display: flex; flex-direction: row; position: absolute; top: 15px; left: 200px;">
 
 
+                <!-- Commented out on 6:50pm on 8/24/26 cause its pretty outdated i think; but saving code just in case. -->
+                <?php if (false): ?>
                 <!-- Menu container with icons to toggle the dropdown -->
                 <div class="menu-container">
                     <div class="menu-icon" onclick="toggleDropdown()"></div>
@@ -3490,6 +3492,7 @@ button {
                         <li><a href="#">Clear an Entry?</a></li>
                         <li><a href="#">Clear All Entries?</a></li>
                     </ul>
+                <?php endif; ?>
                 <?php endif; ?>
             </div>
 
