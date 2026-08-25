@@ -12,7 +12,7 @@ export function renderTheMemeBox(data: any) {
   memeBoxRoot.render(
     <React.StrictMode>
       <div className="uhub-meme-box-stack">
-        <TheMemeBoxImplementation001 data={data} postSource="all" embedded showExternalUploadButton hideFooter />
+        <TheMemeBoxImplementation001 data={data} postSource="all" embedded hideFooter />
         <TheMemeBoxImplementation001 data={data} postSource="user-submitted" embedded hideFooter />
         <TheMemeBoxImplementation001 data={data} postSource="all" embedded hideFooter />
         <TheMemeBoxImplementation001 data={data} postSource="user-submitted" embedded hideFooter />
