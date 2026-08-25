@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import MainUhubFeatureV001ForUserProfileModal from "./MainUhubFeatureV001ForUserProfileModal";
 
-export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, showExternalUploadButton = false, hideFooter = false }) {
+export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, hideFooter = false }) {
   // =====================================================
   // STATE VARIABLES
   // =====================================================
@@ -29,9 +29,6 @@ export default function TheMemeBoxImplementation001({ postSource = "all", embedd
   const autoplayFreshPosts = useRef(new Set());
   const filteredPostsRef = useRef([]);
   const currentPostIndexRef = useRef(0);
-  const favoriteClickTimer = useRef(null);
-  const toastTimerRef = useRef(null);
-  const [toastMessage, setToastMessage] = useState("");
 
   const [isCommentImageZoomOpen, setIsCommentImageZoomOpen] = useState(false);
   const [zoomedCommentImage, setZoomedCommentImage] = useState(null);
@@ -48,15 +45,6 @@ export default function TheMemeBoxImplementation001({ postSource = "all", embedd
   const touchStartY = useRef(0);
   const SWIPE_THRESHOLD = 50;
   const MAX_UPLOAD_IMAGES = 50;
-
-  const showToast = useCallback((message) => {
-    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-    setToastMessage(message);
-    toastTimerRef.current = window.setTimeout(() => {
-      setToastMessage("");
-      toastTimerRef.current = null;
-    }, 5000);
-  }, []);
 
 
   // =====================================================
@@ -104,13 +92,6 @@ const EMOJIS = {
 
     checkAuthStatus();
   }, []);
-
-  useEffect(() => {
-    if (!showExternalUploadButton) return;
-    const handleExternalUpload = () => openUploadDialog();
-    document.addEventListener("uhub-memebox-upload", handleExternalUpload);
-    return () => document.removeEventListener("uhub-memebox-upload", handleExternalUpload);
-  }, [showExternalUploadButton]);
 
   // =====================================================
   // SAMPLE DATA
@@ -410,7 +391,7 @@ return comments.map((comment) => ({
     console.log("[MEMEBOX] ✅ Upvote successful");
   } catch (error) {
     console.error("[MEMEBOX] ❌ Upvote error:", error);
-    showToast("Failed to upvote: " + error.message);
+    alert("Failed to upvote: " + error.message);
   }
 }, [allPosts, currentPostIndex]);
 
@@ -443,7 +424,7 @@ const handleDownvote = useCallback(async () => {
     console.log("[MEMEBOX] ✅ Downvote successful");
   } catch (error) {
     console.error("[MEMEBOX] ❌ Downvote error:", error);
-    showToast("Failed to downvote: " + error.message);
+    alert("Failed to downvote: " + error.message);
   }
 }, [allPosts, currentPostIndex]);
 
@@ -551,7 +532,7 @@ const handleCommentVote = useCallback((commentIndex, voteType) => {
       console.log("[MEMEBOX] ✅ Comment vote synced with database");
     } catch (error) {
       console.error("[MEMEBOX] ❌ Comment vote error:", error);
-      showToast("Failed to vote on comment: " + error.message);
+      alert("Failed to vote on comment: " + error.message);
     }
   },
   [allPosts, currentPostIndex]
@@ -593,28 +574,9 @@ const handleFavorite = useCallback(async () => {
     console.log("[MEMEBOX] ✅ Favorite toggled:", data.isFavorited);
   } catch (error) {
     console.error("[MEMEBOX] ❌ Favorite error:", error);
-    showToast("Failed to toggle favorite: " + error.message);
+    alert("Failed to toggle favorite: " + error.message);
   }
 }, [allPosts, currentPostIndex]);
-
-const handleFavoriteButtonClick = useCallback(() => {
-  if (favoriteClickTimer.current) {
-    window.clearTimeout(favoriteClickTimer.current);
-  }
-
-  favoriteClickTimer.current = window.setTimeout(() => {
-    handleFavorite();
-    favoriteClickTimer.current = null;
-  }, 250);
-}, [handleFavorite]);
-
-const handleFavoriteButtonDoubleClick = useCallback(() => {
-  if (favoriteClickTimer.current) {
-    window.clearTimeout(favoriteClickTimer.current);
-    favoriteClickTimer.current = null;
-  }
-  showFavoritesGrid();
-}, []);
 
 
 
@@ -654,7 +616,7 @@ const handleDeletePost = useCallback(async () => {
     console.log("[MEMEBOX] ✅ Post deleted successfully");
   } catch (error) {
     console.error("[MEMEBOX] ❌ Delete error:", error);
-    showToast("Failed to delete post: " + error.message);
+    alert("Failed to delete post: " + error.message);
   }
 }, [allPosts, currentPostIndex]);
 
@@ -694,7 +656,7 @@ const handleDeletePost = useCallback(async () => {
       console.log("[MEMEBOX] ✅ Comment deleted successfully");
     } catch (error) {
       console.error("[MEMEBOX] ❌ Delete comment error:", error);
-      showToast("Failed to delete comment: " + error.message);
+      alert("Failed to delete comment: " + error.message);
     }
   },
   [allPosts, currentPostIndex]
@@ -810,11 +772,11 @@ const openUserProfile = async (username) => {
       setIsViewingUserProfile(true);
     } else {
       console.error("[MEMEBOX] User not found:", username);
-      showToast(`User "${username}" not found`);
+      alert(`User "${username}" not found`);
     }
   } catch (error) {
     console.error("[MEMEBOX] Error fetching user profile:", error);
-    showToast("Failed to load user profile");
+    alert("Failed to load user profile");
   }
 };
 
@@ -842,7 +804,7 @@ const closeCommentImageZoom = () => {
   
   files.slice(0, MAX_UPLOAD_IMAGES - uploadedImages.length).forEach((file) => {
     if (file.size > MAX_FILE_SIZE) {
-      showToast(`File "${file.name}" is too large. Max size: 50GB`);
+      alert(`File "${file.name}" is too large. Max size: 50GB`);
       return;
     }
 
@@ -875,7 +837,7 @@ const closeCommentImageZoom = () => {
 
   const submitUpload = async () => {
     if (uploadedImages.length === 0) {
-  showToast("Please enter a title and select at least one image");
+  alert("Please enter a title and select at least one image");
   return;
 }
 
@@ -924,7 +886,7 @@ const closeCommentImageZoom = () => {
       closeUploadDialog();
     } catch (error) {
       console.error("[MEMEBOX] ❌ Upload error:", error);
-      showToast("Failed to upload: " + error.message);
+      alert("Failed to upload: " + error.message);
     }
   };
 
@@ -932,7 +894,7 @@ const closeCommentImageZoom = () => {
 
 const submitComment = async () => {
   if (!commentTitle.trim() && !commentDescription.trim()) {
-    showToast("Please enter a comment title and description");
+    alert("Please enter a comment title and description");
     return;
   }
 
@@ -971,7 +933,7 @@ const submitComment = async () => {
     closeCommentDialog();
   } catch (error) {
     console.error("[MEMEBOX] ❌ Comment error:", error);
-    showToast("Failed to add comment: " + error.message);
+    alert("Failed to add comment: " + error.message);
   }
 };
 
@@ -1527,9 +1489,6 @@ const submitComment = async () => {
 
 const renderNavbar = () => {
   const isMobile = window.innerWidth < 768;
-  const isMultiColumnLayout = ["6", "8"].includes(
-    document.getElementById("TheReactMemeImplementationConnection001")?.dataset.memeBoxLayout || ""
-  );
 
   if (isMobile) {
   return (
@@ -1550,12 +1509,10 @@ const renderNavbar = () => {
         Prev
       </button>
 
-      {!isMultiColumnLayout && (
-        <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
-          <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" />
-          {getPageTitle()}
-        </button>
-      )}
+      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
+        <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" />
+        {getPageTitle()}
+      </button>
 
       <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); showNextPost(); }}>
         <img src="/EmojisForUminionWebsite/GreenEmoji012ArrowNextPagePost.png" width="24" />
@@ -1583,16 +1540,14 @@ const renderNavbar = () => {
             Previous Post
           </button>
 
-          {!isMultiColumnLayout && (
-            <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
-              <img
-                src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png"
-                width="24"
-                style={{ marginBottom: 4 }}
-              />
-              {getPageTitle()}
-            </button>
-          )}
+          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
+            <img
+              src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png"
+              width="24"
+              style={{ marginBottom: 4 }}
+            />
+            {getPageTitle()}
+          </button>
 
           <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); showNextPost(); }}>
             <img
@@ -1698,25 +1653,24 @@ const renderNavbar = () => {
 </div>
 
 <div style={styles.navbarButtons}>
-  {!embedded && (
-    <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); openUploadDialog(); }}>
-      <img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" width="24" style={{ marginBottom: 4 }} />
-      Upload
-    </button>
-  )}
-  {isMultiColumnLayout && (
-    <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
-      <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" style={{ marginBottom: 4 }} />
-      {getPageTitle()}
-    </button>
-  )}
+  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); openUploadDialog(); }}>
+    <img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" width="24" style={{ marginBottom: 4 }} />
+    Upload
+  </button>
+  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
+    <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" style={{ marginBottom: 4 }} />
+    {getPageTitle()}
+  </button>
+  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); showFavoritesGrid(); }}>
+    <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ marginBottom: 4 }} />
+    Favorites ({favoritesPosts.length})
+  </button>
   <button
     style={{
       ...styles.navButton,
       ...(displayPost.isFavorited ? styles.actionButtonActive : {}),
     }}
-    onClick={(event) => { event.stopPropagation(); handleFavoriteButtonClick(); }}
-    onDoubleClick={(event) => { event.stopPropagation(); handleFavoriteButtonDoubleClick(); }}
+    onClick={(event) => { event.stopPropagation(); handleFavorite(); }}
   >
     <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ marginBottom: 4 }} />
     Favorites
@@ -2406,57 +2360,6 @@ const renderUserProfileModal = () => {
       onMouseEnter={() => setIsMemeBoxHovered(true)}
       onMouseLeave={() => setIsMemeBoxHovered(false)}
     >
-      {toastMessage && (
-        <div
-          role="alert"
-          style={{
-            position: "fixed",
-            right: "20px",
-            bottom: "20px",
-            zIndex: 1000003,
-            maxWidth: "min(360px, calc(100vw - 40px))",
-            padding: "14px 16px",
-            backgroundColor: "#3f464f",
-            color: "#d1d5db",
-            border: "1px solid #64748b",
-            borderRadius: "6px",
-            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.45)",
-            fontSize: "14px",
-            lineHeight: 1.4,
-          }}
-          onMouseEnter={() => {
-            if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-          }}
-          onMouseLeave={() => {
-            toastTimerRef.current = window.setTimeout(() => {
-              setToastMessage("");
-              toastTimerRef.current = null;
-            }, 5000);
-          }}
-        >
-          <div>{toastMessage}</div>
-          <button
-            type="button"
-            onClick={() => {
-              if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
-              toastTimerRef.current = null;
-              setToastMessage("");
-            }}
-            style={{
-              marginTop: "10px",
-              padding: "6px 12px",
-              backgroundColor: "#f59e0b",
-              color: "#000000",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
-            OK
-          </button>
-        </div>
-      )}
       {renderNavbar()}
       {renderPostViewer()}
       {renderZoomModal()}
