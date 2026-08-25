@@ -86,7 +86,44 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
 
 		<!-- This Code BELOW is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
+<<<<<<< HEAD
 		<script type="module" src="/includes/UminionMainHubVersion.jsx"></script>
+=======
+        <link rel="stylesheet" href="/pantry-finder/dist/pantry-finder.css">
+        <script>
+            window.PANTRY_API_BASE_URL = '/pantry-api';
+        </script>
+        <script type="module" src="/pantry-finder/dist/pantry-finder.js"></script>
+
+        <link rel="stylesheet" href="/uhub/dist/uhub.css">
+        <script type="module" src="/uhub/dist/uhub.js"></script>
+
+        <style>
+            #uhub-launcher-layout {
+                display: grid;
+                grid-template-columns: max-content max-content;
+                grid-template-rows: repeat(3, minmax(36px, auto));
+                align-items: center;
+                gap: 4px 6px;
+                width: max-content;
+            }
+            #uhub-launcher-layout #emojiLineForGitHubQuest54onFrontPage { grid-column: 1; grid-row: 1; }
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage001 { display: contents; }
+            #uhub-launcher-layout .uhub-app-root { display: contents; }
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage002,
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage003,
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage004,
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage005 { display: none; }
+            #uhub-launcher-layout .uhub-launcher-uhub { grid-column: 1; grid-row: 2; }
+            #uhub-launcher-layout .uhub-launcher-login { grid-column: 2; grid-row: 2; }
+            #uhub-launcher-layout .uhub-launcher-facebook { grid-column: 1; grid-row: 3; }
+            #uhub-launcher-layout .uhub-launcher-signup { grid-column: 2; grid-row: 3; }
+            #uhub-launcher-layout .uhub-launcher-avatar { grid-column: 2; grid-row: 1; }
+            #uhub-launcher-layout .uhub-launcher-uhub,
+            #uhub-launcher-layout .uhub-launcher-facebook { width: 100px; }
+            #uhub-launcher-layout .uhub-launcher-facebook > button { width: 100%; }
+        </style>
+>>>>>>> parent of c3ed5c5 (UpgradeFromv2intoV3 -47 decongested most of the memeboxes (or is it memeboxi?)!)
 
 		<!-- This Code ABOVE is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
