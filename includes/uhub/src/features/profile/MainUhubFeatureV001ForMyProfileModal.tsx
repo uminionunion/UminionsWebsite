@@ -518,7 +518,7 @@ if (isMobile) {
                   title="Upload meme"
                   onClick={() => document.dispatchEvent(new Event('uhub-memebox-upload'))}
                 >
-                  <span aria-hidden="true">+</span>
+                  <img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" width="24" alt="" />
                 </Button>
                 <h4 className="font-semibold whitespace-pre-line text-center text-sm flex-1">{broadcast.subtitle}</h4>
               </div>
