@@ -510,18 +510,7 @@ if (isMobile) {
         {!isBroadcastLeftCollapsed && (
           <>
             <div style={{ width: `${broadcastLeftWidth}%` }} className="flex flex-col overflow-hidden">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 shrink-0"
-                  title="Upload meme"
-                  onClick={() => document.dispatchEvent(new Event('uhub-memebox-upload'))}
-                >
-                  <span aria-hidden="true">+</span>
-                </Button>
-                <h4 className="font-semibold whitespace-pre-line text-center text-sm flex-1">{broadcast.subtitle}</h4>
-              </div>
+              <h4 className="font-semibold whitespace-pre-line text-center text-sm">{broadcast.subtitle}</h4>
               <div
                 id="TheReactMemeImplementationConnection001"
                 data-meme-box-layout={broadcastCarouselImageCount}
