@@ -86,9 +86,6 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
 
 		<!-- This Code BELOW is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
-<<<<<<< HEAD
-		<script type="module" src="/includes/UminionMainHubVersion.jsx"></script>
-=======
         <link rel="stylesheet" href="/pantry-finder/dist/pantry-finder.css">
         <script>
             window.PANTRY_API_BASE_URL = '/pantry-api';
@@ -123,7 +120,6 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             #uhub-launcher-layout .uhub-launcher-facebook { width: 100px; }
             #uhub-launcher-layout .uhub-launcher-facebook > button { width: 100%; }
         </style>
->>>>>>> parent of c3ed5c5 (UpgradeFromv2intoV3 -47 decongested most of the memeboxes (or is it memeboxi?)!)
 
 		<!-- This Code ABOVE is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
@@ -2355,7 +2351,14 @@ button {
 
 			<!-- This Code BELOW is part of: "GitHub Quest#34's Part 1 of Z: (part of 'test001' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->
 
-			<div id="emojiLineForGitHubQuest34onFrontPage">🎶🎶🎶🎶🎶🎶🎶</div>
+            <div id="uhub-launcher-layout">
+            <div id="emojiLineForGitHubQuest54onFrontPage"></div> <!-- Presently Completed (in merging in, from page002 and into page001) as of 8/21/26 --> 
+            <div id="emojiLineForGitHubQuest34onFrontPage001"></div> <!-- Page007's uHub controls share this launcher grid with Pantry Finder. -->
+            <div id="emojiLineForGitHubQuest34onFrontPage002"></div>
+            <div id="emojiLineForGitHubQuest34onFrontPage003"></div>
+            <div id="emojiLineForGitHubQuest34onFrontPage004"></div>
+            <div id="emojiLineForGitHubQuest34onFrontPage005"></div>
+            </div>
 
 
 
