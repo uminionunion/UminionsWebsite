@@ -74,14 +74,24 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onSwitchMo
           {mode === 'login' ? (
             <p>
               Don't have an account?{' '}
-              <Button variant="link" onClick={() => onSwitchMode('signup')} className="p-0 h-auto">
+              <Button
+                variant="link"
+                onClick={() => onSwitchMode('signup')}
+                className="p-0 h-auto"
+                style={{ background: 'transparent', border: 'none' }}
+              >
                 Sign Up
               </Button>
             </p>
           ) : (
             <p>
               Already have an account?{' '}
-              <Button variant="link" onClick={() => onSwitchMode('login')} className="p-0 h-auto">
+              <Button
+                variant="link"
+                onClick={() => onSwitchMode('login')}
+                className="p-0 h-auto"
+                style={{ background: 'transparent', border: 'none' }}
+              >
                 Log In
               </Button>
             </p>
@@ -114,6 +124,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onSwitchMo
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                    style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
                     title={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? (
