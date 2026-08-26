@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import MainUhubFeatureV001ForUserProfileModal from "./MainUhubFeatureV001ForUserProfileModal";
 
-export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, hideFooter = false }) {
+export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, showExternalUploadButton = false, hideFooter = false }) {
   // =====================================================
   // STATE VARIABLES
   // =====================================================
@@ -104,6 +104,13 @@ const EMOJIS = {
 
     checkAuthStatus();
   }, []);
+
+  useEffect(() => {
+    if (!showExternalUploadButton) return;
+    const handleExternalUpload = () => openUploadDialog();
+    document.addEventListener("uhub-memebox-upload", handleExternalUpload);
+    return () => document.removeEventListener("uhub-memebox-upload", handleExternalUpload);
+  }, [showExternalUploadButton]);
 
   // =====================================================
   // SAMPLE DATA
@@ -403,7 +410,7 @@ return comments.map((comment) => ({
     console.log("[MEMEBOX] ✅ Upvote successful");
   } catch (error) {
     console.error("[MEMEBOX] ❌ Upvote error:", error);
-    showToast("Failed to upvote: " + error.message);
+    showToast("Please Log in to be able to Upvote: " + error.message);
   }
 }, [allPosts, currentPostIndex]);
 
@@ -436,7 +443,7 @@ const handleDownvote = useCallback(async () => {
     console.log("[MEMEBOX] ✅ Downvote successful");
   } catch (error) {
     console.error("[MEMEBOX] ❌ Downvote error:", error);
-    showToast("Failed to downvote: " + error.message);
+    showToast("Please Log in to be able to Downvote: " + error.message);
   }
 }, [allPosts, currentPostIndex]);
 
@@ -586,7 +593,7 @@ const handleFavorite = useCallback(async () => {
     console.log("[MEMEBOX] ✅ Favorite toggled:", data.isFavorited);
   } catch (error) {
     console.error("[MEMEBOX] ❌ Favorite error:", error);
-    showToast("Failed to toggle favorite: " + error.message);
+    showToast("Please Log In To be able to Favorite: " + error.message);
   }
 }, [allPosts, currentPostIndex]);
 
@@ -1520,6 +1527,9 @@ const submitComment = async () => {
 
 const renderNavbar = () => {
   const isMobile = window.innerWidth < 768;
+  const isMultiColumnLayout = ["6", "8"].includes(
+    document.getElementById("TheReactMemeImplementationConnection001")?.dataset.memeBoxLayout || ""
+  );
 
   if (isMobile) {
   return (
@@ -1540,10 +1550,12 @@ const renderNavbar = () => {
         Prev
       </button>
 
-      <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
-        <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" />
-        {getPageTitle()}
-      </button>
+      {!isMultiColumnLayout && (
+        <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
+          <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" />
+          {getPageTitle()}
+        </button>
+      )}
 
       <button style={{ ...styles.navButton, flex: 1, minWidth: 0 }} onClick={(event) => { event.stopPropagation(); showNextPost(); }}>
         <img src="/EmojisForUminionWebsite/GreenEmoji012ArrowNextPagePost.png" width="24" />
@@ -1571,14 +1583,16 @@ const renderNavbar = () => {
             Previous Post
           </button>
 
-          <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
-            <img
-              src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png"
-              width="24"
-              style={{ marginBottom: 4 }}
-            />
-            {getPageTitle()}
-          </button>
+          {!isMultiColumnLayout && (
+            <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
+              <img
+                src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png"
+                width="24"
+                style={{ marginBottom: 4 }}
+              />
+              {getPageTitle()}
+            </button>
+          )}
 
           <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); showNextPost(); }}>
             <img
@@ -1599,6 +1613,10 @@ const renderNavbar = () => {
           
 
   const renderPostViewer = () => {
+    const isMultiColumnLayout = ["6", "8"].includes(
+      document.getElementById("TheReactMemeImplementationConnection001")?.dataset.memeBoxLayout || ""
+    );
+
     if (!displayPost) {
       return (
         <div style={styles.postViewerContainer}>
@@ -1684,14 +1702,12 @@ const renderNavbar = () => {
 </div>
 
 <div style={styles.navbarButtons}>
-  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); openUploadDialog(); }}>
-    <img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" width="24" style={{ marginBottom: 4 }} />
-    Upload
-  </button>
-  <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
-    <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" style={{ marginBottom: 4 }} />
-    {getPageTitle()}
-  </button>
+  {isMultiColumnLayout && (
+    <button style={styles.navButton} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }}>
+      <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" style={{ marginBottom: 4 }} />
+      {getPageTitle()}
+    </button>
+  )}
   <button
     style={{
       ...styles.navButton,
