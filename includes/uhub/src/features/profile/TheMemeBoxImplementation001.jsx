@@ -1685,13 +1685,13 @@ const renderNavbar = () => {
 </div>
 
 <div style={styles.voteSection}>
-  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); handleUpvote(); }} role="button" tabIndex={0}>
+  <div className="meme-vote-item" style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); handleUpvote(); }} role="button" tabIndex={0}>
     <div style={{ ...styles.voteNumber, pointerEvents: "none" }}>{EMOJIS.UPVOTE_INITIAL} {displayPost.upvotes}</div>
-    <div style={styles.voteLabel}>Upvotes</div>
+    <div className="meme-vote-label-fit" style={styles.voteLabel}>Upvotes</div>
   </div>
-  <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); handleDownvote(); }} role="button" tabIndex={0}> 
+  <div className="meme-vote-item" style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); handleDownvote(); }} role="button" tabIndex={0}> 
     <div style={{ ...styles.voteNumber, pointerEvents: "none" }}>{EMOJIS.DOWNVOTE_INITIAL} {displayPost.downvotes}</div>
-    <div style={styles.voteLabel}>Downvotes</div>
+    <div className="meme-vote-label-fit" style={styles.voteLabel}>Downvotes</div>
   </div>
 </div>
 
@@ -1699,6 +1699,7 @@ const renderNavbar = () => {
   {isMultiColumnLayout ? (
     <>
       <div
+        className="meme-vote-item"
         style={{ ...styles.voteCount, cursor: "pointer" }}
         onClick={(event) => { event.stopPropagation(); handleFavoriteButtonClick(); }}
         onDoubleClick={(event) => { event.stopPropagation(); handleFavoriteButtonDoubleClick(); }}
@@ -1708,30 +1709,31 @@ const renderNavbar = () => {
         <div style={{ ...styles.voteNumber, pointerEvents: "none" }}>
           <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ verticalAlign: "middle" }} />
         </div>
-        <div style={{ ...styles.voteLabel, ...(displayPost.isFavorited ? { color: "#00ff00" } : {}) }}>Favorites</div>
+        <div className="meme-vote-label-fit" style={{ ...styles.voteLabel, ...(displayPost.isFavorited ? { color: "#00ff00" } : {}) }}>Favorites</div>
       </div>
-      <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); openViewCommentsDialog(); }} role="button" tabIndex={0}>
+      <div className="meme-vote-item" style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); openViewCommentsDialog(); }} role="button" tabIndex={0}>
         <div style={{ ...styles.voteNumber, pointerEvents: "none" }}> 
           {EMOJIS.COMMENT_INITIAL} {displayPost.comments.length}
         </div>
-        <div style={styles.voteLabel}>Comments</div>
+        <div className="meme-vote-label-fit" style={styles.voteLabel}>Comments</div>
       </div>
-      <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }} role="button" tabIndex={0}>
+      <div className="meme-vote-item" style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); handlePageNavigation(); }} role="button" tabIndex={0}>
         <div style={{ ...styles.voteNumber, pointerEvents: "none" }}>
           <img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" width="24" style={{ verticalAlign: "middle" }} />
         </div>
-        <div style={styles.voteLabel}>{getPageTitle()}</div>
+        <div className="meme-vote-label-fit" style={styles.voteLabel}>{getPageTitle()}</div>
       </div>
     </>
   ) : (
     <>
-      <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); openViewCommentsDialog(); }} role="button" tabIndex={0}>
+      <div className="meme-vote-item" style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); openViewCommentsDialog(); }} role="button" tabIndex={0}>
         <div style={{ ...styles.voteNumber, pointerEvents: "none" }}> 
           {EMOJIS.COMMENT_INITIAL} {displayPost.comments.length}
         </div>
-        <div style={styles.voteLabel}>Comments</div>
+        <div className="meme-vote-label-fit" style={styles.voteLabel}>Comments</div>
       </div>
       <div
+        className="meme-vote-item"
         style={{ ...styles.voteCount, cursor: "pointer" }}
         onClick={(event) => { event.stopPropagation(); handleFavoriteButtonClick(); }}
         onDoubleClick={(event) => { event.stopPropagation(); handleFavoriteButtonDoubleClick(); }}
@@ -1741,7 +1743,7 @@ const renderNavbar = () => {
         <div style={{ ...styles.voteNumber, pointerEvents: "none" }}>
           <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ verticalAlign: "middle" }} />
         </div>
-        <div style={{ ...styles.voteLabel, ...(displayPost.isFavorited ? { color: "#00ff00" } : {}) }}>Favorites</div>
+        <div className="meme-vote-label-fit" style={{ ...styles.voteLabel, ...(displayPost.isFavorited ? { color: "#00ff00" } : {}) }}>Favorites</div>
       </div>
     </>
   )}

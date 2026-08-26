@@ -269,3 +269,18 @@
 .uhub-transparent-mode [style*="background-color: #333333"] {
   background-color: transparent !important;
 }
+
+/* Hide vote/comment/favorite labels when their column is too narrow to fit the word cleanly. */
+.meme-vote-item {
+  container-type: inline-size;
+}
+.meme-vote-label-fit {
+  display: none;
+  white-space: nowrap;
+}
+@container (min-width: 9ch) {
+  .meme-vote-label-fit {
+    display: block;
+  }
+}
+
