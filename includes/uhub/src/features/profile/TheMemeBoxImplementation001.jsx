@@ -1693,11 +1693,26 @@ const renderNavbar = () => {
     <div style={{ ...styles.voteNumber, pointerEvents: "none" }}>{EMOJIS.DOWNVOTE_INITIAL} {displayPost.downvotes}</div>
     <div style={styles.voteLabel}>Downvotes</div>
   </div>
+</div>
+
+<div style={styles.voteSection}>
   <div style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); openViewCommentsDialog(); }} role="button" tabIndex={0}>
     <div style={{ ...styles.voteNumber, pointerEvents: "none" }}> 
       {EMOJIS.COMMENT_INITIAL} {displayPost.comments.length}
     </div>
     <div style={styles.voteLabel}>Comments</div>
+  </div>
+  <div
+    style={{ ...styles.voteCount, cursor: "pointer" }}
+    onClick={(event) => { event.stopPropagation(); handleFavoriteButtonClick(); }}
+    onDoubleClick={(event) => { event.stopPropagation(); handleFavoriteButtonDoubleClick(); }}
+    role="button"
+    tabIndex={0}
+  >
+    <div style={{ ...styles.voteNumber, pointerEvents: "none" }}>
+      <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ verticalAlign: "middle" }} />
+    </div>
+    <div style={{ ...styles.voteLabel, ...(displayPost.isFavorited ? { color: "#00ff00" } : {}) }}>Favorites</div>
   </div>
 </div>
 
@@ -1708,17 +1723,6 @@ const renderNavbar = () => {
       {getPageTitle()}
     </button>
   )}
-  <button
-    style={{
-      ...styles.navButton,
-      ...(displayPost.isFavorited ? styles.actionButtonActive : {}),
-    }}
-    onClick={(event) => { event.stopPropagation(); handleFavoriteButtonClick(); }}
-    onDoubleClick={(event) => { event.stopPropagation(); handleFavoriteButtonDoubleClick(); }}
-  >
-    <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="24" style={{ marginBottom: 4 }} />
-    Favorites
-  </button>
 </div>
 
       </div>
