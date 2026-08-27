@@ -10,6 +10,7 @@ import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import { db } from './db.js';
 import memesRouter from './memes.js';
+import socialPostsRouter from './social-posts.js';
 
 dotenv.config();
 
@@ -145,6 +146,9 @@ app.use('/api/products', productsRouter);
 
 // Register meme routes
 app.use(memesRouter);
+
+// Register social media posts + feed routes
+app.use(socialPostsRouter);
 
 // NEW: User lookup route (accessible to all, no auth required)
 app.get('/api/users/by-username/:username', async (req: Request, res: Response) => {

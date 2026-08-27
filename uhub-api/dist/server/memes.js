@@ -126,6 +126,47 @@ router.get('/api/memes/posts/user-submitted', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch posts' });
     }
 });
+// Paginated list of a specific user's MemeBox posts, newest first (used by the profile modal's "Recent Posts & Episodes" section).
+router.get('/api/memes/posts/by-user/:userId', async (req, res) => {
+    try {
+        const userId = parseInt(req.params.userId, 10);
+        const offset = parseInt(req.query.offset || '0', 10);
+        const limit = parseInt(req.query.limit || '3', 10);
+        if (!Number.isFinite(userId)) {
+            return res.status(400).json({ error: 'Invalid userId' });
+        }
+        const { count } = await db
+            .selectFrom('MemeImplementation001Posts')
+            .select(db.fn.countAll().as('count'))
+            .where('user_id', '=', userId)
+            .executeTakeFirstOrThrow();
+        const posts = await db
+            .selectFrom('MemeImplementation001Posts')
+            .selectAll()
+            .where('user_id', '=', userId)
+            .orderBy('created_at', 'desc')
+            .limit(limit)
+            .offset(offset)
+            .execute();
+        const postsWithImages = await Promise.all(posts.map(async (post) => {
+            const images = await db
+                .selectFrom('MemeImplementation001Images')
+                .select('image_url')
+                .where('post_id', '=', post.id)
+                .orderBy('display_order', 'asc')
+                .execute();
+            return {
+                ...post,
+                images: images.map((img) => img.image_url),
+            };
+        }));
+        res.json({ posts: postsWithImages, total: Number(count) });
+    }
+    catch (error) {
+        console.error('[MEME API] Error fetching posts by user:', error);
+        res.status(500).json({ error: 'Failed to fetch posts' });
+    }
+});
 // Get post with all images
 router.get('/api/memes/posts/:id', async (req, res) => {
     try {
@@ -225,6 +266,28 @@ router.delete('/api/memes/posts/:id', requireAuth, async (req, res) => {
     catch (error) {
         console.error('[MEME API] Error deleting post:', error);
         res.status(500).json({ error: 'Failed to delete post' });
+    }
+});
+// Edit a post's title/description (owner only); marks the post as edited so the UI can show a "-edited" suffix.
+router.put('/api/memes/posts/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user?.userId;
+        const { title, description } = req.body;
+        const result = await db
+            .updateTable('MemeImplementation001Posts')
+            .set({ title, description: description || null, is_edited: 1 })
+            .where('id', '=', parseInt(id))
+            .where('user_id', '=', userId)
+            .executeTakeFirst();
+        if (!result.numUpdatedRows) {
+            return res.status(404).json({ error: 'Post not found or not owned by you' });
+        }
+        res.json({ message: 'Post updated' });
+    }
+    catch (error) {
+        console.error('[MEME API] Error editing post:', error);
+        res.status(500).json({ error: 'Failed to edit post' });
     }
 });
 // ==========================================

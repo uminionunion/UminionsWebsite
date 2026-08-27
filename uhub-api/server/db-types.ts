@@ -225,6 +225,40 @@ export interface MemeImplementation001Posts {
   upvotes: Generated<number>;
   downvotes: Generated<number>;
   created_at: Generated<string | null>;
+  is_edited: Generated<Boolean>;
+}
+
+export interface SocialMediaPosts {
+  id: Generated<number>;
+  user_id: number;
+  content: string;
+  upvotes: Generated<number>;
+  downvotes: Generated<number>;
+  created_at: Generated<string | null>;
+  is_edited: Generated<Boolean>;
+}
+
+export interface SocialMediaPostVotes {
+  id: Generated<number>;
+  post_id: number;
+  user_id: number;
+  vote_type: -1 | 1;
+  created_at: Generated<string | null>;
+}
+
+export interface SocialMediaPostFavorites {
+  id: Generated<number>;
+  post_id: number;
+  user_id: number;
+  created_at: Generated<string | null>;
+}
+
+export interface SocialMediaPostComments {
+  id: Generated<number>;
+  post_id: number;
+  user_id: number | null;
+  content: string;
+  created_at: Generated<string | null>;
 }
 
 export interface MemeImplementation001Images {
@@ -308,4 +342,8 @@ export interface DB {
   MemeImplementation001PostVotes: MemeImplementation001PostVotes;
   MemeImplementation001CommentVotes: MemeImplementation001CommentVotes;
   MemeImplementation001Favorites: MemeImplementation001Favorites;
+  SocialMediaPosts: SocialMediaPosts;
+  SocialMediaPostVotes: SocialMediaPostVotes;
+  SocialMediaPostFavorites: SocialMediaPostFavorites;
+  SocialMediaPostComments: SocialMediaPostComments;
 }

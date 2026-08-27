@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Users, Megaphone, Code, Settings, Facebook, Youtube, Twitch, Instagram, Github, MessageSquare, ShoppingCart, Eye, ChevronLeft, ChevronRight, Plus, Minus, Search, Play, X, Mountain, Home, ChevronDown, ChevronUp, Trash2, Anvil, Pencil } from 'lucide-react';
 import MainUhubFeatureV001ForChatModal from '../uminion/MainUhubFeatureV001ForChatModal';
 import { useAuth } from '../../hooks/useAuth';
+import { usePaginatedFeed } from '../../hooks/usePaginatedFeed';
+import FeedEntryCard from './FeedEntryCard';
 import MainUhubFeatureV001ForAddProductModal from './MainUhubFeatureV001ForAddProductModal';
 import MainUhubFeatureV001ForProductDetailModal from './MainUhubFeatureV001ForProductDetailModal';
 import MainUhubFeatureV001ForFriendsView from './MainUhubFeatureV001ForFriendsView';
@@ -1602,8 +1604,45 @@ const storePages = buildStorePages();
 };
 
 // HOME MODAL
-const HomeModal = ({ isOpen, onClose, userProducts = [] }) => {
+const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen: boolean; onClose: () => void; userProducts?: any[]; user?: any }) => {
   const [myAccountExpanded, setMyAccountExpanded] = useState(false);
+  const [newPostContent, setNewPostContent] = useState('');
+  const [isSubmittingPost, setIsSubmittingPost] = useState(false);
+
+  const fetchFriendsFeedPage = useCallback(async (offset: number, limit: number) => {
+    if (!user) return { items: [], total: 0 };
+    const res = await fetch(`/api/feed/friends?offset=${offset}&limit=${limit}`, { credentials: 'include' });
+    if (!res.ok) return { items: [], total: 0 };
+    return res.json();
+  }, [user]);
+
+  const fetchUnionAnnouncementsPage = useCallback(async (offset: number, limit: number) => {
+    if (!user) return { items: [], total: 0 };
+    const res = await fetch(`/api/feed/union-announcements?offset=${offset}&limit=${limit}`, { credentials: 'include' });
+    if (!res.ok) return { items: [], total: 0 };
+    return res.json();
+  }, [user]);
+
+  const friendsFeed = usePaginatedFeed(fetchFriendsFeedPage, [user?.id], isOpen && !!user);
+  const unionFeed = usePaginatedFeed(fetchUnionAnnouncementsPage, [user?.id], isOpen && !!user);
+
+  const handleCreatePost = async () => {
+    if (!newPostContent.trim()) return;
+    setIsSubmittingPost(true);
+    try {
+      await fetch('/api/social-posts', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: newPostContent.trim() }),
+      });
+      setNewPostContent('');
+    } catch (error) {
+      console.error('[HOME MODAL] Error creating post:', error);
+    } finally {
+      setIsSubmittingPost(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -1612,7 +1651,7 @@ const HomeModal = ({ isOpen, onClose, userProducts = [] }) => {
       <div className="bg-background border rounded-lg p-6 max-w-4xl w-[90%] max-h-[90vh] overflow-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Home</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} style={{ backgroundColor: 'transparent', color: '#ffffff' }}>
             <X className="h-6 w-6" />
           </Button>
         </div>
@@ -1687,17 +1726,71 @@ const HomeModal = ({ isOpen, onClose, userProducts = [] }) => {
             <h3 className="font-bold mb-4">My Posts</h3>
             <textarea 
               className="w-full p-3 border rounded mb-2 bg-gray-800 text-white placeholder-gray-500 flex-1 resize-none" 
+              style={{ color: '#ffffff' }}
               placeholder="Write a post..." 
               rows={3}
+              value={newPostContent}
+              onChange={(e) => setNewPostContent(e.target.value)}
+              disabled={!user}
             ></textarea>
-            <Button className="w-full bg-orange-400 hover:bg-orange-500">Create Post</Button>
+            <Button
+              className="w-full bg-orange-400 hover:bg-orange-500"
+              onClick={handleCreatePost}
+              disabled={!user || isSubmittingPost || !newPostContent.trim()}
+            >
+              {isSubmittingPost ? 'Posting...' : 'Create Post'}
+            </Button>
           </div>
 
           <div className="border rounded-lg p-4 overflow-auto flex flex-col">
             <h3 className="font-bold mb-4">My Feed</h3>
-            <div className="text-center text-muted-foreground py-8 flex-1 flex items-center justify-center">
-              Posts from friends appear here
-            </div>
+            {!user ? (
+              <div className="text-center text-muted-foreground py-8 flex-1 flex items-center justify-center">
+                Log in to see posts from your friends
+              </div>
+            ) : (
+              <div className="flex-1 overflow-y-auto space-y-4">
+                <div>
+                  <h4 className="text-sm font-semibold text-cyan-400 mb-2">Friends</h4>
+                  {friendsFeed.isLoading ? (
+                    <div className="text-center text-muted-foreground text-sm">Loading feed...</div>
+                  ) : friendsFeed.items.length > 0 ? (
+                    <div className="space-y-2">
+                      {friendsFeed.items.map((entry: any) => (
+                        <FeedEntryCard key={`${entry.type}-${entry.id}`} entry={entry} onChanged={friendsFeed.reload} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground text-sm">Posts from friends appear here</div>
+                  )}
+                  {friendsFeed.hasMore && (
+                    <Button variant="outline" size="sm" className="w-full mt-2" onClick={friendsFeed.viewMore}>
+                      View More
+                    </Button>
+                  )}
+                </div>
+
+                <div>
+                  <h4 className="text-sm font-semibold text-orange-400 mb-2">Union Announcements</h4>
+                  {unionFeed.isLoading ? (
+                    <div className="text-center text-muted-foreground text-sm">Loading announcements...</div>
+                  ) : unionFeed.items.length > 0 ? (
+                    <div className="space-y-2">
+                      {unionFeed.items.map((entry: any) => (
+                        <FeedEntryCard key={`${entry.type}-${entry.id}`} entry={entry} onChanged={unionFeed.reload} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center text-muted-foreground text-sm">No announcements yet</div>
+                  )}
+                  {unionFeed.hasMore && (
+                    <Button variant="outline" size="sm" className="w-full mt-2" onClick={unionFeed.viewMore}>
+                      View More
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -3926,6 +4019,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
           isOpen={isHomeModalOpen}
           onClose={() => setIsHomeModalOpen(false)}
           userProducts={userStoreProducts}
+          user={user}
         />
     </>
     );
