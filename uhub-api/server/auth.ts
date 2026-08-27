@@ -109,10 +109,32 @@ router.post('/signup', async (req, res) => {
 
       console.log(`[SIGNUP] ✅ User \"${prefixedUsername}\" created with ID ${newUser.id} and ${friendshipsCreated}/3 default friendships`);
 
-      res.status(201).json({ 
-        message: 'User created successfully',
-        userId: newUser.id,
-        friendshipsCreated: friendshipsCreated
+      // Log the new user in immediately (same as /login) so the session cookie actually exists,
+      // instead of leaving the frontend showing a "logged in" UI with no real auth token behind it.
+      const token = jwt.sign({ userId: newUser.id, username: prefixedUsername }, JWT_SECRET, {
+        expiresIn: '7d',
+      });
+
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      });
+
+      res.status(201).json({
+        id: newUser.id,
+        username: prefixedUsername,
+        profile_image_url: null,
+        is_high_high_high_admin: isHighHighHighAdmin,
+        is_high_high_admin: isHighHighAdmin,
+        is_high_admin: 0,
+        is_special_user: 0,
+        is_special_special_user: 0,
+        is_special_special_special_user: 0,
+        is_blocked: 0,
+        is_banned_from_chatrooms: 0,
+        is_new_user: 1,
+        friendshipsCreated: friendshipsCreated,
       });
   } catch (error) {
     console.error('[SIGNUP] Error:', error);
