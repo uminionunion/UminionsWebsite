@@ -76,5 +76,36 @@ db.exec(`
     UNIQUE(post_id, user_id)
   );
 `);
-db.close();
 console.log('[init-data] MemeBox tables verified.');
+
+// Heal older uhub_data volumes that predate the role/admin columns auth.ts relies on for signup/login.
+const usersTableExists = db
+  .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
+  .get();
+
+if (usersTableExists) {
+  const existingUserColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
+  const requiredUserColumns = [
+    ['is_high_high_high_admin', 'INTEGER NOT NULL DEFAULT 0'],
+    ['is_high_high_admin', 'INTEGER NOT NULL DEFAULT 0'],
+    ['is_high_admin', 'INTEGER NOT NULL DEFAULT 0'],
+    ['is_special_user', 'INTEGER NOT NULL DEFAULT 0'],
+    ['is_special_special_user', 'INTEGER NOT NULL DEFAULT 0'],
+    ['is_special_special_special_user', 'INTEGER NOT NULL DEFAULT 0'],
+    ['is_blocked', 'INTEGER NOT NULL DEFAULT 0'],
+    ['is_banned_from_chatrooms', 'INTEGER NOT NULL DEFAULT 0'],
+    ['is_new_user', 'INTEGER NOT NULL DEFAULT 0'],
+  ];
+
+  for (const [columnName, columnDefinition] of requiredUserColumns) {
+    if (!existingUserColumns.includes(columnName)) {
+      db.exec(`ALTER TABLE users ADD COLUMN ${columnName} ${columnDefinition}`);
+      console.log(`[init-data] Added missing users.${columnName} column.`);
+    }
+  }
+  console.log('[init-data] users table role/admin columns verified.');
+} else {
+  console.log('[init-data] users table not found; skipping role/admin column check.');
+}
+
+db.close();
