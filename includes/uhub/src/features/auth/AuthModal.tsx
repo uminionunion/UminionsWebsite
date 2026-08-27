@@ -186,12 +186,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, mode, onSwitchMo
                     scrollbarWidth: 'thin',
                   }}
                 >
-                  <label
-                    htmlFor="terms"
+                  <span
+                    onClick={() => setTermsAgreed((prev) => !prev)}
                     className="cursor-pointer inline-block text-gray-400 hover:text-gray-300 transition-colors"
                   >
                     {termsText}
-                  </label>
+                  </span>
                 </div>
               </div>
             )}

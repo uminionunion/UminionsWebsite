@@ -22,6 +22,8 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
         ref={ref}
         // Spread any other props to the input element.
         {...props}
+        // Form controls don't inherit color without Tailwind Preflight, so typed text defaults to invisible on dark backgrounds.
+        style={{ color: '#ffffff', ...props.style }}
       />
     );
   },
