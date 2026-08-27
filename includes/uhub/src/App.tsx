@@ -151,7 +151,13 @@ useEffect(() => {
           <Button onClick={() => handleOpenAuthModal('login')} className="uhub-launcher-login">Log In?</Button>
         </>
       ) : (
-        <Button onClick={handleLogout} variant="destructive">Log Out</Button>
+        <Button
+          onClick={handleLogout}
+          className="uhub-launcher-logout"
+          style={{ backgroundColor: '#3f464f', color: '#ef4444' }}
+        >
+          Log Out
+        </Button>
       )}
 
       <a href="https://www.facebook.com/groups/uminion/" target="_blank" rel="noopener noreferrer" className="uhub-launcher-facebook">
