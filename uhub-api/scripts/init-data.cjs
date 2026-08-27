@@ -108,4 +108,53 @@ if (usersTableExists) {
   console.log('[init-data] users table not found; skipping role/admin column check.');
 }
 
+// Heal older uhub_data volumes that predate the "-edited" tracking flag on MemeBox posts.
+const memePostsTableExists = db
+  .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='MemeImplementation001Posts'")
+  .get();
+
+if (memePostsTableExists) {
+  const existingMemePostColumns = db.prepare('PRAGMA table_info(MemeImplementation001Posts)').all().map((c) => c.name);
+  if (!existingMemePostColumns.includes('is_edited')) {
+    db.exec("ALTER TABLE MemeImplementation001Posts ADD COLUMN is_edited INTEGER NOT NULL DEFAULT 0");
+    console.log('[init-data] Added missing MemeImplementation001Posts.is_edited column.');
+  }
+}
+
+// Social Media Posts ("My Posts" / "My Feed") tables.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS SocialMediaPosts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    upvotes INTEGER NOT NULL DEFAULT 0,
+    downvotes INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    is_edited INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS SocialMediaPostVotes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    vote_type INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(post_id, user_id)
+  );
+  CREATE TABLE IF NOT EXISTS SocialMediaPostFavorites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(post_id, user_id)
+  );
+  CREATE TABLE IF NOT EXISTS SocialMediaPostComments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL,
+    user_id INTEGER,
+    content TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+console.log('[init-data] SocialMediaPosts tables verified.');
+
 db.close();
