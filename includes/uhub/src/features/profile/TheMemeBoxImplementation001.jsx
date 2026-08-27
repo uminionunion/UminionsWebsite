@@ -46,6 +46,8 @@ export default function TheMemeBoxImplementation001({ postSource = "all", embedd
   const touchStartY = useRef(0);
   const SWIPE_THRESHOLD = 50;
   const MAX_UPLOAD_IMAGES = 50;
+  const ROTATION_IMAGE_DELAY_MS = 3000;
+  const ROTATION_MOTION_DELAY_MS = 8000; // Videos/GIFs autoplay on their own, so give them more time before rotating.
   const toastTimerRef = useRef(null);
   const [toastMessage, setToastMessage] = useState("");
 
@@ -993,9 +995,21 @@ const submitComment = async () => {
     return `${Math.floor(seconds / 604800)}w ago`;
   };
 
+  // Detects both base64 data URIs (data:video/mp4;base64,...) and plain URL extensions.
   const isVideoFile = (url) => {
-    return /\.(mp4|webm|ogg|mov|avi|mkv|gif)$/i.test(url);
+    if (!url) return false;
+    if (/^data:video\//i.test(url)) return true;
+    return /\.(mp4|webm|ogg|mov|avi|mkv)(\?|$)/i.test(url);
   };
+
+  const isGifFile = (url) => {
+    if (!url) return false;
+    if (/^data:image\/gif/i.test(url)) return true;
+    return /\.gif(\?|$)/i.test(url);
+  };
+
+  // Videos and GIFs both autoplay/animate on their own, so they get the slower rotation delay.
+  const isMotionMedia = (url) => isVideoFile(url) || isGifFile(url);
 
   const getPageTitle = () => {
     if (postSource === "user-submitted") return "All Posts";
@@ -1072,37 +1086,48 @@ const submitComment = async () => {
       return;
     }
 
-    const rotationInterval = window.setInterval(() => {
+    let rotationTimeout = null;
+
+    const scheduleNextRotation = () => {
       const posts = filteredPostsRef.current;
-      const freshCutoff = Date.now() - (100 * 60 * 60 * 1000);
-      const freshPosts = posts.filter((post) => new Date(post.timestamp).getTime() >= freshCutoff);
       const currentPost = posts[currentPostIndexRef.current];
+      const delay = currentPost?.images?.some(isMotionMedia) ? ROTATION_MOTION_DELAY_MS : ROTATION_IMAGE_DELAY_MS;
 
-      if (currentPost && freshPosts.some((post) => post.id === currentPost.id)) {
-        autoplayFreshPosts.current.add(currentPost.id);
-      }
+      rotationTimeout = window.setTimeout(() => {
+        const latestPosts = filteredPostsRef.current;
+        const freshCutoff = Date.now() - (100 * 60 * 60 * 1000);
+        const freshPosts = latestPosts.filter((post) => new Date(post.timestamp).getTime() >= freshCutoff);
+        const latestCurrentPost = latestPosts[currentPostIndexRef.current];
 
-      const unseenFreshPosts = freshPosts.filter((post) => !autoplayFreshPosts.current.has(post.id));
-      const unseenPosts = posts.filter((post) => !autoplayFreshPosts.current.has(post.id));
-      const candidates = unseenFreshPosts.length > 0 ? unseenFreshPosts : unseenPosts;
-      const nextPost = candidates[Math.floor(Math.random() * candidates.length)];
+        if (latestCurrentPost && freshPosts.some((post) => post.id === latestCurrentPost.id)) {
+          autoplayFreshPosts.current.add(latestCurrentPost.id);
+        }
 
-      if (nextPost) {
-        const nextIndex = posts.findIndex((post) => post.id === nextPost.id);
-        autoplayFreshPosts.current.add(nextPost.id);
-        currentPostIndexRef.current = nextIndex;
-        setCurrentPostIndex(nextIndex);
-        return;
-      }
+        const unseenFreshPosts = freshPosts.filter((post) => !autoplayFreshPosts.current.has(post.id));
+        const unseenPosts = latestPosts.filter((post) => !autoplayFreshPosts.current.has(post.id));
+        const candidates = unseenFreshPosts.length > 0 ? unseenFreshPosts : unseenPosts;
+        const nextPost = candidates[Math.floor(Math.random() * candidates.length)];
 
-      autoplayFreshPosts.current.clear();
-      const nextIndex = Math.floor(Math.random() * posts.length);
-      currentPostIndexRef.current = nextIndex;
-      setCurrentPostIndex(nextIndex);
-    }, 3000);
+        if (nextPost) {
+          const nextIndex = latestPosts.findIndex((post) => post.id === nextPost.id);
+          autoplayFreshPosts.current.add(nextPost.id);
+          currentPostIndexRef.current = nextIndex;
+          setCurrentPostIndex(nextIndex);
+        } else {
+          autoplayFreshPosts.current.clear();
+          const nextIndex = Math.floor(Math.random() * latestPosts.length);
+          currentPostIndexRef.current = nextIndex;
+          setCurrentPostIndex(nextIndex);
+        }
 
-    return () => window.clearInterval(rotationInterval);
-  }, [filteredPosts.length, isMemeBoxHovered, isUploadDialogOpen, isCommentDialogOpen, isViewCommentsDialogOpen, isFavoritesGridOpen, isZoomModalOpen]);
+        scheduleNextRotation();
+      }, delay);
+    };
+
+    scheduleNextRotation();
+
+    return () => window.clearTimeout(rotationTimeout);
+  }, [filteredPosts.length, currentPostIndex, isMemeBoxHovered, isUploadDialogOpen, isCommentDialogOpen, isViewCommentsDialogOpen, isFavoritesGridOpen, isZoomModalOpen]);
 
   // =====================================================
   // STYLES
@@ -1636,6 +1661,9 @@ const renderNavbar = () => {
         <video
           style={styles.postVideo}
           controls={false}
+          autoPlay
+          loop
+          playsInline
           muted
           onClick={(e) => {
             e.stopPropagation();

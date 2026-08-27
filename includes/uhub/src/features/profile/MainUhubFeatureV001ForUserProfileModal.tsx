@@ -144,7 +144,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
     className="cursor-pointer relative group"
   >
     <Avatar className="h-32 w-32 group-hover:opacity-80 transition">
-      <AvatarImage src={user.profile_image_url || 'https://uminion.com/wp-content/uploads/2025/02/iArt06532.png'} alt={user.username} />
+      <AvatarImage src={user.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt={user.username} />
       <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
     </Avatar>
   </div>
