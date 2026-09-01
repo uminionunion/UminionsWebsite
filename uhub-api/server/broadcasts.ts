@@ -38,6 +38,15 @@ router.post('/api/broadcasts', requireAuth, async (req: Request, res: Response) 
       return res.status(400).json({ error: 'Broadcast name is required' });
     }
 
+    const { count } = await db
+      .selectFrom('UserBroadcasts')
+      .select(db.fn.countAll().as('count'))
+      .where('user_id', '=', userId)
+      .executeTakeFirstOrThrow();
+    if (Number(count) >= 7) {
+      return res.status(400).json({ error: 'You can create up to 7 broadcasts.' });
+    }
+
     const result = await db
       .insertInto('UserBroadcasts')
       .values({ user_id: userId, name: name.trim() })
@@ -86,6 +95,25 @@ router.post('/api/broadcasts/:broadcastId/episodes', requireAuth, async (req: Re
 
     if (!name.trim()) {
       return res.status(400).json({ error: 'Episode name is required' });
+    }
+
+    const ownedBroadcast = await db
+      .selectFrom('UserBroadcasts')
+      .select('id')
+      .where('id', '=', broadcastId)
+      .where('user_id', '=', userId)
+      .executeTakeFirst();
+    if (!ownedBroadcast) {
+      return res.status(403).json({ error: 'You can only add episodes to your own broadcasts.' });
+    }
+
+    const { count } = await db
+      .selectFrom('UserBroadcastEpisodes')
+      .select(db.fn.countAll().as('count'))
+      .where('broadcast_id', '=', broadcastId)
+      .executeTakeFirstOrThrow();
+    if (Number(count) >= 100) {
+      return res.status(400).json({ error: 'Each broadcast can have up to 100 episodes.' });
     }
 
     const result = await db.transaction().execute(async (trx) => {
