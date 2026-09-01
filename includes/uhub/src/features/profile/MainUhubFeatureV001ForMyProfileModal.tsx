@@ -518,6 +518,76 @@ const BetaButtonView = () => (
   </div>
 );
 
+const UmiMatchView = () => {
+  const { user } = useAuth();
+  const [screen, setScreen] = useState<'discover' | 'matches' | 'messages' | 'settings'>('discover');
+  const [discoverUsers, setDiscoverUsers] = useState<any[]>([]);
+  const [matches, setMatches] = useState<any[]>([]);
+  const [profile, setProfile] = useState<any>({});
+  const [messageUser, setMessageUser] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [messageText, setMessageText] = useState('');
+  const currentCard = discoverUsers[0];
+
+  const loadDiscover = () => fetch('/api/umimatch/discover', { credentials: 'include' }).then(res => res.ok ? res.json() : { users: [] }).then(data => setDiscoverUsers(data.users || [])).catch(() => setDiscoverUsers([]));
+  const loadMatches = () => fetch('/api/umimatch/matches', { credentials: 'include' }).then(res => res.ok ? res.json() : { matches: [] }).then(data => setMatches(data.matches || [])).catch(() => setMatches([]));
+  const loadProfile = () => fetch('/api/umimatch/profile', { credentials: 'include' }).then(res => res.ok ? res.json() : { profile: {} }).then(data => setProfile(data.profile || {})).catch(() => setProfile({}));
+
+  useEffect(() => {
+    if (!user) return;
+    loadDiscover();
+    loadMatches();
+    loadProfile();
+  }, [user]);
+
+  const swipe = async (targetUserId: number, action: 'like' | 'skip') => {
+    const response = await fetch(`/api/umimatch/${action}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId }) });
+    const result = response.ok ? await response.json() : null;
+    if (result?.isMatch) alert("It's a Match!");
+    setDiscoverUsers(users => users.filter(matchUser => matchUser.id !== targetUserId));
+    loadMatches();
+  };
+
+  const openMessages = async (match: any) => {
+    setMessageUser(match);
+    setScreen('messages');
+    const response = await fetch(`/api/umimatch/messages/${match.id}`, { credentials: 'include' });
+    const data = response.ok ? await response.json() : { messages: [] };
+    setMessages(data.messages || []);
+  };
+
+  const sendMessage = async () => {
+    if (!messageUser || !messageText.trim()) return;
+    const response = await fetch(`/api/umimatch/messages/${messageUser.id}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: messageText }) });
+    if (response.ok) {
+      setMessageText('');
+      openMessages(messageUser);
+    }
+  };
+
+  const saveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const body = Object.fromEntries(formData.entries());
+    body.allow_anyone = formData.get('allow_anyone') ? '1' : '';
+    const response = await fetch('/api/umimatch/profile', { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (response.ok) alert('UmiMatch profile saved.');
+    loadProfile();
+  };
+
+  if (!user) return <div className="p-6 text-center text-muted-foreground">Log in or sign up with uHub to use UmiMatch.</div>;
+
+  return <div className="h-full overflow-y-auto rounded-md border bg-black p-4 text-white">
+    <div className="mb-4 flex gap-2"><Button size="sm" onClick={() => setScreen('discover')}>Discover</Button><Button size="sm" variant="outline" onClick={() => { setScreen('matches'); loadMatches(); }}>Matches</Button><Button size="sm" variant="outline" onClick={() => { setScreen('settings'); loadProfile(); }}>Settings</Button></div>
+    {screen === 'discover' && <div className="mx-auto max-w-md text-center">
+      {currentCard ? <><div className="overflow-hidden rounded-md border bg-gray-900"><img src={currentCard.profile?.image1 || currentCard.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt={currentCard.username} className="h-72 w-full object-cover" /><div className="p-3"><h3 className="text-xl font-bold">{currentCard.username}{currentCard.profile?.gender ? `, ${currentCard.profile.gender}` : ''}</h3><p className="text-sm text-muted-foreground">{currentCard.profile?.city || 'Location unknown'}</p><p className="mt-2 text-sm">{currentCard.profile?.bio || 'No bio yet.'}</p></div></div><div className="mt-3 flex justify-center gap-4"><Button variant="outline" onClick={() => swipe(currentCard.id, 'skip')}>Skip</Button><Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => swipe(currentCard.id, 'like')}>Like</Button></div></> : <p className="text-muted-foreground">That's enough people in your area for now.</p>}
+    </div>}
+    {screen === 'matches' && <div className="space-y-2">{matches.length ? matches.map(match => <button key={match.id} className="flex w-full items-center gap-3 rounded border p-2 text-left hover:bg-gray-900" onClick={() => openMessages(match)}><img src={match.profile?.image1 || match.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt="" className="h-12 w-12 rounded object-cover" /><span>{match.username}</span></button>) : <p className="text-muted-foreground">No matches yet.</p>}</div>}
+    {screen === 'messages' && <div className="space-y-3"><Button size="sm" variant="outline" onClick={() => setScreen('matches')}>Back</Button><h3 className="font-bold">{messageUser?.username}</h3><div className="h-64 overflow-y-auto rounded border p-2">{messages.map(message => <div key={message.id} className={`mb-2 ${message.sender_id === user.id ? 'text-right' : 'text-left'}`}><span className="inline-block rounded bg-gray-800 px-2 py-1 text-sm">{message.content}</span></div>)}</div><div className="flex gap-2"><input value={messageText} onChange={event => setMessageText(event.target.value)} onKeyDown={event => event.key === 'Enter' && sendMessage()} className="flex-1 rounded border bg-gray-900 p-2" placeholder="Type a message..." /><Button onClick={sendMessage}>Send</Button></div></div>}
+    {screen === 'settings' && <form onSubmit={saveProfile} className="grid gap-3"><textarea name="bio" defaultValue={profile.bio || ''} maxLength={1000} className="min-h-24 rounded border bg-gray-900 p-2" placeholder="Bio" /><input name="city" defaultValue={profile.city || ''} className="rounded border bg-gray-900 p-2" placeholder="City" /><div className="grid grid-cols-2 gap-2"><select name="gender" defaultValue={profile.gender || ''} className="rounded border bg-gray-900 p-2"><option value="">Gender</option><option>Male</option><option>Female</option><option>EveryoneElse</option></select><select name="interested_in" defaultValue={profile.interested_in || ''} className="rounded border bg-gray-900 p-2"><option value="">Interested in</option><option>Male</option><option>Female</option><option>EveryoneElse</option><option>Everyone</option></select></div><input name="max_distance" type="number" min="1" max="100" defaultValue={profile.max_distance || 100} className="rounded border bg-gray-900 p-2" placeholder="Max distance" /><label className="flex gap-2 text-sm"><input name="allow_anyone" type="checkbox" defaultChecked={profile.allow_anyone === 1} /> Allow me to match with everyone</label>{[1, 2, 3, 4, 5].map(num => <input key={num} name={`image${num}`} defaultValue={profile[`image${num}`] || ''} className="rounded border bg-gray-900 p-2" placeholder={`Image ${num} URL`} />)}<Button type="submit">Save Settings</Button></form>}
+  </div>;
+};
+
 const getNextUnionEventDateLabel = (short = false) => {
   const today = new Date();
   const eventDate = new Date(today.getFullYear(), today.getMonth() + (today.getDate() >= 25 ? 1 : 0), 24);
@@ -550,7 +620,7 @@ const RotatingUnionEventCard = () => {
 const headerStoreItems = [
   { image_url: '/StoreProductsAndImagery/UkraineLogo001.png', title: 'Ukraine Poster', price: 'u24.gov.ua', website: 'https://u24.gov.ua' },
   { image_url: '/StoreProductsAndImagery/TapestryVersion001.png', title: 'BYO Tapestry', price: '$1,499.95 BYO Tapestry', website: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.001AAAAA' },
-  { image_url: '/StoreProductsAndImagery/Tshirtbatchversion001.png', title: 'Union Shirts', price: 'View Cart', website: 'https://page001.uminion.com/cart/' },
+  { image_url: '/StoreProductsAndImagery/Tshirtbatchversion001.png', title: 'Union Shirts', price: null, website: null },
 ];
 
 const useManagedCarouselItems = (slot: 'left' | 'right', fallbackItems: ManagedCarouselItem[]) => {
@@ -678,6 +748,7 @@ const BroadcastView = ({
   if (broadcastView === 'UnionRadio#15') return <UnionRadioPlayer />;
   if (broadcastView === 'Find-a-Pantry#13') return <PantryFinderBroadcastView />;
   if (broadcastView === 'Beta-Button-10,011') return <BetaButtonView />;
+  if (broadcastView === 'UmiMatch#22') return <UmiMatchView />;
 
   const handleReorderLeft = async (imageId: number) => {
     try {
@@ -2462,6 +2533,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
       'UnionNews#14': { memeBoxId: 'TheReactMemeImplementationConnection001', title: 'UnionNews#14 & GEMMMS#25', creator: 'GEMMMS#25', subtitle: 'Got Memes? Share Memes:', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.15-Made-on-NC-JPEG.png', extraImages: ['https://page001.uminion.com/StoreProductsAndImagery/TapestryVersion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/Tshirtbatchversion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/UkraineLogo001.png'], description: 'Welcome to the Uminion Union! We have Rallies every 24th of the month, stores built by unionFolk, chats, news, voting, teach ppl how to code (for free) & even offer an ad-free- meme section below!', website: 'https://github.com/uminionunion/UminionsWebsite/discussions/13' },
       'UnionRadio#15': { title: 'Broadcasts- UnionRadio#15', creator: 'StorytellingSalem', subtitle: 'Under Construction- Union Radio #15.', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.16-Made-on-NC-JPEG.png', extraImages: [], description: 'Union Radio #15 is presently underConstruction; & is expected to be live again, along with when we launch v3!', website: 'https://uminion.com' },
       'Find-a-Pantry#13': { title: 'Find-a-Pantry#13', creator: 'Uminion Union', subtitle: 'Find and add community resources.', logo: '', extraImages: [], description: 'Find-a-Pantry', website: 'https://uminion.com' },
+      'UmiMatch#22': { title: 'UmiMatch#22', creator: 'Uminion Union', subtitle: 'Meet union folk.', logo: '', extraImages: [], description: 'UmiMatch', website: 'https://uminion.com' },
       'Beta-Button-10,011': { title: 'Beta-Button-10,011', creator: 'Uminion Union', subtitle: 'Features in Development', logo: '', extraImages: [], description: 'Beta Pages', website: 'https://uminion.com' },
   };
   const broadcastKeys = ['MyBroadcasts', ...Object.keys(broadcasts)];
@@ -3797,8 +3869,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         key={buttonNumber}
         variant="outline"
         size="sm"
-        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [3, 4, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''} ${typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 ? 'text-[0.65rem] text-gray-500 opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
-        style={{ color: '#ffffff', backgroundColor: customizableButtonPage === 1 && buttonNumber === 5 ? '#2563eb' : 'transparent' }}
+        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [4, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''} ${typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 ? 'text-[0.65rem] text-gray-500 opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
+        style={{ color: '#ffffff', backgroundColor: customizableButtonPage === 1 && buttonNumber === 3 && areFeatureIconsActive.heart ? '#dc2626' : customizableButtonPage === 1 && buttonNumber === 5 ? '#2563eb' : 'transparent' }}
         onClick={() => {
           if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')) {
             setCustomizableButtonPage(page => Math.max(1, page - 1));
@@ -3918,15 +3990,23 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
           // Microphone toggle: 1st click opens Broadcasts-UnionRadio#15, 2nd click opens MyBroadcasts.
           if (customizableButtonPage === 1 && buttonNumber === 6) {
             const nextMicrophoneState = !areFeatureIconsActive.microphone;
-            setAreFeatureIconsActive(prev => ({ ...prev, microphone: nextMicrophoneState }));
+            setAreFeatureIconsActive(prev => ({ ...prev, heart: false, lion: false, microphone: nextMicrophoneState }));
             setCenterView('broadcasts');
             setBroadcastView(nextMicrophoneState ? 'UnionRadio#15' : 'MyBroadcasts');
             return;
           }
 
+          if (customizableButtonPage === 1 && buttonNumber === 3) {
+            const nextHeartState = !areFeatureIconsActive.heart;
+            setAreFeatureIconsActive(prev => ({ ...prev, heart: nextHeartState, lion: false, microphone: false }));
+            setCenterView('broadcasts');
+            setBroadcastView(nextHeartState ? 'UmiMatch#22' : 'UnionNews#14');
+            return;
+          }
+
           if (customizableButtonPage === 1 && buttonNumber === 5) {
             const nextLionState = !areFeatureIconsActive.lion;
-            setAreFeatureIconsActive(prev => ({ ...prev, lion: nextLionState }));
+            setAreFeatureIconsActive(prev => ({ ...prev, heart: false, lion: nextLionState, microphone: false }));
             setCenterView('broadcasts');
             setBroadcastView(nextLionState ? 'Find-a-Pantry#13' : 'UnionNews#14');
             return;

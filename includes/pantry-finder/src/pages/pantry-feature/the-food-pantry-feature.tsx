@@ -92,8 +92,9 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
     : [];
 
   return (
-    <div className="grid h-full min-h-[520px] w-full grid-cols-[24%_42%_34%] bg-background">
-      <div className="h-full border-r overflow-y-auto p-4 flex flex-col gap-4">
+    <div className="grid h-full min-h-[520px] w-full grid-rows-[auto_1fr] bg-background">
+      <div className="grid grid-cols-[26%_74%] gap-3 border-b p-3">
+      <div className="flex flex-col gap-3">
         <Button className="w-full justify-center text-center" onClick={() => setActiveView('find')} variant={'default'}>
           Find a Pantry
         </Button>
@@ -110,18 +111,10 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
           Running for Office?
         </Button>
       </div>
-      <div className="h-full min-h-[520px] overflow-hidden">
-        <PantryMap
-          pantries={filteredPantries}
-          politicians={filteredPoliticians}
-          candidates={filteredCandidates}
-          onViewDetails={handleViewDetails}
-        />
-      </div>
-      <div className="h-full border-l overflow-y-auto">
-        <PantryControls 
-          addPantry={addPantry} 
-          activeView={activeView}
+      <div className="max-h-40 overflow-y-auto">
+        <PantryControls
+          addPantry={addPantry}
+          activeView="find"
           setActiveView={setActiveView}
           selectedPantry={selectedPantry}
             selectedCountry={selectedCountry}
@@ -134,6 +127,34 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
           setFilterOptions={setFilterOptions}
           onCandidateCreated={refreshCandidates}
         />
+      </div>
+      </div>
+      <div className="grid min-h-0 grid-cols-[66%_34%]">
+      <div className="h-full min-h-[360px] overflow-hidden">
+        <PantryMap
+          pantries={filteredPantries}
+          politicians={filteredPoliticians}
+          candidates={filteredCandidates}
+          onViewDetails={handleViewDetails}
+        />
+      </div>
+      <div className="h-full border-l overflow-y-auto">
+        {activeView === 'find' ? <div className="p-4 text-sm text-muted-foreground">Select map filters above.</div> : <PantryControls
+          addPantry={addPantry}
+          activeView={activeView}
+          setActiveView={setActiveView}
+          selectedPantry={selectedPantry}
+            selectedCountry={selectedCountry}
+            selectedState={selectedState}
+            onCountryChange={setSelectedCountry}
+            onStateChange={setSelectedState}
+          selectedCategories={selectedCategories}
+          onCategoryChange={setSelectedCategories}
+          filterOptions={filterOptions}
+          setFilterOptions={setFilterOptions}
+          onCandidateCreated={refreshCandidates}
+        />}
+      </div>
       </div>
     </div>
   );
