@@ -245,4 +245,39 @@ db.exec(`
 `);
 console.log('[init-data] UhubManagedCarouselItems table verified.');
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS UmiMatchProfiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE NOT NULL,
+    bio TEXT DEFAULT '',
+    city TEXT DEFAULT '',
+    gender TEXT DEFAULT '',
+    interested_in TEXT DEFAULT '',
+    max_distance INTEGER DEFAULT 100,
+    allow_anyone INTEGER NOT NULL DEFAULT 0,
+    image1 TEXT,
+    image2 TEXT,
+    image3 TEXT,
+    image4 TEXT,
+    image5 TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS UmiMatchSwipes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    target_user_id INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, target_user_id)
+  );
+  CREATE TABLE IF NOT EXISTS UmiMatchMessages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER NOT NULL,
+    receiver_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+console.log('[init-data] UmiMatch tables verified.');
+
 db.close();

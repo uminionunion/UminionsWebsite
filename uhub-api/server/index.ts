@@ -12,6 +12,7 @@ import { db } from './db.js';
 import memesRouter from './memes.js';
 import socialPostsRouter from './social-posts.js';
 import broadcastsRouter from './broadcasts.js';
+import umiMatchRouter from './umimatch.js';
 
 dotenv.config();
 
@@ -174,6 +175,9 @@ app.use(socialPostsRouter);
 
 // Register broadcast/episode routes
 app.use(broadcastsRouter);
+
+// Register UmiMatch routes
+app.use(umiMatchRouter);
 
 // NEW: User lookup route (accessible to all, no auth required)
 app.get('/api/users/by-username/:username', async (req: Request, res: Response) => {

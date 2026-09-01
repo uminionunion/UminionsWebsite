@@ -98,9 +98,9 @@
   right: 6px;
   bottom: 6px;
   left: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
   align-items: center;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.62);
@@ -111,6 +111,18 @@
   text-shadow: 0 1px 2px #000;
 }
 
+.uhub-root .uhub-header-product-overlay span {
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.uhub-root .uhub-header-product-overlay small {
+  display: none;
+}
+
 .uhub-root .uhub-header-product-overlay button {
   min-height: 22px;
   max-width: 100%;
@@ -119,6 +131,7 @@
   padding: 2px 6px;
   color: #fff;
   font-size: 10px;
+  white-space: nowrap;
 }
 
 .uhub-root .uhub-login-status,

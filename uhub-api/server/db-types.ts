@@ -322,6 +322,39 @@ export interface UhubManagedCarouselItems {
   created_at: Generated<string | null>;
 }
 
+export interface UmiMatchProfiles {
+  id: Generated<number>;
+  user_id: number;
+  bio: string | null;
+  city: string | null;
+  gender: string | null;
+  interested_in: string | null;
+  max_distance: Generated<number>;
+  allow_anyone: Generated<Boolean>;
+  image1: string | null;
+  image2: string | null;
+  image3: string | null;
+  image4: string | null;
+  image5: string | null;
+  created_at: Generated<string | null>;
+}
+
+export interface UmiMatchSwipes {
+  id: Generated<number>;
+  user_id: number;
+  target_user_id: number;
+  action: 'like' | 'skip';
+  created_at: Generated<string | null>;
+}
+
+export interface UmiMatchMessages {
+  id: Generated<number>;
+  sender_id: number;
+  receiver_id: number;
+  content: string;
+  created_at: Generated<string | null>;
+}
+
 export interface UserBroadcastEpisodeFavorites {
   id: Generated<number>;
   episode_id: number;
@@ -428,6 +461,9 @@ export interface DB {
   UserBroadcastEpisodeMedia: UserBroadcastEpisodeMedia;
   UserBroadcastEpisodeVotes: UserBroadcastEpisodeVotes;
   UhubManagedCarouselItems: UhubManagedCarouselItems;
+  UmiMatchProfiles: UmiMatchProfiles;
+  UmiMatchSwipes: UmiMatchSwipes;
+  UmiMatchMessages: UmiMatchMessages;
   UserBroadcastEpisodeFavorites: UserBroadcastEpisodeFavorites;
   UserBroadcastEpisodeComments: UserBroadcastEpisodeComments;
 }
