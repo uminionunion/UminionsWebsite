@@ -51,6 +51,19 @@ try {
   const pantryColumns = db.prepare('PRAGMA table_info(pantries)').all().map(column => column.name);
   if (!pantryColumns.includes('country')) db.exec('ALTER TABLE pantries ADD COLUMN country TEXT');
   if (!pantryColumns.includes('state')) db.exec('ALTER TABLE pantries ADD COLUMN state TEXT');
+  const candidateColumns = db.prepare('PRAGMA table_info(candidates)').all().map(column => column.name);
+  const candidateMigrations = [
+    ['country', 'TEXT'],
+    ['website', 'TEXT'],
+    ['image_url', 'TEXT'],
+    ['user_id', 'INTEGER'],
+    ['username', 'TEXT'],
+    ['show_on_map', 'INTEGER DEFAULT 1'],
+    ['created_at', 'TEXT'],
+  ];
+  for (const [column, type] of candidateMigrations) {
+    if (!candidateColumns.includes(column)) db.exec(`ALTER TABLE candidates ADD COLUMN ${column} ${type}`);
+  }
   console.log('DB initialized at', dbPath);
 } catch (err) {
   console.error('Failed to initialize DB:', err);
