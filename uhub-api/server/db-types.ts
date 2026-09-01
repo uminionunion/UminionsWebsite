@@ -336,6 +336,8 @@ export interface UmiMatchProfiles {
   image3: string | null;
   image4: string | null;
   image5: string | null;
+  is_enrolled: Generated<Boolean>;
+  deleted_at: string | null;
   created_at: Generated<string | null>;
 }
 
@@ -352,6 +354,51 @@ export interface UmiMatchMessages {
   sender_id: number;
   receiver_id: number;
   content: string;
+  created_at: Generated<string | null>;
+}
+
+export interface DeletedUmiMatchAccounts {
+  id: Generated<number>;
+  user_id: number;
+  profile_json: string | null;
+  swipes_json: string | null;
+  messages_json: string | null;
+  deleted_at: Generated<string | null>;
+}
+
+export interface DeletedUserAccounts {
+  id: Generated<number>;
+  user_id: number;
+  user_json: string | null;
+  deleted_at: Generated<string | null>;
+}
+
+export interface MillionPixels {
+  id: Generated<number>;
+  x: number;
+  y: number;
+  color: string;
+  change_count: Generated<number>;
+  next_cost_tickets: Generated<number>;
+  last_changed_by: number | null;
+  last_changed_at: string | null;
+  created_at: Generated<string | null>;
+}
+
+export interface MillionPixelHistory {
+  id: Generated<number>;
+  pixel_x: number;
+  pixel_y: number;
+  change_number: number;
+  color: string;
+  changed_by_user_id: number;
+  changed_at: Generated<string | null>;
+}
+
+export interface MillionPixelUserTickets {
+  id: Generated<number>;
+  user_id: number;
+  total_pixeltickets: Generated<number>;
   created_at: Generated<string | null>;
 }
 
@@ -464,6 +511,11 @@ export interface DB {
   UmiMatchProfiles: UmiMatchProfiles;
   UmiMatchSwipes: UmiMatchSwipes;
   UmiMatchMessages: UmiMatchMessages;
+  DeletedUmiMatchAccounts: DeletedUmiMatchAccounts;
+  DeletedUserAccounts: DeletedUserAccounts;
+  MillionPixels: MillionPixels;
+  MillionPixelHistory: MillionPixelHistory;
+  MillionPixelUserTickets: MillionPixelUserTickets;
   UserBroadcastEpisodeFavorites: UserBroadcastEpisodeFavorites;
   UserBroadcastEpisodeComments: UserBroadcastEpisodeComments;
 }

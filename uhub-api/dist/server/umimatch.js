@@ -32,6 +32,8 @@ router.put('/api/umimatch/profile', requireAuth, async (req, res) => {
             image3: asString(req.body.image3).slice(0, 1000) || null,
             image4: asString(req.body.image4).slice(0, 1000) || null,
             image5: asString(req.body.image5).slice(0, 1000) || null,
+            is_enrolled: 1,
+            deleted_at: null,
         };
         const existing = await db.selectFrom('UmiMatchProfiles').select('id').where('user_id', '=', userId).executeTakeFirst();
         const profile = existing
@@ -44,15 +46,49 @@ router.put('/api/umimatch/profile', requireAuth, async (req, res) => {
         res.status(500).json({ error: 'Failed to save profile' });
     }
 });
+router.post('/api/umimatch/enroll', requireAuth, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const existing = await db.selectFrom('UmiMatchProfiles').select('id').where('user_id', '=', userId).executeTakeFirst();
+        const profile = existing
+            ? await db.updateTable('UmiMatchProfiles').set({ is_enrolled: 1, deleted_at: null }).where('user_id', '=', userId).returningAll().executeTakeFirstOrThrow()
+            : await db.insertInto('UmiMatchProfiles').values({ user_id: userId, is_enrolled: 1 }).returningAll().executeTakeFirstOrThrow();
+        res.json({ profile });
+    }
+    catch (error) {
+        console.error('[UMIMATCH] Failed to enroll:', error);
+        res.status(500).json({ error: 'Failed to enroll' });
+    }
+});
+router.post('/api/umimatch/remove', requireAuth, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const [profile, swipes, messages] = await Promise.all([
+            db.selectFrom('UmiMatchProfiles').selectAll().where('user_id', '=', userId).executeTakeFirst(),
+            db.selectFrom('UmiMatchSwipes').selectAll().where(eb => eb.or([eb('user_id', '=', userId), eb('target_user_id', '=', userId)])).execute(),
+            db.selectFrom('UmiMatchMessages').selectAll().where(eb => eb.or([eb('sender_id', '=', userId), eb('receiver_id', '=', userId)])).execute(),
+        ]);
+        await db.insertInto('DeletedUmiMatchAccounts').values({ user_id: userId, profile_json: JSON.stringify(profile || null), swipes_json: JSON.stringify(swipes), messages_json: JSON.stringify(messages) }).execute();
+        await db.deleteFrom('UmiMatchSwipes').where(eb => eb.or([eb('user_id', '=', userId), eb('target_user_id', '=', userId)])).execute();
+        await db.deleteFrom('UmiMatchMessages').where(eb => eb.or([eb('sender_id', '=', userId), eb('receiver_id', '=', userId)])).execute();
+        await db.updateTable('UmiMatchProfiles').set({ is_enrolled: 0, deleted_at: new Date().toISOString() }).where('user_id', '=', userId).execute();
+        res.json({ success: true });
+    }
+    catch (error) {
+        console.error('[UMIMATCH] Failed to remove account:', error);
+        res.status(500).json({ error: 'Failed to remove UmiMatch account' });
+    }
+});
 router.get('/api/umimatch/discover', requireAuth, async (req, res) => {
     try {
         const userId = req.user.userId;
         const seen = await db.selectFrom('UmiMatchSwipes').select('target_user_id').where('user_id', '=', userId).execute();
         const seenIds = new Set(seen.map(item => item.target_user_id));
         const users = await db.selectFrom('users').select(['id', 'username', 'profile_image_url']).where('id', '!=', userId).execute();
-        const profiles = await db.selectFrom('UmiMatchProfiles').selectAll().execute();
+        const profiles = await db.selectFrom('UmiMatchProfiles').selectAll().where('is_enrolled', '=', 1).where('deleted_at', 'is', null).execute();
+        const enrolledIds = new Set(profiles.map(profile => profile.user_id));
         const cards = users
-            .filter(user => !seenIds.has(user.id))
+            .filter(user => !seenIds.has(user.id) && enrolledIds.has(user.id))
             .map(user => ({ ...user, profile: profiles.find(profile => profile.user_id === user.id) || null }))
             .slice(0, 20);
         res.json({ users: cards });

@@ -260,6 +260,8 @@ db.exec(`
     image3 TEXT,
     image4 TEXT,
     image5 TEXT,
+    is_enrolled INTEGER NOT NULL DEFAULT 0,
+    deleted_at TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
   CREATE TABLE IF NOT EXISTS UmiMatchSwipes (
@@ -277,7 +279,56 @@ db.exec(`
     content TEXT NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS DeletedUmiMatchAccounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    profile_json TEXT,
+    swipes_json TEXT,
+    messages_json TEXT,
+    deleted_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS DeletedUserAccounts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    user_json TEXT,
+    deleted_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
 `);
+const umiMatchProfileColumns = db.prepare('PRAGMA table_info(UmiMatchProfiles)').all().map((c) => c.name);
+if (!umiMatchProfileColumns.includes('is_enrolled')) db.exec('ALTER TABLE UmiMatchProfiles ADD COLUMN is_enrolled INTEGER NOT NULL DEFAULT 0');
+if (!umiMatchProfileColumns.includes('deleted_at')) db.exec('ALTER TABLE UmiMatchProfiles ADD COLUMN deleted_at TEXT');
 console.log('[init-data] UmiMatch tables verified.');
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS MillionPixels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    x INTEGER NOT NULL,
+    y INTEGER NOT NULL,
+    color TEXT NOT NULL DEFAULT '#ffffff',
+    change_count INTEGER NOT NULL DEFAULT 0,
+    next_cost_tickets INTEGER NOT NULL DEFAULT 1,
+    last_changed_by INTEGER,
+    last_changed_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(x, y)
+  );
+  CREATE TABLE IF NOT EXISTS MillionPixelHistory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pixel_x INTEGER NOT NULL,
+    pixel_y INTEGER NOT NULL,
+    change_number INTEGER NOT NULL,
+    color TEXT NOT NULL,
+    changed_by_user_id INTEGER NOT NULL,
+    changed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(pixel_x, pixel_y, change_number)
+  );
+  CREATE TABLE IF NOT EXISTS MillionPixelUserTickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER UNIQUE NOT NULL,
+    total_pixeltickets INTEGER NOT NULL DEFAULT 1000,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+console.log('[init-data] MillionPixel tables verified.');
 
 db.close();

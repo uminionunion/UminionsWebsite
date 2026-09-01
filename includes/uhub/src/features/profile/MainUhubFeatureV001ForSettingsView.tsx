@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Facebook, Youtube, Twitch, Instagram, Github, MessageSquare } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { useAuth } from '@/hooks/useAuth';
 
 const socialLinks = [
   { id: 'facebook', icon: <Facebook />, defaultLink: 'https://www.facebook.com/groups/1615679026489537' },
@@ -23,7 +24,9 @@ const socialLinks = [
 ];
 
 const MainUhubFeatureV001ForSettingsView = () => {
+  const { user, logout } = useAuth();
   const [autoLaunch, setAutoLaunch] = useState(true);
+  const [isUmiMatchEnrolled, setIsUmiMatchEnrolled] = useState(false);
 
   useEffect(() => {
     const savedAutoLaunch = localStorage.getItem('uHubAutoLaunch');
@@ -31,6 +34,29 @@ const MainUhubFeatureV001ForSettingsView = () => {
       setAutoLaunch(JSON.parse(savedAutoLaunch));
     }
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/umimatch/profile', { credentials: 'include' })
+      .then(response => response.ok ? response.json() : { profile: null })
+      .then(data => setIsUmiMatchEnrolled(data.profile?.is_enrolled === 1))
+      .catch(() => setIsUmiMatchEnrolled(false));
+  }, [user]);
+
+  const removeUmiMatchAccount = async () => {
+    if (!window.confirm('Remove your UmiMatch account, matches, and UmiMatch chats?')) return;
+    const response = await fetch('/api/umimatch/remove', { method: 'POST', credentials: 'include' });
+    if (response.ok) setIsUmiMatchEnrolled(false);
+  };
+
+  const deleteMyAccount = async () => {
+    if (!window.confirm('Delete your uHub account? This archives your user record and logs you out.')) return;
+    const response = await fetch('/api/account/delete', { method: 'POST', credentials: 'include' });
+    if (response.ok) {
+      await logout();
+      window.location.reload();
+    }
+  };
 
   const handleAutoLaunchChange = (checked: boolean) => {
     setAutoLaunch(checked);
@@ -73,6 +99,11 @@ const MainUhubFeatureV001ForSettingsView = () => {
             <Label htmlFor="text-opt-in">I opt-in to receive texts on events/newsletters/reminders/stuff regarding the union</Label>
           </div>
         </div>
+      </div>
+
+      <div className="space-y-3">
+        {isUmiMatchEnrolled && <Button variant="outline" onClick={removeUmiMatchAccount}>You are signed up for UmiMatch. Would you like to unSignUp/HaveYourAccountRemoved from UmiMatch?</Button>}
+        <Button variant="destructive" onClick={deleteMyAccount}>Delete My Account</Button>
       </div>
     </div>
   );

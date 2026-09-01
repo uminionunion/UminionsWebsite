@@ -93,7 +93,10 @@ const [archivedMessages, setArchivedMessages] = useState<Message[]>([]);
 const [showArchive, setShowArchive] = useState(false);
 const [archiveOffset, setArchiveOffset] = useState(0);
 const [hasMoreArchives, setHasMoreArchives] = useState(false);
-const [isLoadingArchive, setIsLoadingArchive] = useState(false);  const [newMessage, setNewMessage] = useState('');
+const [isLoadingArchive, setIsLoadingArchive] = useState(false);
+const [hasMoreMessages, setHasMoreMessages] = useState(false);
+const [isLoadingPreviousMessages, setIsLoadingPreviousMessages] = useState(false);
+const [newMessage, setNewMessage] = useState('');
   const [users, setUsers] = useState<User[]>([]);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [modalOptionPage, setModalOptionPage] = useState(0);
@@ -137,7 +140,8 @@ const [isLoadingArchive, setIsLoadingArchive] = useState(false);  const [newMess
               reconnectionDelay: 1000,
               reconnectionDelayMax: 5000,
               reconnectionAttempts: 5,
-              transports: ['websocket', 'polling'],
+              transports: process.env.NODE_ENV === 'production' ? ['polling'] : ['websocket', 'polling'],
+              upgrade: process.env.NODE_ENV !== 'production',
             }
           );
 
@@ -146,8 +150,16 @@ const [isLoadingArchive, setIsLoadingArchive] = useState(false);  const [newMess
             socketRef.current?.emit('joinRoom', roomName);
           });
 
-          socketRef.current.on('loadMessages', (loadedMessages: Message[]) => {
+          socketRef.current.on('loadMessages', (payload: Message[] | { messages: Message[]; hasMore: boolean }) => {
+            const loadedMessages = Array.isArray(payload) ? payload : payload.messages;
             setMessages(loadedMessages);
+            setHasMoreMessages(!Array.isArray(payload) && payload.hasMore);
+          });
+
+          socketRef.current.on('loadedPreviousMessages', (payload: { messages: Message[]; hasMore: boolean }) => {
+            setMessages((current) => [...payload.messages, ...current]);
+            setHasMoreMessages(payload.hasMore);
+            setIsLoadingPreviousMessages(false);
           });
 
           socketRef.current.on('receiveMessage', (message: Message) => {
@@ -368,6 +380,12 @@ const handleViewProfile = (username: string) => {
     }
   };
 
+  const loadPreviousMessages = () => {
+    if (!socketRef.current || !messages.length) return;
+    setIsLoadingPreviousMessages(true);
+    socketRef.current.emit('loadPreviousMessages', { room: roomName, beforeId: messages[0].id });
+  };
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDraggingDivider) return;
@@ -526,14 +544,7 @@ const formatMessageTime = (isoString: string): string => {
     )}
     {!showArchive && (
   <>
-    <Button 
-      className="bg-gray-500 text-white w-full mb-4 cursor-not-allowed opacity-50"
-      onClick={() => {}}
-      disabled={true}
-      title="Archive feature is currently disabled"
-    >
-      Archive
-    </Button>
+    {hasMoreMessages && <Button className="mb-2 w-full bg-white/5 text-white/55 hover:bg-white/10 hover:text-white" onClick={loadPreviousMessages} disabled={isLoadingPreviousMessages}>{isLoadingPreviousMessages ? 'Loading...' : 'View More?'}</Button>}
         {messages.map((msg) => (
   <div key={msg.id}>
     <div className="flex items-baseline gap-2 mb-2">

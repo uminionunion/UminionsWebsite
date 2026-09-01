@@ -111,7 +111,7 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
           Running for Office?
         </Button>
       </div>
-      <div className="max-h-40 overflow-y-auto">
+      <div className="max-h-28 overflow-y-auto">
         <PantryControls
           addPantry={addPantry}
           activeView="find"
