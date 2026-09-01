@@ -36,8 +36,9 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
   const [isEditMode, setIsEditMode] = useState(false);
   const [isLoadingUpdate, setIsLoadingUpdate] = useState(false);
   const [zoomedBadge, setZoomedBadge] = useState<{ url: string; name: string } | null>(null);
-  const [editingEntry, setEditingEntry] = useState<{ type: 'meme' | 'social'; id: number; title: string; description: string } | null>(null);
+  const [editingEntry, setEditingEntry] = useState<{ type: 'meme' | 'social' | 'episode'; id: number; title: string; description: string } | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [hostedBroadcasts, setHostedBroadcasts] = useState<any[]>([]);
 
   const isOwnProfile = currentUser && user.id === currentUser.id;
 
@@ -57,6 +58,38 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
 
   const memeFeed = usePaginatedFeed(fetchMemePostsPage, [user?.id], isOpen && !!user?.id);
   const socialFeed = usePaginatedFeed(fetchSocialPostsPage, [user?.id], isOpen && !!user?.id);
+
+  const fetchEpisodesPage = useCallback(async (offset: number, limit: number) => {
+    try {
+      const broadcasts = await fetch(`/api/broadcasts/by-user/${user.id}`, { credentials: 'include' }).then(r => r.json());
+      if (!broadcasts?.length) return { items: [], total: 0 };
+      
+      const allEpisodes: any[] = [];
+      for (const broadcast of broadcasts) {
+        const res = await fetch(`/api/broadcasts/${broadcast.id}/episodes?offset=0&limit=100`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          allEpisodes.push(...(data.episodes || []));
+        }
+      }
+      
+      const sorted = allEpisodes.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+      return { items: sorted.slice(offset, offset + limit), total: sorted.length };
+    } catch (error) {
+      console.error('[EPISODES] Error fetching episodes:', error);
+      return { items: [], total: 0 };
+    }
+  }, [user?.id]);
+
+  const episodeFeed = usePaginatedFeed(fetchEpisodesPage, [user?.id], isOpen && !!user?.id);
+
+  useEffect(() => {
+    if (!isOpen || !user?.id) return;
+    fetch(`/api/broadcasts/by-user/${user.id}`, { credentials: 'include' })
+      .then((response) => response.ok ? response.json() : [])
+      .then((broadcasts) => setHostedBroadcasts(Array.isArray(broadcasts) ? broadcasts : []))
+      .catch(() => setHostedBroadcasts([]));
+  }, [isOpen, user?.id]);
 
   const handleDeleteMemePost = async (postId: number) => {
     try {
@@ -88,7 +121,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
           body: JSON.stringify({ title: editingEntry.title, description: editingEntry.description }),
         });
         memeFeed.reload();
-      } else {
+      } else if (editingEntry.type === 'social') {
         await fetch(`/api/social-posts/${editingEntry.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -96,6 +129,14 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
           body: JSON.stringify({ content: editingEntry.description }),
         });
         socialFeed.reload();
+      } else if (editingEntry.type === 'episode') {
+        await fetch(`/api/episodes/${editingEntry.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name: editingEntry.title, description: editingEntry.description }),
+        });
+        episodeFeed.reload();
       }
       setEditingEntry(null);
     } catch (error) {
@@ -349,7 +390,29 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
             </div>
             <div className="w-[34%] p-4 overflow-y-auto">
               <h3 className="font-bold mb-4">Hosted Broadcasts</h3>
-              <div className="text-center text-muted-foreground">No broadcasts yet.</div>
+              {hostedBroadcasts.length ? (
+                <div className="space-y-3">
+                  {hostedBroadcasts.map((broadcast) => {
+                    const episodes = episodeFeed.items.filter((episode: any) => episode.broadcast_id === broadcast.id);
+                    return (
+                      <div key={broadcast.id} className="border rounded p-2 bg-gray-900/50">
+                        <p className="font-semibold text-sm truncate">{broadcast.name}</p>
+                        <div className="mt-2 space-y-1">
+                          {episodes.length ? episodes.map((episode: any) => (
+                            <div key={episode.id} className="flex items-center gap-1 text-xs">
+                              <span className="min-w-0 flex-1 truncate">{episode.name}{episode.is_edited ? ' -edited' : ''}</span>
+                              {isOwnProfile && <>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-green-400 hover:text-green-300" title="Edit episode" onClick={() => setEditingEntry({ type: 'episode', id: episode.id, title: episode.name, description: episode.description || '' })}><Pencil className="h-3 w-3" /></Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:text-red-300" title="Delete episode" onClick={async () => { if (confirm('Delete this episode?')) { await fetch(`/api/episodes/${episode.id}`, { method: 'DELETE', credentials: 'include' }); episodeFeed.reload(); } }}><Trash2 className="h-3 w-3" /></Button>
+                              </>}
+                            </div>
+                          )) : <p className="text-xs text-muted-foreground">No episodes yet.</p>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : <div className="text-center text-muted-foreground">No broadcasts yet.</div>}
             </div>
             <div className="w-[33%] p-4 border-l overflow-y-auto">
               <h3 className="font-bold mb-4">Recent Posts &amp; Episodes</h3>
@@ -378,8 +441,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-white hover:text-cyan-400"
-                            style={{ color: '#ffffff' }}
+                            className="h-6 w-6 text-green-400 hover:text-green-300"
                             title="Edit post"
                             onClick={() => setEditingEntry({ type: 'meme', id: post.id, title: post.title, description: post.description || '' })}
                           >
@@ -388,8 +450,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-white hover:text-red-400"
-                            style={{ color: '#ffffff' }}
+                            className="h-6 w-6 text-red-400 hover:text-red-300"
                             title="Delete post"
                             onClick={() => handleDeleteMemePost(post.id)}
                           >
@@ -423,8 +484,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-white hover:text-cyan-400"
-                              style={{ color: '#ffffff' }}
+                              className="h-6 w-6 text-green-400 hover:text-green-300"
                               title="Edit post"
                               onClick={() => setEditingEntry({ type: 'social', id: post.id, title: '', description: post.content })}
                             >
@@ -433,8 +493,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-white hover:text-red-400"
-                              style={{ color: '#ffffff' }}
+                              className="h-6 w-6 text-red-400 hover:text-red-300"
                               title="Delete post"
                               onClick={() => handleDeleteSocialPost(post.id)}
                             >
@@ -459,15 +518,58 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
               )}
 
               <h4 className="text-sm font-semibold text-cyan-400 mb-2 mt-4">Recent Episodes</h4>
-              <div className="text-center text-muted-foreground">No episodes yet.</div>
-              {/*
-                Episodes have no creation flow / real data source yet (MainHubUpgradeV001ForEpisodes is unused).
-                Once episode entries are actually fetched and rendered here, give each entry a disabled Edit
-                button like this, ready to be enabled once we know exactly which episode fields it should edit:
-                <Button variant="ghost" size="icon" className="h-6 w-6" disabled title="Editing episodes is not wired up yet">
-                  <Pencil className="h-3 w-3" />
-                </Button>
-              */}
+              {episodeFeed.isLoading ? (
+                <div className="text-center text-muted-foreground">Loading...</div>
+              ) : episodeFeed.items.length > 0 ? (
+                <>
+                  {episodeFeed.items.map((episode: any) => (
+                    <div key={episode.id} className="mb-2 p-2 border rounded bg-gray-900/30 flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-xs truncate">{episode.name}{episode.is_edited ? ' -edited' : ''}</p>
+                        {episode.description && (
+                          <p className="text-xs text-gray-500 truncate">{episode.description}</p>
+                        )}
+                      </div>
+                      {isOwnProfile && (
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => setEditingEntry({ type: 'episode' as any, id: episode.id, title: episode.name, description: episode.description })}
+                          >
+                            <Pencil className="h-3 w-3 text-green-400" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={async () => {
+                              if (confirm('Delete this episode?')) {
+                                try {
+                                  await fetch(`/api/episodes/${episode.id}`, { method: 'DELETE', credentials: 'include' });
+                                  episodeFeed.reload();
+                                } catch (error) {
+                                  console.error('[EPISODES] Error deleting:', error);
+                                }
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3 text-red-400" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {episodeFeed.hasMore && (
+                    <Button variant="outline" size="sm" className="w-full mb-4" onClick={episodeFeed.viewMore}>
+                      View More
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <div className="text-center text-muted-foreground">No episodes yet.</div>
+              )}
             </div>
           </div>
 
@@ -479,7 +581,9 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
         {editingEntry && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100010]">
             <div className="bg-background border rounded-lg p-6 max-w-md w-[90%]">
-              <h3 className="font-bold mb-4">{editingEntry.type === 'meme' ? 'Edit MemeBox Post' : 'Edit Social Media Post'}</h3>
+              <h3 className="font-bold mb-4">
+                {editingEntry.type === 'meme' ? 'Edit MemeBox Post' : editingEntry.type === 'social' ? 'Edit Social Media Post' : 'Edit Episode'}
+              </h3>
               {editingEntry.type === 'meme' && (
                 <input
                   className="w-full p-2 border rounded mb-2 bg-gray-800 text-white"
@@ -489,13 +593,22 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
                   placeholder="Title"
                 />
               )}
+              {editingEntry.type === 'episode' && (
+                <input
+                  className="w-full p-2 border rounded mb-2 bg-gray-800 text-white"
+                  style={{ color: '#ffffff' }}
+                  value={editingEntry.title}
+                  onChange={(e) => setEditingEntry({ ...editingEntry, title: e.target.value })}
+                  placeholder="Episode Name"
+                />
+              )}
               <textarea
                 className="w-full p-2 border rounded mb-4 bg-gray-800 text-white resize-none"
                 style={{ color: '#ffffff' }}
                 rows={4}
                 value={editingEntry.description}
                 onChange={(e) => setEditingEntry({ ...editingEntry, description: e.target.value })}
-                placeholder={editingEntry.type === 'meme' ? 'Description' : 'What\'s on your mind?'}
+                placeholder={editingEntry.type === 'meme' ? 'Description' : editingEntry.type === 'social' ? 'What\'s on your mind?' : 'Episode Description'}
               />
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setEditingEntry(null)} disabled={isSavingEdit}>

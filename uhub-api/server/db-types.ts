@@ -261,6 +261,70 @@ export interface SocialMediaPostComments {
   created_at: Generated<string | null>;
 }
 
+export interface UserBroadcasts {
+  id: Generated<number>;
+  user_id: number;
+  name: string;
+  created_at: Generated<string | null>;
+}
+
+export interface UserBroadcastEpisodes {
+  id: Generated<number>;
+  broadcast_id: number;
+  user_id: number;
+  name: string;
+  description: string | null;
+  media_url: string | null;
+  media_type: string | null;
+  cover_image_url: string | null;
+  scheduled_at: string | null;
+  tags: string | null;
+  website: string | null;
+  upvotes: Generated<number>;
+  downvotes: Generated<number>;
+  is_edited: Generated<Boolean>;
+  last_played_at: string | null;
+  play_count: Generated<number>;
+  created_at: Generated<string | null>;
+}
+
+export interface UserBroadcastEpisodePlays {
+  id: Generated<number>;
+  episode_id: number;
+  completed_at: Generated<string | null>;
+}
+
+export interface UserBroadcastEpisodeMedia {
+  id: Generated<number>;
+  episode_id: number;
+  media_url: string;
+  media_type: string;
+  display_order: Generated<number>;
+}
+
+export interface UserBroadcastEpisodeVotes {
+  id: Generated<number>;
+  episode_id: number;
+  user_id: number;
+  vote_type: -1 | 1;
+  created_at: Generated<string | null>;
+}
+
+export interface UserBroadcastEpisodeFavorites {
+  id: Generated<number>;
+  episode_id: number;
+  user_id: number;
+  created_at: Generated<string | null>;
+}
+
+export interface UserBroadcastEpisodeComments {
+  id: Generated<number>;
+  episode_id: number;
+  user_id: number | null;
+  content: string;
+  created_at: Generated<string | null>;
+}
+
 export interface MemeImplementation001Images {
   id: Generated<number>;
   post_id: number;
@@ -346,4 +410,11 @@ export interface DB {
   SocialMediaPostVotes: SocialMediaPostVotes;
   SocialMediaPostFavorites: SocialMediaPostFavorites;
   SocialMediaPostComments: SocialMediaPostComments;
+  UserBroadcasts: UserBroadcasts;
+  UserBroadcastEpisodes: UserBroadcastEpisodes;
+    UserBroadcastEpisodePlays: UserBroadcastEpisodePlays;
+  UserBroadcastEpisodeMedia: UserBroadcastEpisodeMedia;
+  UserBroadcastEpisodeVotes: UserBroadcastEpisodeVotes;
+  UserBroadcastEpisodeFavorites: UserBroadcastEpisodeFavorites;
+  UserBroadcastEpisodeComments: UserBroadcastEpisodeComments;
 }

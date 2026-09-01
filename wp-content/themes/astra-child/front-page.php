@@ -1049,6 +1049,24 @@ audio::-webkit-media-controls-timeline::-webkit-media-controls-timeline-containe
     margin-right: 20px; /* Add some margin to separate from channels */
 }
 
+/* Audio/video submission now lives in uHub MyBroadcasts. Keep legacy markup for archival compatibility,
+   but do not expose or run the retired controls. */
+#recordButton,
+#recordButton02,
+#submitMp3,
+#uploadMp3Btn,
+#uploadLogoBtn,
+#headerLeftBottomContainer,
+#videoForm {
+    display: none !important;
+}
+
+/* Retired MySQL calendar/archive. New broadcast calendar and archives are rendered in uHub UnionRadio. */
+#scheduleContainer,
+.archive-container {
+    display: none !important;
+}
+
 /* Channel Section */
 #Channels {
     display: flex;
@@ -5021,7 +5039,7 @@ if (removeAudioBtn) {
 
 
  // Fetch the popularity archive data from the server
- fetch('includes/getPopularityArchive.php')
+ if (false) fetch('includes/getPopularityArchive.php')
     .then(response => response.json()) // Parse the response as JSON
     .then(data => {
         if (data.status === "success" && data.audios) { // Check if the status is "success" and there are audio entries
@@ -5115,7 +5133,7 @@ if (removeAudioBtn) {
 
 
 // Fetch and display the Recent Archive on page load
-fetch('includes/getRecentArchive.php')
+if (false) fetch('includes/getRecentArchive.php')
     .then(response => response.json()) // Parse the response as JSON
     .then(data => {
         if (data.status === "success" && data.audios) { // Check if the status is "success" and there are audio entries
@@ -5163,7 +5181,7 @@ fetch('includes/getRecentArchive.php')
 
 
 // Fetch and display the Random Archive on page load
-fetch('includes/getRandomArchive.php')
+if (false) fetch('includes/getRandomArchive.php')
     .then(response => response.json()) // Parse the response as JSON
     .then(data => {
         if (data.status === "success" && data.audios) { // Check if the status is "success" and there are audio entries
@@ -5248,7 +5266,7 @@ fetch('includes/getRandomArchive.php')
 
 
 // Fetch and display the historical archive on page load
-fetch('includes/getHistoricalArchive.php')
+if (false) fetch('includes/getHistoricalArchive.php')
     .then(response => response.json()) // Parse the response as JSON
     .then(data => {
         if (data.status === "success" && data.audios) { // Check if the status is "success" and there are audio entries
@@ -6434,7 +6452,7 @@ document.addEventListener("DOMContentLoaded", () => {
 //Extra Extra Note:> This stuff was commented out, cause, after i 'schedule a video' and it plays. and its in the calendar. and after it plays it goes bye bye. in the calendar, if it 'used to show (optional:) title,description, logo, ALONG WITH scheduled times? THIS CODE, only had it show scheduled time. which i suppose makes sense, cause, this php file is not equipped for that yo. and it sees to be a repeat. so to integrate it, i'd have to like, upgrade this type of php file or a whole other php file that brings these entries back after theyve played. you know? =D! 
 
 // ***********************Fetch and display the scheduled MP3s from the database >>>>> HAS BEEN COMMENTED OUT AS OF 10:02pm on 1/19/25 DUE TO HOW CLOSE IT WAS TO WHAT PART 6 WAS DOING; SO I JUST MERGED ANY STUFF FROM PART 5 TO PART 6 AND COMMENTED OUT PART 5
- fetch('includes/getScheduledMp3s.php')
+ if (false) fetch('includes/getScheduledMp3s.php')
     .then(response => response.json()) // Parse the response as JSON
     .then(data => {
         console.log('Fetched MP3s Data:', data); // Log the entire response
@@ -6512,7 +6530,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ********Triggered AFTER DOM Loaded************** Part 6 NOT IN WORKING AUDIOS, I CHECKED -11:38pm on 1/16/25 ***Update:> PART 5 and PART 6 seemed very similar, so i combined them as of (and commented out part 5) -10:00pm on 1/19/25 ***Update:> Note:> this code block is more for: 'handles fetching and scheduling MP3s from a database'. -10:09pm on 1/19/25
 
 // Fetch and display the scheduled MP3s from the database
-fetch('includes/getScheduledMp3s.php')
+if (false) fetch('includes/getScheduledMp3s.php')
     .then(response => response.json()) // Parse the response as JSON
     .then(data => {
         console.log('Fetched MP3s Data:', data); // Log the entire response
@@ -7396,10 +7414,12 @@ window.isPlaying = false; // Initialize the isPlaying flag
 
 // Initialize the schedule on page load
 document.addEventListener('DOMContentLoaded', () => {
-    generateSchedule(); // Call the function to generate the schedule
-    checkScheduledVideos(); // Call to fetch and update calendar entries on page load
-    setInterval(checkScheduledVideos, 30000); // Check every 30 seconds
-    setInterval(updateCalendarEntriesDaily, 86400000); // Update the calendar entries daily (every 24 hours)
+    // Retired: uHub UnionRadio owns the SQLite calendar and scheduled playback.
+    if (false) generateSchedule();
+    if (false) checkScheduledVideos();
+    // Retired: scheduled video playback now runs through the uHub UnionRadio player.
+    if (false) setInterval(checkScheduledVideos, 30000);
+    if (false) setInterval(updateCalendarEntriesDaily, 86400000);
 });
 
 
@@ -7410,6 +7430,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 async function checkScheduledVideos() {
+    if (true) return;
     const now = new Date().getTime(); // Get the current time in milliseconds
     try {
         const response = await fetch('includes/getScheduledVideos.php'); // Fetch scheduled videos from the server
@@ -7642,7 +7663,8 @@ function playScheduledVideo() {
 
 
 // Set interval to check and play the scheduled video every 10 seconds
-setInterval(playScheduledVideo, 10000);
+// Retired: scheduled video playback now runs through the uHub UnionRadio player.
+if (false) setInterval(playScheduledVideo, 10000);
 
 
 
@@ -8263,8 +8285,9 @@ if (submitVideoButton) { // Check if submit video button exists
 
 
     checkScheduledVideos(); // Call this function to start checking for scheduled videos
-    setInterval(checkScheduledVideos, 30000); // Check every 30 seconds
-    setInterval(playScheduledVideo, 10000); // Check and play scheduled videos every 10 seconds
+    // Retired: scheduled video playback now runs through the uHub UnionRadio player.
+    if (false) setInterval(checkScheduledVideos, 30000);
+    if (false) setInterval(playScheduledVideo, 10000);
 
 
 
@@ -11609,25 +11632,54 @@ document.querySelector('.footer-link').addEventListener('click', (event) => {
 
 
 
-    function addToRecentlyPlayed002(entry, type) {
-        // Add the most recently played entry to the beginning of the list
-        recentlyPlayed002.unshift({ ...entry, type });
+    let replayMedia = null;
+    let pausedMediaForReplay = null;
 
-        // Keep only the 3 most recent entries
-        if (recentlyPlayed002.length > 3) {
-            recentlyPlayed002.pop();
-        }
+    function getRecentlyPlayedSource(item) {
+        const source = item.audioUrl || item.audio_url || item.video_url || item.videoUrl || '';
+        return source && !source.startsWith('http') && !source.startsWith('/') ? `uploads/${source}` : source;
+    }
 
-        // Update the recently played section
+    function renderRecentlyPlayed() {
         const recentlyPlayedContainer = document.getElementById('headerRightContainer005');
-        recentlyPlayedContainer.innerHTML = recentlyPlayed002.map(item => `
-            <div>
-                <button class="upvote" onclick="voteUp(${item.id}, this)">⬆️</button>
-                <button class="downvote" onclick="voteDown(${item.id}, this)">⬇️</button>
-                <p>${item.title}</p>
-                ${item.description ? `<p>${item.description}</p>` : ""}
-            </div>
-        `).join('');
+        const header = document.getElementById('recentlyPlayedHeader');
+        if (!recentlyPlayedContainer) return;
+
+        if (header) header.style.display = recentlyPlayed.length ? 'block' : 'none';
+        recentlyPlayedContainer.querySelectorAll('.recently-played-item').forEach(item => item.remove());
+
+        recentlyPlayed.forEach((item, index) => {
+            const row = document.createElement('div');
+            row.className = 'recently-played-item';
+
+            const playButton = document.createElement('button');
+            playButton.type = 'button';
+            playButton.textContent = '▶';
+            playButton.title = `Replay ${item.title}`;
+            playButton.onclick = () => replayRecentlyPlayed(index);
+
+            const upvoteButton = document.createElement('button');
+            upvoteButton.type = 'button';
+            upvoteButton.className = 'upvote';
+            upvoteButton.textContent = '⬆️';
+            upvoteButton.onclick = () => voteUp(item.id, upvoteButton);
+
+            const downvoteButton = document.createElement('button');
+            downvoteButton.type = 'button';
+            downvoteButton.className = 'downvote';
+            downvoteButton.textContent = '⬇️';
+            downvoteButton.onclick = () => voteDown(item.id, downvoteButton);
+
+            const title = document.createElement('span');
+            title.textContent = item.title || item.audio_title_user_uploaded || item.video_title || 'Untitled';
+
+            row.append(playButton, upvoteButton, downvoteButton, title);
+            recentlyPlayedContainer.appendChild(row);
+        });
+    }
+
+    function addToRecentlyPlayed002(entry, type) {
+        addToRecentlyPlayed(entry, type);
     }
 
 
@@ -11668,25 +11720,51 @@ function playVideo(video) {
 
 
 
-function addToRecentlyPlayed(entry, type) {
-    // Add the most recently played entry to the beginning of the list
-    recentlyPlayed.unshift({ ...entry, type });
-
-    // Keep only the 3 most recent entries
+function addToRecentlyPlayed(entry, type, description, logoUrl, audioUrl) {
+    // The oldest MP3 queue passes positional fields; audio/video broadcast paths pass an entry object.
+    const item = typeof entry === 'object'
+        ? { ...entry, type }
+        : { id: entry, title: type, description, logoUrl, audioUrl, type: 'audio' };
+    recentlyPlayed.unshift(item);
     if (recentlyPlayed.length > 3) {
         recentlyPlayed.pop();
     }
+    renderRecentlyPlayed();
+}
 
-    // Update the recently played section
-    const recentlyPlayedContainer = document.getElementById('headerRightContainer005');
-    recentlyPlayedContainer.innerHTML = recentlyPlayed.map(item => `
-        <div>
-            <button class="upvote" onclick="voteUp(${item.id}, this)">⬆️</button>
-            <button class="downvote" onclick="voteDown(${item.id}, this)">⬇️</button>
-            <p>${item.title}</p>
-            ${item.description ? `<p>${item.description}</p>` : ""}
-        </div>
-    `).join('');
+function replayRecentlyPlayed(index) {
+    const item = recentlyPlayed[index];
+    const source = item && getRecentlyPlayedSource(item);
+    if (!source) return;
+
+    if (replayMedia) {
+        replayMedia.pause();
+        replayMedia.remove();
+    }
+
+    pausedMediaForReplay = Array.from(document.querySelectorAll('audio, video')).find((media) => !media.paused && !media.muted) || null;
+    if (pausedMediaForReplay) pausedMediaForReplay.pause();
+
+    replayMedia = document.createElement(item.type === 'video' ? 'video' : 'audio');
+    replayMedia.src = source;
+    replayMedia.preload = 'auto';
+    replayMedia.style.display = 'none';
+    document.body.appendChild(replayMedia);
+
+    replayMedia.onended = () => {
+        replayMedia.remove();
+        replayMedia = null;
+        if (pausedMediaForReplay && !pausedMediaForReplay.ended && !pausedMediaForReplay.muted) {
+            pausedMediaForReplay.play().catch(() => {});
+        }
+        pausedMediaForReplay = null;
+    };
+    replayMedia.play().catch(() => {
+        replayMedia.remove();
+        replayMedia = null;
+        if (pausedMediaForReplay && !pausedMediaForReplay.muted) pausedMediaForReplay.play().catch(() => {});
+        pausedMediaForReplay = null;
+    });
 }
 
 
@@ -11749,6 +11827,7 @@ function initiateLogoCheck(videoId, logoFile) {
 // ********NotDOMed**************Part 41 Note:> i upgraded this area as a 'backup' to make sure audios work at their scheduled time. -4:58pm on 1/24/25
 
 function checkDatabaseForScheduledMedia() {
+    if (true) return;
     fetch('includes/AudioScheduledTimeBackUp.php')
         .then(response => response.json())
         .then(data => {
@@ -11770,7 +11849,8 @@ function checkDatabaseForScheduledMedia() {
         });
 }
 
-setInterval(checkDatabaseForScheduledMedia, 8000); // Check the database every 8 seconds
+// Retired: scheduled audio playback now runs through the uHub UnionRadio player.
+if (false) setInterval(checkDatabaseForScheduledMedia, 8000);
 
 
 

@@ -1213,6 +1213,13 @@ const submitComment = async () => {
       display: "block",
       borderRadius: "12px",
     },
+    postVideo: {
+      width: "100%",
+      height: "auto",
+      display: "block",
+      borderRadius: "12px",
+      backgroundColor: "#000000",
+    },
     playIcon: {
       borderRadius: "50%",
       display: "flex",
@@ -1655,10 +1662,13 @@ const renderNavbar = () => {
         {/* ✅ NEW: Stacked images */}
         <div style={styles.imagesStack}>
           {displayPost.images.map((image, idx) => (
-  <div key={idx} style={styles.mediaItem} onClick={() => openZoomModal(idx)}>
+  // Key on the post+media identity (not just array index) so React remounts the <video> element on rotation
+  // instead of reusing the old DOM node with a stale <source>, which would otherwise leave the previous clip frozen.
+  <div key={`${displayPost.id}-${idx}`} style={styles.mediaItem} onClick={() => openZoomModal(idx)}>
     {isVideoFile(image) ? (
       <>
         <video
+          key={image}
           style={styles.postVideo}
           controls={false}
           autoPlay
