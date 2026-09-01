@@ -541,8 +541,7 @@ const RotatingUnionEventCard = () => {
 const headerStoreItems = [
   { title: 'Ukraine Poster', image: '/StoreProductsAndImagery/UkraineLogo001.png', action: 'u24.gov.ua', url: 'https://u24.gov.ua', cart: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton004.001AAA' },
   { title: 'BYO Tapestry', image: '/StoreProductsAndImagery/TapestryVersion001.png', action: '+$1,499.95 BYO Tapestry', cart: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.001AAAAA' },
-  { title: 'Union Classic', image: '/StoreProductsAndImagery/UminionLogo001.01.2025Classic.png', action: '+$69.95', cart: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.013.02A' },
-  { title: 'View Cart', image: '/StoreProductsAndImagery/UminionLogo002.02.2025Classic.png', action: 'View Cart', cart: 'https://page001.uminion.com/cart/' },
+  { title: 'Union Shirts', image: '/StoreProductsAndImagery/Tshirtbatchversion001.png', action: 'View Cart', cart: 'https://page001.uminion.com/cart/' },
 ];
 
 const HeaderProductCarousel = () => {
@@ -568,25 +567,32 @@ const HeaderProductCarousel = () => {
   </div>;
 };
 
-const footerLogoItems = [
-  { name: 'Facebook', url: 'https://www.facebook.com/share/g/16rAWr8eDn/', img: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg' },
-  { name: 'YouTube', url: 'https://www.youtube.com/@UminionUnion', img: 'https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg' },
-  { name: 'Bluesky', url: 'https://bsky.app/profile/uminion.bsky.social', img: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/bluesky.svg' },
-  { name: 'Instagram', url: 'https://www.instagram.com/theuminionunion?igsh=ajdjeGUycHRmczVs&ut-m_source=qr', img: 'https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg' },
-  { name: 'Twitch', url: 'https://www.twitch.tv/theuminionunion', img: 'https://upload.wikimedia.org/wikipedia/commons/2/26/Twitch_logo.svg' },
-  { name: 'Mastodon', url: 'https://mastodon.social/@uminion', img: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/mastodon.svg' },
-  { name: 'Patreon', url: 'https://www.patreon.com/uminion', img: 'https://upload.wikimedia.org/wikipedia/commons/9/94/Patreon_logo.svg' },
-  { name: 'TikTok', url: 'https://www.tiktok.com/@theuminionunion?_t=ZT-8zoud0oiVCf&_r=1', img: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/tiktok.svg' },
-  { name: 'Twitter/X', url: 'https://x.com/theuminionunion', img: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/x.svg' },
+const footerPosterItems = [
+  { title: 'Sister Union #14: Union News - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo014.00.2024Classic.png', sku: 'UStoreButton005.026.01A' },
+  { title: 'Sister Union #15: Union Radio - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo015.00.2024Classic.png', sku: 'UStoreButton005.027.01A' },
+  { title: 'Sister Union #16: Union Drive - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo016.00.2024Classic.png', sku: 'UStoreButton005.028.01A' },
+  { title: 'Sister Union #17: Union Archive - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo017.00.2024Classic.png', sku: 'UStoreButton005.029.01A' },
+  { title: 'Sister Union #18: Union Tech - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo018.00.2024Classic.png', sku: 'UStoreButton005.030.01A' },
+  { title: 'Sister Union #19: Union Politic - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo019.00.2024Classic.png', sku: 'UStoreButton005.031.01A' },
 ];
 
-const FooterLogoCarousel = () => {
+const FooterPosterCarousel = () => {
   const [index, setIndex] = useState(0);
-  const visible = Array.from({ length: 5 }, (_, offset) => footerLogoItems[(index + offset) % footerLogoItems.length]);
-  return <div className="uhub-footer-logo-carousel">
-    <button type="button" onClick={() => setIndex(value => (value - 5 + footerLogoItems.length) % footerLogoItems.length)}>‹</button>
-    <div>{visible.map(item => <a key={item.name} href={item.url} target="_blank" rel="noreferrer" title={item.name}><img src={item.img} alt={item.name} referrerPolicy="no-referrer" /></a>)}</div>
-    <button type="button" onClick={() => setIndex(value => (value + 5) % footerLogoItems.length)}>›</button>
+  const visible = Array.from({ length: 3 }, (_, offset) => footerPosterItems[(index + offset) % footerPosterItems.length]);
+  return <div className="uhub-footer-poster-carousel">
+    <button type="button" className="uhub-footer-poster-arrow" onClick={() => setIndex(value => (value - 1 + footerPosterItems.length) % footerPosterItems.length)}>‹</button>
+    <div className="uhub-footer-poster-strip">{visible.map(item => <div key={item.sku} className="uhub-footer-poster-card">
+      <img src={item.image} alt={item.title} />
+      <div className="uhub-footer-poster-overlay">
+        <button type="button" aria-label="Previous poster variant">▲</button>
+        <span>{item.title}</span>
+        <button type="button" aria-label="Next poster variant">▼</button>
+        <button type="button" onClick={() => window.open(`https://page001.uminion.com/cart/?add-to-cart=${encodeURIComponent(item.sku)}`, '_blank')}>+ Cart</button>
+        <input type="number" aria-label="Quantity" />
+        <strong>$69.95</strong>
+      </div>
+    </div>)}</div>
+    <button type="button" className="uhub-footer-poster-arrow" onClick={() => setIndex(value => (value + 1) % footerPosterItems.length)}>›</button>
   </div>;
 };
 
@@ -3205,7 +3211,7 @@ const resetRightSection = () => {
         )}
       </div>
     </div>
-    <div className="mb-3 overflow-hidden border rounded-md"><FooterLogoCarousel /></div>
+    <div className="mb-3 overflow-hidden border rounded-md"><FooterPosterCarousel /></div>
     <div id="MainUhubFeatureV001ForUsersStores" className="border rounded-md p-2 flex flex-col h-full" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div className="flex justify-between items-center mb-2 sticky top-0 z-10 uhub-users-stores-header" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
     <div className="flex items-center flex-1">
@@ -3971,7 +3977,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     )}
   </div>
     <div className="absolute bottom-0 right-0 flex items-center gap-2">
-      {user ? <Button size="sm" className={showLogout ? 'bg-red-600 hover:bg-red-700 text-white h-7 text-xs' : 'bg-green-600 hover:bg-green-700 text-white h-7 text-xs'} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }}>{showLogout ? 'Log Out' : 'Logged In'}</Button> : <div className="flex gap-1"><Button size="sm" className="h-7 text-xs" onClick={() => onOpenAuthModal('login')}>Log In</Button><Button size="sm" className="h-7 text-xs bg-orange-400 hover:bg-orange-500 text-black" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button></div>}
+      {user ? <button type="button" className={showLogout ? 'rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700' : 'flex items-center gap-1 rounded bg-transparent px-2 py-1 text-xs text-gray-400 hover:text-gray-200'} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }}>{showLogout ? 'Log Out?' : <><span className="h-2 w-2 rounded-full bg-green-500" /> Logged In</>}</button> : <div className="flex gap-1"><Button size="sm" className="h-7 text-xs" onClick={() => onOpenAuthModal('login')}>Log In</Button><Button size="sm" className="h-7 text-xs bg-orange-400 hover:bg-orange-500 text-black" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button></div>}
   </div>
 </div>
          </div>

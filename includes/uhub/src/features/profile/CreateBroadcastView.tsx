@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, Mic } from 'lucide-react';
+import { Upload, Mic, Video } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -265,10 +265,8 @@ export const CreateBroadcastView = () => {
                     </div>
                 )}
 
-                {broadcastId && (
-                    <>
                 <div>
-                    <Label htmlFor="episode-name">Episode Name</Label>
+                    <Label htmlFor="episode-name">Episode Title</Label>
                     <Input 
                         id="episode-name" 
                         placeholder="e.g., Episode 1: The Beginning" 
@@ -284,7 +282,7 @@ export const CreateBroadcastView = () => {
                             <Button variant="outline" className="w-full cursor-pointer" asChild>
                                 <span>
                                     <Upload className="mr-2 h-4 w-4" /> 
-                                    {mediaFile?.type.includes('video') ? 'Change Video' : 'Audio'}
+                                    {mediaFile?.type.includes('audio') ? 'Change MP3' : 'MP3'}
                                 </span>
                             </Button>
                             <input 
@@ -309,13 +307,19 @@ export const CreateBroadcastView = () => {
                                                     type="button"
                                                     variant="outline"
                                                     className="flex-1"
-                                                    onPointerDown={handleRecordPointerDown}
-                                                    onPointerUp={handleRecordPointerUp}
-                                                    onPointerCancel={stopRecording}
-                                                    onPointerLeave={() => recordingMode === 'audio' && stopRecording()}
+                                                    onClick={() => recordingMode === 'audio' ? stopRecording() : startRecording('audio')}
                                                 >
                                                     <Mic className="mr-2 h-4 w-4" />
-                                                    {recordingMode === 'audio' ? 'Release to Stop' : recordingMode === 'video' ? 'Stop Video' : 'Record'}
+                                                    {recordingMode === 'audio' ? 'Stop Audio' : 'Record Audio'}
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                    onClick={() => recordingMode === 'video' ? stopRecording() : startRecording('video')}
+                                                >
+                                                    <Video className="mr-2 h-4 w-4" />
+                                                    {recordingMode === 'video' ? 'Stop Video' : 'Record Video'}
                                                 </Button>
                     </div>
                     {mediaFile && <p className="text-xs text-gray-400 mt-1">Selected: {mediaFile.name}</p>}
@@ -407,8 +411,6 @@ export const CreateBroadcastView = () => {
                 <Button onClick={handleSubmitEpisode} disabled={isSubmitting || !episodeName.trim()}>
                     {isSubmitting ? '...' : 'Submit Episode'}
                 </Button>
-                    </>
-                )}
             </div>
 
             {/* Right Side: Select Broadcast */}
@@ -429,7 +431,7 @@ export const CreateBroadcastView = () => {
                     </div>
                 ) : (
                     <div className="flex-grow flex items-center justify-center border-2 border-dashed rounded-md p-8 text-center text-muted-foreground">
-                        <p>Create a broadcast on the left to get started! (You can create up to 10 broadcasts, with 10 episodes each.)</p>
+                        <p>Create or select a broadcast on the left to get started. You can create up to 7 broadcasts with 100 episodes each.</p>
                     </div>
                 )}
             </div>
