@@ -21,6 +21,154 @@
   height: 100%;
 }
 
+.uhub-root .uhub-pantry-finder .leaflet-container {
+  min-height: 260px;
+}
+
+.uhub-root .uhub-event-rotator {
+  position: relative;
+  height: 118px;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: #111827;
+  cursor: pointer;
+  text-align: center;
+}
+
+.uhub-root .uhub-event-rotator img,
+.uhub-root .uhub-header-product-carousel img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.uhub-root .uhub-event-rotator p {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 5px 22px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.uhub-root .uhub-event-arrow,
+.uhub-root .uhub-mini-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  display: flex;
+  height: 28px;
+  width: 24px;
+  transform: translateY(-50%);
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  line-height: 1;
+}
+
+.uhub-root .uhub-event-arrow.left,
+.uhub-root .uhub-mini-carousel-arrow.left {
+  left: 6px;
+}
+
+.uhub-root .uhub-event-arrow.right,
+.uhub-root .uhub-mini-carousel-arrow.right {
+  right: 6px;
+}
+
+.uhub-root .uhub-header-product-carousel {
+  position: relative;
+  height: 118px;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  background: #1f2937;
+}
+
+.uhub-root .uhub-header-product-overlay {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  left: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.62);
+  padding: 4px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px #000;
+}
+
+.uhub-root .uhub-header-product-overlay button {
+  min-height: 22px;
+  max-width: 100%;
+  border-radius: 4px;
+  background: #2563eb;
+  padding: 2px 6px;
+  color: #fff;
+  font-size: 10px;
+}
+
+.uhub-root .uhub-footer-logo-carousel {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  background: transparent;
+  padding: 4px;
+}
+
+.uhub-root .uhub-footer-logo-carousel > button {
+  display: flex;
+  height: 42px;
+  width: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+.uhub-root .uhub-footer-logo-carousel > div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  justify-content: space-evenly;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.uhub-root .uhub-footer-logo-carousel a {
+  display: flex;
+  height: 42px;
+  width: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 5px;
+}
+
+.uhub-root .uhub-footer-logo-carousel img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
+
 .uhub-root .uhub-pantry-finder select,
 .uhub-root .uhub-pantry-finder input,
 .uhub-root .uhub-pantry-finder textarea {

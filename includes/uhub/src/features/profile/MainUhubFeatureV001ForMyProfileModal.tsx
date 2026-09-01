@@ -509,15 +509,86 @@ const BetaButtonView = () => (
   </div>
 );
 
-const legacyCarouselItems: BroadcastItem[] = [
-  { id: 1, title: 'Ukraine', imageUrl: '/StoreProductsAndImagery/UkraineLogo001.png', clickUrl: 'https://u24.gov.ua' },
-  { id: 2, title: 'Tapestry', imageUrl: '/StoreProductsAndImagery/TapestryVersion001.png', clickUrl: '' },
-  { id: 3, title: 'Union Card', imageUrl: '/defaultUminionUassets/defaultUminionUbadge.png', clickUrl: '' },
+const getNextUnionEventDateLabel = (short = false) => {
+  const today = new Date();
+  const eventDate = new Date(today.getFullYear(), today.getMonth() + (today.getDate() >= 25 ? 1 : 0), 24);
+  return eventDate.toLocaleDateString('en-US', { month: short ? 'short' : 'long', day: 'numeric', year: 'numeric' });
+};
+
+const RotatingUnionEventCard = () => {
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const faces = [
+    { image: '/includes/Uminionad001.png', text: `Next Union Event: ${getNextUnionEventDateLabel()} 9am to 9pm` },
+    { image: '/includes/WYSad001.png', text: 'AD - Sponsored By: WhatsYorStory.com', url: 'https://WhatsYorStory.com' },
+    { image: '/includes/Uminionad001.png', text: `Next Union Event: ${getNextUnionEventDateLabel(true)} (9am to 9pm)` },
+    { image: '/includes/WYSad001.png', text: 'AD - Sponsored By: WhatsYorStory.com', url: 'https://WhatsYorStory.com' },
+  ];
+  useEffect(() => {
+    if (paused) return;
+    const timer = window.setInterval(() => setIndex(value => (value + 1) % faces.length), 4500);
+    return () => window.clearInterval(timer);
+  }, [paused, faces.length]);
+  const activeFace = faces[index];
+  return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeFace.url && window.open(activeFace.url, '_blank')}>
+    <button type="button" className="uhub-event-arrow left" onClick={(event) => { event.stopPropagation(); setIndex(value => (value - 1 + faces.length) % faces.length); }}>‹</button>
+    <img src={activeFace.image} alt="Next Union Event" />
+    <p>{activeFace.text}</p>
+    <button type="button" className="uhub-event-arrow right" onClick={(event) => { event.stopPropagation(); setIndex(value => (value + 1) % faces.length); }}>›</button>
+  </div>;
+};
+
+const headerStoreItems = [
+  { title: 'Ukraine Poster', image: '/StoreProductsAndImagery/UkraineLogo001.png', action: 'u24.gov.ua', url: 'https://u24.gov.ua', cart: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton004.001AAA' },
+  { title: 'BYO Tapestry', image: '/StoreProductsAndImagery/TapestryVersion001.png', action: '+$1,499.95 BYO Tapestry', cart: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.001AAAAA' },
+  { title: 'Union Classic', image: '/StoreProductsAndImagery/UminionLogo001.01.2025Classic.png', action: '+$69.95', cart: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.013.02A' },
+  { title: 'View Cart', image: '/StoreProductsAndImagery/UminionLogo002.02.2025Classic.png', action: 'View Cart', cart: 'https://page001.uminion.com/cart/' },
 ];
 
-const LegacyCarousel = ({ compact = false }: { compact?: boolean }) => (
-  <BroadcastCarousel items={legacyCarouselItems} visibleItemCount={compact ? 1 : 3} />
-);
+const HeaderProductCarousel = () => {
+  const [index, setIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    if (paused) return;
+    const timer = window.setInterval(() => setIndex(value => (value + 1) % headerStoreItems.length), 3000);
+    return () => window.clearInterval(timer);
+  }, [paused]);
+  const item = headerStoreItems[index];
+  return <div className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+    <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + headerStoreItems.length) % headerStoreItems.length)}>‹</button>
+    <img src={item.image} alt={item.title} />
+    <div className="uhub-header-product-overlay">
+      <span>{item.title}</span>
+      <div className="flex gap-1">
+        {item.url && <button type="button" onClick={() => window.open(item.url, '_blank')}>{item.action}</button>}
+        <button type="button" onClick={() => window.open(item.cart, '_blank')}>{item.url ? '+ Cart' : item.action}</button>
+      </div>
+    </div>
+    <button type="button" className="uhub-mini-carousel-arrow right" onClick={() => setIndex(value => (value + 1) % headerStoreItems.length)}>›</button>
+  </div>;
+};
+
+const footerLogoItems = [
+  { name: 'Facebook', url: 'https://www.facebook.com/share/g/16rAWr8eDn/', img: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg' },
+  { name: 'YouTube', url: 'https://www.youtube.com/@UminionUnion', img: 'https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg' },
+  { name: 'Bluesky', url: 'https://bsky.app/profile/uminion.bsky.social', img: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/bluesky.svg' },
+  { name: 'Instagram', url: 'https://www.instagram.com/theuminionunion?igsh=ajdjeGUycHRmczVs&ut-m_source=qr', img: 'https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg' },
+  { name: 'Twitch', url: 'https://www.twitch.tv/theuminionunion', img: 'https://upload.wikimedia.org/wikipedia/commons/2/26/Twitch_logo.svg' },
+  { name: 'Mastodon', url: 'https://mastodon.social/@uminion', img: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/mastodon.svg' },
+  { name: 'Patreon', url: 'https://www.patreon.com/uminion', img: 'https://upload.wikimedia.org/wikipedia/commons/9/94/Patreon_logo.svg' },
+  { name: 'TikTok', url: 'https://www.tiktok.com/@theuminionunion?_t=ZT-8zoud0oiVCf&_r=1', img: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/tiktok.svg' },
+  { name: 'Twitter/X', url: 'https://x.com/theuminionunion', img: 'https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/x.svg' },
+];
+
+const FooterLogoCarousel = () => {
+  const [index, setIndex] = useState(0);
+  const visible = Array.from({ length: 5 }, (_, offset) => footerLogoItems[(index + offset) % footerLogoItems.length]);
+  return <div className="uhub-footer-logo-carousel">
+    <button type="button" onClick={() => setIndex(value => (value - 5 + footerLogoItems.length) % footerLogoItems.length)}>‹</button>
+    <div>{visible.map(item => <a key={item.name} href={item.url} target="_blank" rel="noreferrer" title={item.name}><img src={item.img} alt={item.name} referrerPolicy="no-referrer" /></a>)}</div>
+    <button type="button" onClick={() => setIndex(value => (value + 5) % footerLogoItems.length)}>›</button>
+  </div>;
+};
 
 
 const BroadcastView = ({ 
@@ -2165,6 +2236,7 @@ const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen
 const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyProfileModalProps> = ({ isOpen, onClose, onOpenAuthModal, onBadgeZoom }) => {
   const { user, logout } = useAuth();
   const [isPoliticFilterOpen, setPoliticFilterOpen] = useState(false);
+  const [isPoliticFilterPressed, setPoliticFilterPressed] = useState(false);
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
   const [customizableButtonPage, setCustomizableButtonPage] = useState(1);
   const CustomButtonsPage001sNextPageButton = 'CustomButtonsPage001sNextPageButton';
@@ -3133,7 +3205,7 @@ const resetRightSection = () => {
         )}
       </div>
     </div>
-    <div className="mb-3 overflow-hidden border rounded-md"><LegacyCarousel compact /></div>
+    <div className="mb-3 overflow-hidden border rounded-md"><FooterLogoCarousel /></div>
     <div id="MainUhubFeatureV001ForUsersStores" className="border rounded-md p-2 flex flex-col h-full" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div className="flex justify-between items-center mb-2 sticky top-0 z-10 uhub-users-stores-header" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
     <div className="flex items-center flex-1">
@@ -3989,7 +4061,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
   {!isLeftSectionCollapsed && (
     <>
       <div id="MainUhubFeatureV001ForMyProfileSettingsCenterLeftSection" className="md:border-r overflow-y-auto p-2 md:p-4 text-white" style={{ width: window.innerWidth < 768 ? '100%' : `${leftWidthDesktop}%`, height: window.innerWidth < 768 ? 'auto' : 'auto', backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
-        <div className="mb-3 border rounded-md bg-gray-900 p-2 text-center text-xs"><img src="/includes/Uminionad001.png" alt="Next Union Event" className="mx-auto h-20 w-full object-cover" /><p className="mt-1 font-semibold">Next Union Event: Sep 24, 9am to 9pm</p></div>
+        <RotatingUnionEventCard />
         <h3 className="text-center font-bold mb-2 md:mb-4 text-xs md:text-base">uHome-Hub:</h3>
         <div className="grid grid-cols-2 gap-1 md:gap-2">
           {MainUhubFeatureV001ForUHomeHubButtons.map(num => (
@@ -4011,7 +4083,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             </div>
           ))}
         </div>
-        <div className="mt-4"><LegacyCarousel compact /></div>
+        <div className="mt-4"><HeaderProductCarousel /></div>
       </div>
       
       {/* LEFT DIVIDER - ONLY SHOW IF LEFT NOT COLLAPSED (DESKTOP ONLY) */}
@@ -4057,7 +4129,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateCenterRight('left')}><ChevronLeft className="h-4 w-4" /></Button>
         <h3 className="text-center font-bold mx-1 md:mx-2 text-xs md:text-base text-white">{centerRightView.displayName}</h3>
         <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateCenterRight('right')}><ChevronRight className="h-4 w-4" /></Button>
-        {centerRightView.number === 19 && <Button variant="ghost" size="sm" className="h-7 ml-1 text-xs text-white" onClick={() => setPoliticFilterOpen(open => !open)}>Filter</Button>}
+        {centerRightView.number === 19 && <Button variant="outline" size="sm" className={`h-7 ml-1 border-white text-xs ${isPoliticFilterPressed ? 'bg-blue-500 text-white' : 'bg-black text-white hover:bg-gray-800'}`} onClick={() => { setPoliticFilterOpen(open => !open); setPoliticFilterPressed(true); window.setTimeout(() => setPoliticFilterPressed(false), 220); }}>Filter</Button>}
       </div>
       <div className="space-y-1 md:space-y-4">
         {renderCenterRightContent()}

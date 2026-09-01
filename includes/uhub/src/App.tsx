@@ -170,7 +170,7 @@ useEffect(() => {
       </Routes>
 
       {isProfileModalOpen && (
-        <div className="fixed inset-0 z-[9999] bg-black/50">
+        <div className="fixed inset-0 z-[100200] bg-black/50">
           {sharedProfileUser ? (
             <MainUhubFeatureV001ForUserProfileModal
               isOpen={isProfileModalOpen}

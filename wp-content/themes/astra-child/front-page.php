@@ -124,13 +124,13 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
                 position: fixed;
                 top: 18px;
                 left: 132px;
-                z-index: 100001;
+                z-index: 10000;
             }
             #uhub-launcher-layout .uhub-launcher-avatar {
                 position: fixed;
                 top: 16px;
                 right: 18px;
-                z-index: 100001;
+                z-index: 10000;
             }
 
             /* Outdated Feature as of 9/1/2026: superseded by the uHub experience. */
