@@ -24,6 +24,8 @@ import BroadcastCarouselZoomModal from './BroadcastCarouselZoomModal';
 import TheMemeBoxImplementation001 from './TheMemeBoxImplementation001';
 import { renderTheMemeBox, unmountTheMemeBox } from '@/TheMemeBoxRenderer';
 import { additionalHardCodedCustomButtonPages } from './additional-hard-coded-custom-button-pages';
+import { TheFoodPantryFeature } from '../../../../pantry-finder/src/pages/pantry-feature/the-food-pantry-feature';
+import 'leaflet/dist/leaflet.css';
 
 
 
@@ -170,6 +172,7 @@ const ProductBox = ({ product, onMagnify, onAddToCart }) => {
 };
 
 const UnionRadioPlayer = () => {
+  const { user } = useAuth();
   const [nowPlaying, setNowPlaying] = useState<any>(null);
   const [mediaIndex, setMediaIndex] = useState(0);
   const [replayEpisode, setReplayEpisode] = useState<any>(null);
@@ -178,6 +181,9 @@ const UnionRadioPlayer = () => {
   const [archiveMode, setArchiveMode] = useState<'recent' | 'popular' | 'random'>('recent');
   const [archiveEpisodes, setArchiveEpisodes] = useState<any[]>([]);
   const [calendarEpisodes, setCalendarEpisodes] = useState<any[]>([]);
+  const [commentEpisode, setCommentEpisode] = useState<any>(null);
+  const [episodeComments, setEpisodeComments] = useState<any[]>([]);
+  const [commentText, setCommentText] = useState('');
   const playerRef = useRef<HTMLMediaElement | null>(null);
   const replayPlayerRef = useRef<HTMLMediaElement | null>(null);
   const checkingScheduleRef = useRef(false);
@@ -262,6 +268,39 @@ const UnionRadioPlayer = () => {
     if (response.ok) loadArchive(archiveMode);
   };
 
+  const openComments = async (episode: any) => {
+    setCommentEpisode(episode);
+    setCommentText('');
+    const response = await fetch(`/api/episodes/${episode.id}/comments`, { credentials: 'include' });
+    const comments = response.ok ? await response.json() : [];
+    setEpisodeComments(Array.isArray(comments) ? comments : []);
+  };
+
+  const submitComment = async () => {
+    if (!commentEpisode || !commentText.trim()) return;
+    const response = await fetch(`/api/episodes/${commentEpisode.id}/comments`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: commentText.trim() }),
+    });
+    if (response.ok) {
+      setCommentText('');
+      openComments(commentEpisode);
+    }
+  };
+
+  const EpisodeActions = ({ episode, compact = false }: { episode: any; compact?: boolean }) => (
+    <div className={`flex items-center gap-1 ${compact ? 'mt-1' : 'mt-2'}`}>
+      <Button variant="outline" size="icon" className={compact ? 'h-5 w-5' : 'h-7 w-7'} onClick={() => replay(episode)} title={`Replay ${episode.name}`}><Play className="h-3 w-3" /></Button>
+      <button type="button" className={compact ? 'text-[10px] text-green-400' : 'text-xs text-green-400'} onClick={() => vote(episode.id, 'upvote')}>+{episode.upvotes || 0}</button>
+      <button type="button" className={compact ? 'text-[10px] text-red-400' : 'text-xs text-red-400'} onClick={() => vote(episode.id, 'downvote')}>-{episode.downvotes || 0}</button>
+      <Button variant="ghost" size="icon" className={compact ? 'h-5 w-5' : 'h-7 w-7'} onClick={() => openComments(episode)} title={`View comments for ${episode.name}`}>
+        <img src="/EmojisForUminionWebsite/GreenEmoji004CommentOrChat.png" alt="Comments" className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+
   const media = nowPlaying?.media?.[mediaIndex];
   const replayMedia = replayEpisode?.media?.[replayMediaIndex];
   const toLocalDayKey = (value: Date | string) => {
@@ -297,6 +336,7 @@ const UnionRadioPlayer = () => {
             ) : (
               <audio key={`replay-${replayEpisode.id}-${replayMedia.id}`} ref={replayPlayerRef as React.RefObject<HTMLAudioElement>} className="w-full" controls autoPlay onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></audio>
             ))}
+            <EpisodeActions episode={nowPlaying} />
           </div>
         ) : replayMedia ? (
           <div className="space-y-3">
@@ -322,27 +362,9 @@ const UnionRadioPlayer = () => {
               <span className="min-w-0 flex-1 truncate">{episode.name}</span>
               <button type="button" className="text-green-400" onClick={() => vote(episode.id, 'upvote')}>+{episode.upvotes || 0}</button>
               <button type="button" className="text-red-400" onClick={() => vote(episode.id, 'downvote')}>-{episode.downvotes || 0}</button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openComments(episode)} title={`View comments for ${episode.name}`}><img src="/EmojisForUminionWebsite/GreenEmoji004CommentOrChat.png" alt="Comments" className="h-4 w-4" /></Button>
             </div>
           )) : <p className="text-xs text-muted-foreground">Nothing has finished playing yet.</p>}
-        </div>
-      </section>
-
-      <section className="lg:col-span-2 border rounded-md p-4 bg-gray-950">
-        <div className="flex items-center gap-2 mb-3">
-          <h4 className="font-semibold text-cyan-400 mr-auto">Archive</h4>
-          {(['recent', 'popular', 'random'] as const).map((mode) => <Button key={mode} variant={archiveMode === mode ? 'default' : 'outline'} size="sm" onClick={() => setArchiveMode(mode)}>{mode}</Button>)}
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {archiveEpisodes.map((episode) => (
-            <div key={episode.id} className="border rounded p-2 text-sm">
-              <p className="font-semibold truncate">{episode.name}</p>
-              <div className="flex gap-2 mt-2">
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => replay(episode)} title={`Replay ${episode.name}`}><Play className="h-3 w-3" /></Button>
-                <button type="button" className="text-xs text-green-400" onClick={() => vote(episode.id, 'upvote')}>Up {episode.upvotes}</button>
-                <button type="button" className="text-xs text-red-400" onClick={() => vote(episode.id, 'downvote')}>Down {episode.downvotes}</button>
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -365,11 +387,7 @@ const UnionRadioPlayer = () => {
                         <span className="min-w-0 flex-1 truncate">{episode.name}</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground">{new Date(episode.scheduled_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
-                      {played && <div className="flex items-center gap-1 mt-1">
-                        <Button variant="outline" size="icon" className="h-5 w-5" onClick={() => replay(episode)} title={`Replay ${episode.name}`}><Play className="h-3 w-3" /></Button>
-                        <button type="button" className="text-[10px] text-green-400" onClick={() => vote(episode.id, 'upvote')}>+{episode.upvotes}</button>
-                        <button type="button" className="text-[10px] text-red-400" onClick={() => vote(episode.id, 'downvote')}>-{episode.downvotes}</button>
-                      </div>}
+                      {played && <EpisodeActions episode={episode} compact />}
                     </div>
                   );
                 })}
@@ -378,8 +396,47 @@ const UnionRadioPlayer = () => {
           })}
         </div>
       </section>
+      <section className="lg:col-span-2 border rounded-md p-4 bg-gray-950">
+        <div className="flex items-center gap-2 mb-3">
+          <h4 className="font-semibold text-cyan-400 mr-auto">Archive</h4>
+          {(['recent', 'popular', 'random'] as const).map((mode) => <Button key={mode} variant={archiveMode === mode ? 'default' : 'outline'} size="sm" onClick={() => setArchiveMode(mode)}>{mode}</Button>)}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {archiveEpisodes.map((episode) => (
+            <div key={episode.id} className="border rounded p-2 text-sm">
+              <p className="font-semibold truncate">{episode.name}</p>
+              <EpisodeActions episode={episode} />
+            </div>
+          ))}
+        </div>
+      </section>
+      {commentEpisode && <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/70 p-4" onClick={() => setCommentEpisode(null)}>
+        <div className="w-full max-w-lg border rounded-md bg-black p-4" onClick={(event) => event.stopPropagation()}>
+          <div className="mb-3 flex items-center justify-between"><h4 className="font-semibold">Comments: {commentEpisode.name}</h4><Button variant="ghost" size="icon" onClick={() => setCommentEpisode(null)} title="Close comments"><X className="h-4 w-4" /></Button></div>
+          <div className="max-h-64 space-y-2 overflow-y-auto text-sm">{episodeComments.length ? episodeComments.map((comment) => <div key={comment.id} className="border rounded p-2"><p className="font-semibold text-xs text-cyan-400">{comment.username || 'Member'}</p><p>{comment.content}</p></div>) : <p className="text-muted-foreground">No comments yet.</p>}</div>
+          {user ? <div className="mt-3 flex gap-2"><input className="flex-1 rounded border bg-gray-900 p-2 text-sm text-white" value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="Write a comment..." /><Button onClick={submitComment} disabled={!commentText.trim()}>Post</Button></div> : <p className="mt-3 text-xs text-muted-foreground">Log in to leave a comment.</p>}
+        </div>
+      </div>}
     </div>
   );
+};
+
+const PantryFinderBroadcastView = () => {
+  const [pantries, setPantries] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('/pantry-api/api/pantries').then((response) => response.ok ? response.json() : []).then((items) => setPantries(Array.isArray(items) ? items.filter((item) => item.deleted === 0) : [])).catch(() => setPantries([]));
+  }, []);
+
+  const addPantry = async (pantry: any) => {
+    const response = await fetch('/pantry-api/api/pantries', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pantry) });
+    if (!response.ok) return null;
+    const created = await response.json();
+    setPantries((items) => [...items, created]);
+    return created;
+  };
+
+  return <div className="min-h-[620px] overflow-hidden border rounded-md"><TheFoodPantryFeature pantries={pantries} addPantry={addPantry} /></div>;
 };
 
 
@@ -409,6 +466,7 @@ const BroadcastView = ({
   MainUhubFeatureV001ForModalColors,
 }) => {
   if (broadcastView === 'UnionRadio#15') return <UnionRadioPlayer />;
+  if (broadcastView === 'Find-a-Pantry#13') return <PantryFinderBroadcastView />;
 
   const handleReorderLeft = async (imageId: number) => {
     try {
@@ -2024,7 +2082,7 @@ const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen
 
 
 const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyProfileModalProps> = ({ isOpen, onClose, onOpenAuthModal, onBadgeZoom }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
   const [customizableButtonPage, setCustomizableButtonPage] = useState(1);
   const CustomButtonsPage001sNextPageButton = 'CustomButtonsPage001sNextPageButton';
@@ -2149,6 +2207,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
     steeringWheel: false,
     movie: false,
   });
+  const [showLogout, setShowLogout] = useState(false);
   //i have an error. trying to find the error. is this whats causing the error? part000002 of X ***Update:> I think error is solved; cause this might be a repeat of a working code. aka i think safe maybe to delete as of 2/10/26+maybe yes
   // const [everythingProducts, setEverythingProducts] = useState<Product[]>([]);
   const [allProductsForAdmin, setAllProductsForAdmin] = useState<Product[]>([]);
@@ -2176,6 +2235,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const broadcasts = {
       'UnionNews#14': { memeBoxId: 'TheReactMemeImplementationConnection001', title: 'UnionNews#14 & GEMMMS#25', creator: 'GEMMMS#25', subtitle: 'Got Memes? Share Memes:', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.15-Made-on-NC-JPEG.png', extraImages: ['https://page001.uminion.com/StoreProductsAndImagery/TapestryVersion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/Tshirtbatchversion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/UkraineLogo001.png'], description: 'Welcome to the Uminion Union! We have Rallies every 24th of the month, stores built by unionFolk, chats, news, voting, teach ppl how to code (for free) & even offer an ad-free- meme section below!', website: 'https://github.com/uminionunion/UminionsWebsite/discussions/13' },
       'UnionRadio#15': { title: 'Broadcasts- UnionRadio#15', creator: 'StorytellingSalem', subtitle: 'Under Construction- Union Radio #15.', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.16-Made-on-NC-JPEG.png', extraImages: [], description: 'Union Radio #15 is presently underConstruction; & is expected to be live again, along with when we launch v3!', website: 'https://uminion.com' },
+      'Find-a-Pantry#13': { title: 'Find-a-Pantry#13', creator: 'Uminion Union', subtitle: 'Find and add community resources.', logo: '', extraImages: [], description: 'Find-a-Pantry', website: 'https://uminion.com' },
   };
   const broadcastKeys = ['MyBroadcasts', ...Object.keys(broadcasts)];
   const [selectedFriendForModal, setSelectedFriendForModal] = useState<any>(null);
@@ -2188,6 +2248,12 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
 
 const [isUnionNews14ModalOpen, setIsUnionNews14ModalOpen] = useState(false);
 const [unionNews14Images, setUnionNews14Images] = useState<BroadcastItem[]>([]);
+
+  useEffect(() => {
+    if (!showLogout) return;
+    const timeout = window.setTimeout(() => setShowLogout(false), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [showLogout]);
 
 
   
@@ -3504,8 +3570,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         key={buttonNumber}
         variant="outline"
         size="sm"
-        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [3, 4, 5, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''} ${typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 ? 'text-[0.65rem] text-gray-500 opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
-        style={{ color: '#ffffff', backgroundColor: 'transparent' }}
+        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [3, 4, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''} ${typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 ? 'text-[0.65rem] text-gray-500 opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
+        style={{ color: '#ffffff', backgroundColor: customizableButtonPage === 1 && buttonNumber === 5 ? '#2563eb' : 'transparent' }}
         onClick={() => {
           if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')) {
             setCustomizableButtonPage(page => Math.max(1, page - 1));
@@ -3631,6 +3697,14 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             return;
           }
 
+          if (customizableButtonPage === 1 && buttonNumber === 5) {
+            const nextLionState = !areFeatureIconsActive.lion;
+            setAreFeatureIconsActive(prev => ({ ...prev, lion: nextLionState }));
+            setCenterView('broadcasts');
+            setBroadcastView(nextLionState ? 'Find-a-Pantry#13' : 'UnionNews#14');
+            return;
+          }
+
           setAreFeatureIconsActive(prev => ({
             ...prev,
             heart: buttonNumber === 3 ? !prev.heart : prev.heart,
@@ -3736,9 +3810,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       </button>
     )}
   </div>
-  <div className="absolute bottom-0 right-0 flex items-center gap-2">
-      <div className={`w-3 h-3 rounded-full ${user ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-      <span className="text-xs text-muted-foreground">{user ? 'Online' : 'Not Logged In'}</span>
+    <div className="absolute bottom-0 right-0 flex items-center gap-2">
+      {user ? <Button size="sm" className={showLogout ? 'bg-red-600 hover:bg-red-700 text-white h-7 text-xs' : 'bg-green-600 hover:bg-green-700 text-white h-7 text-xs'} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }}>{showLogout ? 'Log Out' : 'Logged In'}</Button> : <div className="flex gap-1"><Button size="sm" className="h-7 text-xs" onClick={() => onOpenAuthModal('login')}>Log In</Button><Button size="sm" className="h-7 text-xs bg-orange-400 hover:bg-orange-500 text-black" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button></div>}
   </div>
 </div>
          </div>
