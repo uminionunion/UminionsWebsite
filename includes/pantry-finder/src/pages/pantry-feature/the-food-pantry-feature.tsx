@@ -50,6 +50,10 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
     setActiveView('details');
   };
 
+  const refreshCandidates = () => {
+    fetch(pantryApiUrl('/api/candidates')).then(res => res.ok ? res.json() : []).then(data => setCandidates(Array.isArray(data) ? data : [])).catch(console.error);
+  };
+
   const filteredPantries = pantries.filter(p => {
     if (!selectedCountry) return false;
     if (p.country !== selectedCountry) return false;
@@ -128,6 +132,7 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
           onCategoryChange={setSelectedCategories}
           filterOptions={filterOptions}
           setFilterOptions={setFilterOptions}
+          onCandidateCreated={refreshCandidates}
         />
       </div>
     </div>

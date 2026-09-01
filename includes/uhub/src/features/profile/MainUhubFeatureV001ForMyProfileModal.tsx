@@ -25,6 +25,7 @@ import TheMemeBoxImplementation001 from './TheMemeBoxImplementation001';
 import { renderTheMemeBox, unmountTheMemeBox } from '@/TheMemeBoxRenderer';
 import { additionalHardCodedCustomButtonPages } from './additional-hard-coded-custom-button-pages';
 import { TheFoodPantryFeature } from '../../../../pantry-finder/src/pages/pantry-feature/the-food-pantry-feature';
+import { pantryApiUrl } from '@/lib/api';
 import 'leaflet/dist/leaflet.css';
 
 
@@ -121,6 +122,65 @@ interface Product {
   user_store_id?: number;
   user_store_name?: string;
 }
+
+interface PoliticalCandidate {
+  id: number;
+  name: string;
+  country?: string | null;
+  state: string;
+  office: string;
+  website?: string | null;
+  image_url?: string | null;
+  username?: string | null;
+  user_id?: number | null;
+  lat: number;
+  lng: number;
+  show_on_map?: number;
+}
+
+const UnionPoliticCandidates = ({ filtersOpen }: { filtersOpen: boolean }) => {
+  const { user } = useAuth();
+  const [candidates, setCandidates] = useState<PoliticalCandidate[]>([]);
+  const [filters, setFilters] = useState({ country: '', state: '', office: '' });
+  const [editing, setEditing] = useState<PoliticalCandidate | null>(null);
+
+  const loadCandidates = () => fetch(pantryApiUrl('/api/candidates')).then(response => response.ok ? response.json() : []).then((data: PoliticalCandidate[]) => setCandidates([...data].sort(() => Math.random() - 0.5))).catch(console.error);
+  useEffect(() => { loadCandidates(); }, []);
+  const removeCandidate = async (id: number) => {
+    if (!window.confirm('Delete this candidate card?')) return;
+    const response = await fetch(pantryApiUrl(`/api/candidates/${id}`), { method: 'DELETE', credentials: 'include' });
+    if (!response.ok) return alert((await response.json()).message || 'Unable to delete candidate.');
+    loadCandidates();
+  };
+  const saveCandidate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editing) return;
+    const response = await fetch(pantryApiUrl(`/api/candidates/${editing.id}`), { method: 'PUT', credentials: 'include', body: new FormData(event.currentTarget) });
+    if (!response.ok) return alert((await response.json()).message || 'Unable to update candidate.');
+    setEditing(null);
+    loadCandidates();
+  };
+  const visibleCandidates = candidates.filter(candidate =>
+    (!filters.country || candidate.country === filters.country) &&
+    (!filters.state || candidate.state === filters.state) &&
+    (!filters.office || candidate.office === filters.office));
+  const options = (field: 'country' | 'state' | 'office') => [...new Set(candidates.map(candidate => candidate[field]).filter(Boolean))] as string[];
+
+  return <div className="border rounded-md p-3 space-y-3">
+    {filtersOpen && <div className="grid grid-cols-3 gap-2">
+      {(['country', 'state', 'office'] as const).map(field => <select key={field} value={filters[field]} onChange={event => setFilters({ ...filters, [field]: event.target.value })} className="bg-black border rounded p-1 text-xs"><option value="">All {field}s</option>{options(field).map(value => <option key={value} value={value}>{value}</option>)}</select>)}
+    </div>}
+    <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto">
+      {visibleCandidates.map(candidate => <article key={candidate.id} className="border rounded-md p-2 relative min-h-24">
+        <div className="flex gap-2"><div className="h-16 w-16 shrink-0 bg-gray-800">{candidate.image_url && <img src={candidate.image_url} alt={candidate.name} className="h-full w-full object-cover" />}</div><div className="min-w-0"><h4 className="font-semibold truncate">{candidate.name}</h4><p className="text-xs text-muted-foreground">{[candidate.country, candidate.state, candidate.office].filter(Boolean).join(' | ')}</p>{candidate.website && <a href={candidate.website} target="_blank" rel="noreferrer" className="text-xs text-orange-400 hover:underline break-all">Website</a>}</div></div>
+        {user?.id === candidate.user_id && <div className="absolute right-1 bottom-1 flex gap-1"><Button size="icon" variant="ghost" className="h-6 w-6" title="Edit candidate" onClick={() => setEditing(candidate)}><Pencil className="h-3 w-3" /></Button><Button size="icon" variant="ghost" className="h-6 w-6 text-red-400" title="Delete candidate" onClick={() => removeCandidate(candidate.id)}><Trash2 className="h-3 w-3" /></Button></div>}
+        <span className="absolute bottom-1 right-1 text-xs text-muted-foreground pr-1">{candidate.username || 'Community'}</span>
+      </article>)}
+      {!visibleCandidates.length && <p className="text-sm text-muted-foreground text-center py-6">No candidate cards match these filters.</p>}
+    </div>
+    {editing && <form onSubmit={saveCandidate} className="border-t pt-3 grid gap-2"><input name="name" defaultValue={editing.name} required className="bg-black border rounded p-2" /><input name="country" defaultValue={editing.country || ''} required className="bg-black border rounded p-2" /><input name="state" defaultValue={editing.state} className="bg-black border rounded p-2" /><input name="office" defaultValue={editing.office} required className="bg-black border rounded p-2" /><input name="website" defaultValue={editing.website || ''} placeholder="Website" className="bg-black border rounded p-2" /><div className="grid grid-cols-2 gap-2"><input name="lat" type="number" step="any" defaultValue={editing.lat} className="bg-black border rounded p-2" aria-label="Optional latitude" /><input name="lng" type="number" step="any" defaultValue={editing.lng} className="bg-black border rounded p-2" aria-label="Optional longitude" /></div><input name="image" type="file" accept="image/jpeg,image/png" className="text-xs" /><div className="flex gap-2"><Button type="submit" size="sm">Save</Button><Button type="button" size="sm" variant="outline" onClick={() => setEditing(null)}>Cancel</Button></div></form>}
+  </div>;
+};
 
 const ProductBox = ({ product, onMagnify, onAddToCart }) => {
     const [inCart, setInCart] = useState(false);
@@ -436,8 +496,28 @@ const PantryFinderBroadcastView = () => {
     return created;
   };
 
-  return <div className="min-h-[620px] overflow-hidden border rounded-md"><TheFoodPantryFeature pantries={pantries} addPantry={addPantry} /></div>;
+  return <div className="uhub-pantry-finder min-h-[620px] h-[70vh] overflow-hidden border rounded-md bg-gray-950"><TheFoodPantryFeature pantries={pantries} addPantry={addPantry} /></div>;
 };
+
+const BetaButtonView = () => (
+  <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-5">
+    {Array.from({ length: 25 }, (_, index) => index + 1).map((page) => (
+      <a key={page} className="flex min-h-20 items-center justify-center border rounded-md bg-gray-900 text-sm font-semibold text-cyan-300 hover:border-orange-400 hover:text-white" href={`/?betaPage=${page}`}>
+        Page{String(page).padStart(3, '0')}
+      </a>
+    ))}
+  </div>
+);
+
+const legacyCarouselItems: BroadcastItem[] = [
+  { id: 1, title: 'Ukraine', imageUrl: '/StoreProductsAndImagery/UkraineLogo001.png', clickUrl: 'https://u24.gov.ua' },
+  { id: 2, title: 'Tapestry', imageUrl: '/StoreProductsAndImagery/TapestryVersion001.png', clickUrl: '' },
+  { id: 3, title: 'Union Card', imageUrl: '/defaultUminionUassets/defaultUminionUbadge.png', clickUrl: '' },
+];
+
+const LegacyCarousel = ({ compact = false }: { compact?: boolean }) => (
+  <BroadcastCarousel items={legacyCarouselItems} visibleItemCount={compact ? 1 : 3} />
+);
 
 
 const BroadcastView = ({ 
@@ -467,6 +547,7 @@ const BroadcastView = ({
 }) => {
   if (broadcastView === 'UnionRadio#15') return <UnionRadioPlayer />;
   if (broadcastView === 'Find-a-Pantry#13') return <PantryFinderBroadcastView />;
+  if (broadcastView === 'Beta-Button-10,011') return <BetaButtonView />;
 
   const handleReorderLeft = async (imageId: number) => {
     try {
@@ -2083,6 +2164,7 @@ const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen
 
 const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyProfileModalProps> = ({ isOpen, onClose, onOpenAuthModal, onBadgeZoom }) => {
   const { user, logout } = useAuth();
+  const [isPoliticFilterOpen, setPoliticFilterOpen] = useState(false);
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
   const [customizableButtonPage, setCustomizableButtonPage] = useState(1);
   const CustomButtonsPage001sNextPageButton = 'CustomButtonsPage001sNextPageButton';
@@ -2236,6 +2318,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
       'UnionNews#14': { memeBoxId: 'TheReactMemeImplementationConnection001', title: 'UnionNews#14 & GEMMMS#25', creator: 'GEMMMS#25', subtitle: 'Got Memes? Share Memes:', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.15-Made-on-NC-JPEG.png', extraImages: ['https://page001.uminion.com/StoreProductsAndImagery/TapestryVersion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/Tshirtbatchversion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/UkraineLogo001.png'], description: 'Welcome to the Uminion Union! We have Rallies every 24th of the month, stores built by unionFolk, chats, news, voting, teach ppl how to code (for free) & even offer an ad-free- meme section below!', website: 'https://github.com/uminionunion/UminionsWebsite/discussions/13' },
       'UnionRadio#15': { title: 'Broadcasts- UnionRadio#15', creator: 'StorytellingSalem', subtitle: 'Under Construction- Union Radio #15.', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.16-Made-on-NC-JPEG.png', extraImages: [], description: 'Union Radio #15 is presently underConstruction; & is expected to be live again, along with when we launch v3!', website: 'https://uminion.com' },
       'Find-a-Pantry#13': { title: 'Find-a-Pantry#13', creator: 'Uminion Union', subtitle: 'Find and add community resources.', logo: '', extraImages: [], description: 'Find-a-Pantry', website: 'https://uminion.com' },
+      'Beta-Button-10,011': { title: 'Beta-Button-10,011', creator: 'Uminion Union', subtitle: 'Features in Development', logo: '', extraImages: [], description: 'Beta Pages', website: 'https://uminion.com' },
   };
   const broadcastKeys = ['MyBroadcasts', ...Object.keys(broadcasts)];
   const [selectedFriendForModal, setSelectedFriendForModal] = useState<any>(null);
@@ -3050,6 +3133,7 @@ const resetRightSection = () => {
         )}
       </div>
     </div>
+    <div className="mb-3 overflow-hidden border rounded-md"><LegacyCarousel compact /></div>
     <div id="MainUhubFeatureV001ForUsersStores" className="border rounded-md p-2 flex flex-col h-full" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div className="flex justify-between items-center mb-2 sticky top-0 z-10 uhub-users-stores-header" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
     <div className="flex items-center flex-1">
@@ -3152,9 +3236,7 @@ const resetRightSection = () => {
 )}
 
             {isUnionPolitic19 && (
-                <div className="border rounded-md p-4 flex items-center justify-center text-muted-foreground h-48">
-                    This store is coming soon
-                </div>
+              <UnionPoliticCandidates filtersOpen={isPoliticFilterOpen} />
             )}
 
             {!isUnionSAM20 && !isUnionPolitic19 && (
@@ -3705,6 +3787,12 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             return;
           }
 
+          if (customizableButtonPage === 715 && buttonNumber === 10011 && (user?.id === 1 || user?.id === 2)) {
+            setCenterView('broadcasts');
+            setBroadcastView(current => current === 'Beta-Button-10,011' ? 'UnionNews#14' : 'Beta-Button-10,011');
+            return;
+          }
+
           setAreFeatureIconsActive(prev => ({
             ...prev,
             heart: buttonNumber === 3 ? !prev.heart : prev.heart,
@@ -3718,7 +3806,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             setIsQuadrantsModalOpen(true);
           }
         }}
-        disabled={typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012}
+        disabled={typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 && !(customizableButtonPage === 715 && buttonNumber === 10011 && (user?.id === 1 || user?.id === 2))}
         title={typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')
           ? 'Previous button page'
           : typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')
@@ -3901,6 +3989,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
   {!isLeftSectionCollapsed && (
     <>
       <div id="MainUhubFeatureV001ForMyProfileSettingsCenterLeftSection" className="md:border-r overflow-y-auto p-2 md:p-4 text-white" style={{ width: window.innerWidth < 768 ? '100%' : `${leftWidthDesktop}%`, height: window.innerWidth < 768 ? 'auto' : 'auto', backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+        <div className="mb-3 border rounded-md bg-gray-900 p-2 text-center text-xs"><img src="/includes/Uminionad001.png" alt="Next Union Event" className="mx-auto h-20 w-full object-cover" /><p className="mt-1 font-semibold">Next Union Event: Sep 24, 9am to 9pm</p></div>
         <h3 className="text-center font-bold mb-2 md:mb-4 text-xs md:text-base">uHome-Hub:</h3>
         <div className="grid grid-cols-2 gap-1 md:gap-2">
           {MainUhubFeatureV001ForUHomeHubButtons.map(num => (
@@ -3922,6 +4011,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             </div>
           ))}
         </div>
+        <div className="mt-4"><LegacyCarousel compact /></div>
       </div>
       
       {/* LEFT DIVIDER - ONLY SHOW IF LEFT NOT COLLAPSED (DESKTOP ONLY) */}
@@ -3967,6 +4057,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateCenterRight('left')}><ChevronLeft className="h-4 w-4" /></Button>
         <h3 className="text-center font-bold mx-1 md:mx-2 text-xs md:text-base text-white">{centerRightView.displayName}</h3>
         <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateCenterRight('right')}><ChevronRight className="h-4 w-4" /></Button>
+        {centerRightView.number === 19 && <Button variant="ghost" size="sm" className="h-7 ml-1 text-xs text-white" onClick={() => setPoliticFilterOpen(open => !open)}>Filter</Button>}
       </div>
       <div className="space-y-1 md:space-y-4">
         {renderCenterRightContent()}

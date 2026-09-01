@@ -32,10 +32,17 @@ export interface Politician {
 export interface Candidate {
   id: number;
   name: string;
-  office: 'House' | 'Senate';
+  office: string;
   state: string;
   district: number | null;
   party: string;
   lat: number;
   lng: number;
+  country?: string | null;
+  website?: string | null;
+  image_url?: string | null;
+  user_id?: number | null;
+  username?: string | null;
+  show_on_map?: number;
+  created_at?: string;
 }

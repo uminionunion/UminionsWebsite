@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { countries } from './countries-data';
+import { useAuth } from '@/hooks/useAuth';
+import { pantryApiUrl } from '@/lib/api';
 
 const officeTypes = [
   { id: 'House', label: 'House' },
@@ -18,20 +20,25 @@ const officeTypes = [
 
 const sortedCountryList = Object.keys(countries).sort();
 
-export function RunningForOfficeForm() {
+export function RunningForOfficeForm({ onCandidateCreated }: { onCandidateCreated?: () => void }) {
+  const { user } = useAuth();
   const [submissionResult, setSubmissionResult] = React.useState<{ message: string; link: string } | null>(null);
   const [selectedCountry, setSelectedCountry] = React.useState<string>('USA');
   const [selectedState, setSelectedState] = React.useState<string>('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [showOnMap, setShowOnMap] = React.useState('yes');
 
   const states = countries[selectedCountry] || [];
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-    
-    // Here you would normally send the data to your backend
-    console.log('Form submitted:', data);
+    if (!user) return;
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(pantryApiUrl('/api/candidates'), { method: 'POST', credentials: 'include', body: formData });
+      if (!response.ok) throw new Error((await response.json()).message || 'Submission failed');
+      onCandidateCreated?.();
 
     // Mocking backend response
     // In a real app, you'd fetch this link from your backend based on country/state
@@ -42,6 +49,11 @@ export function RunningForOfficeForm() {
       message: "Here's the unionCandidate to unionCandidate whatsapp channel to meet other unionCandidates who have tossed their name into the ring: uminion.com \" & Ask any questions and/or discuss strategies there! -Salem",
       link: ballotAccessLink,
     });
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Unable to submit candidate card.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (submissionResult) {
@@ -121,7 +133,7 @@ export function RunningForOfficeForm() {
       </div>
       <div className="space-y-2">
         <Label>Optional: Want a marker of you running; placed on the map?</Label>
-        <RadioGroup name="show_on_map" defaultValue="yes">
+        <RadioGroup name="show_on_map" value={showOnMap} onValueChange={setShowOnMap}>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="yes" id="show-yes" />
             <Label htmlFor="show-yes">Yes</Label>
@@ -132,7 +144,17 @@ export function RunningForOfficeForm() {
           </div>
         </RadioGroup>
       </div>
-      <Button type="submit" className="w-full">Submit</Button>
+      {showOnMap === 'yes' && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2"><Label htmlFor="lat">Optional Latitude</Label><Input id="lat" name="lat" type="number" step="any" /></div>
+          <div className="space-y-2"><Label htmlFor="lng">Optional Longitude</Label><Input id="lng" name="lng" type="number" step="any" /></div>
+        </div>
+      )}
+      <div className="space-y-2">
+        <Label htmlFor="candidate-image" className="pantry-finder-field-label">Photo (JPG or PNG)</Label>
+        <Input id="candidate-image" name="image" type="file" accept="image/jpeg,image/png" />
+      </div>
+      <Button type="submit" className="w-full" disabled={!user || isSubmitting}>{!user ? 'Log in to submit' : isSubmitting ? 'Submitting...' : 'Submit'}</Button>
     </form>
   );
 }

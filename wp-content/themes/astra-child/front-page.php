@@ -118,6 +118,41 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             #uhub-launcher-layout .uhub-launcher-uhub,
             #uhub-launcher-layout .uhub-launcher-facebook { width: 100px; }
             #uhub-launcher-layout .uhub-launcher-facebook > button { width: 100%; }
+
+            /* The retired menu location is now the uHub entry point. */
+            #uhub-launcher-layout .uhub-launcher-uhub {
+                position: fixed;
+                top: 18px;
+                left: 132px;
+                z-index: 100001;
+            }
+            #uhub-launcher-layout .uhub-launcher-avatar {
+                position: fixed;
+                top: 16px;
+                right: 18px;
+                z-index: 100001;
+            }
+
+            /* Outdated Feature as of 9/1/2026: superseded by the uHub experience. */
+            #headerRightContainer000,
+            #headerRightContainer001,
+            #headerRightContainer002,
+            #headerRightContainer002\.01,
+            #headerRightContainer002\.02,
+            #headerRightContainer003,
+            #headerRightContainer004,
+            #headerRightContainer005,
+            #headerRightContainer006,
+            .innerDivAbovePlacard,
+            .innerDivBelowPlacard,
+            #BannerAtTopOfPage,
+            #BannerAtBottomOfPage,
+            .scene00002,
+            .scene0000002,
+            .BetaButtonV001-root,
+            #uhub-launcher-layout .uhub-launcher-facebook {
+                display: none !important;
+            }
         </style>
 
 		<!-- This Code ABOVE is part of: "GitHub Quest#34's Part 2 of Z: (part of 'making the React Code work by making our html/main code page, start expecting some react code' of:) 'inserting the ROOT-id-code that our react will use for creating the 'MainHub' of our ReactNavBar"-->

@@ -19,9 +19,10 @@ interface PantryControlsProps {
   onCategoryChange: (categories: Category[]) => void;
   filterOptions: any;
   setFilterOptions: React.Dispatch<React.SetStateAction<any>>;
+  onCandidateCreated?: () => void;
 }
 
-export function PantryControls({ addPantry, activeView, setActiveView, selectedPantry, selectedCountry, selectedState, onCountryChange, onStateChange, selectedCategories, onCategoryChange, filterOptions, setFilterOptions }: PantryControlsProps) {
+export function PantryControls({ addPantry, activeView, setActiveView, selectedPantry, selectedCountry, selectedState, onCountryChange, onStateChange, selectedCategories, onCategoryChange, filterOptions, setFilterOptions, onCandidateCreated }: PantryControlsProps) {
 
   const handleAddPantry = async (pantryData: Omit<Pantry, 'id' | 'deleted'>) => {
     const newPantry = await addPantry(pantryData);
@@ -39,7 +40,7 @@ export function PantryControls({ addPantry, activeView, setActiveView, selectedP
       case 'details':
         return selectedPantry ? <PantryDetailsView pantry={selectedPantry} /> : <p>No pantry selected.</p>;
       case 'running':
-        return <RunningForOfficeForm />;
+        return <RunningForOfficeForm onCandidateCreated={onCandidateCreated} />;
       default:
         return <FindPantryView selectedCategories={selectedCategories} onCategoryChange={onCategoryChange} selectedCountry={selectedCountry} selectedState={selectedState} onCountryChange={onCountryChange} onStateChange={onStateChange} filterOptions={filterOptions} setFilterOptions={setFilterOptions} />;
     }

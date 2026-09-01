@@ -114,7 +114,7 @@ export function PantryMap({ pantries = [], politicians = [], candidates = [], on
           </Marker>
         );
       })}
-      {!isPreview && candidates.map(candidate => (
+      {!isPreview && candidates.filter(candidate => candidate.show_on_map !== 0).map(candidate => (
         <Marker
           key={`candidate-${candidate.id}`}
           position={[candidate.lat, candidate.lng]}

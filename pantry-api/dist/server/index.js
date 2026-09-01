@@ -26,6 +26,11 @@ catch (e) {
 }
 import express from 'express';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
+import jwt from 'jsonwebtoken';
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
 import { setupStaticServing } from './static-serve.js';
 import { db } from './db.js';
 dotenv.config();
@@ -71,6 +76,55 @@ installMountLogging(app);
 // Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+const candidateImageDirectory = path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'candidate-images');
+fs.mkdirSync(candidateImageDirectory, { recursive: true });
+app.use('/candidate-images', express.static(candidateImageDirectory));
+const candidateImageUpload = multer({
+    storage: multer.diskStorage({
+        destination: candidateImageDirectory,
+        filename: (_req, file, callback) => callback(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname).toLowerCase()}`),
+    }),
+    fileFilter: (_req, file, callback) => callback(null, ['image/jpeg', 'image/png'].includes(file.mimetype)),
+    limits: { fileSize: 5 * 1024 * 1024 },
+});
+function requireUhubAuth(req, res, next) {
+    const token = req.cookies?.token;
+    if (!token)
+        return res.status(401).json({ message: 'Authentication required.' });
+    try {
+        req.user = jwt.verify(token, process.env.JWT_SECRET || 'your-super-secret-key');
+        next();
+    }
+    catch {
+        return res.status(401).json({ message: 'Invalid or expired authentication.' });
+    }
+}
+const stateMarkerAnchors = {
+    Alabama: { lat: 32.8067, lng: -86.7911, radius: 1.6 }, Alaska: { lat: 61.3707, lng: -152.4044, radius: 5.5 }, Arizona: { lat: 33.7298, lng: -111.4312, radius: 2.0 }, Arkansas: { lat: 34.9697, lng: -92.3731, radius: 1.5 }, California: { lat: 36.1162, lng: -119.6816, radius: 2.8 }, Colorado: { lat: 39.0598, lng: -105.3111, radius: 2.0 }, Connecticut: { lat: 41.5978, lng: -72.7554, radius: 0.5 }, Delaware: { lat: 39.3185, lng: -75.5071, radius: 0.4 }, Florida: { lat: 27.7663, lng: -81.6868, radius: 2.1 }, Georgia: { lat: 33.0406, lng: -83.6431, radius: 1.6 }, Hawaii: { lat: 21.0943, lng: -157.4983, radius: 1.0 }, Idaho: { lat: 44.2405, lng: -114.4788, radius: 2.2 }, Illinois: { lat: 40.3495, lng: -88.9861, radius: 1.5 }, Indiana: { lat: 39.8494, lng: -86.2583, radius: 1.1 }, Iowa: { lat: 42.0115, lng: -93.2105, radius: 1.3 }, Kansas: { lat: 38.5266, lng: -96.7265, radius: 1.6 }, Kentucky: { lat: 37.6681, lng: -84.6701, radius: 1.3 }, Louisiana: { lat: 31.1695, lng: -91.8678, radius: 1.4 }, Maine: { lat: 44.6939, lng: -69.3819, radius: 1.3 }, Maryland: { lat: 39.0639, lng: -76.8021, radius: 0.8 }, Massachusetts: { lat: 42.2302, lng: -71.5301, radius: 0.7 }, Michigan: { lat: 43.3266, lng: -84.5361, radius: 1.7 }, Minnesota: { lat: 45.6945, lng: -93.9002, radius: 1.8 }, Mississippi: { lat: 32.7416, lng: -89.6787, radius: 1.4 }, Missouri: { lat: 38.4561, lng: -92.2884, radius: 1.5 }, Montana: { lat: 46.9219, lng: -110.4544, radius: 2.7 }, Nebraska: { lat: 41.1254, lng: -98.2681, radius: 1.8 }, Nevada: { lat: 38.3135, lng: -117.0554, radius: 2.3 }, 'New Hampshire': { lat: 43.4525, lng: -71.5639, radius: 0.8 }, 'New Jersey': { lat: 40.2989, lng: -74.5210, radius: 0.7 }, 'New Mexico': { lat: 34.8405, lng: -106.2485, radius: 2.0 }, 'New York': { lat: 42.1657, lng: -74.9481, radius: 1.7 }, 'North Carolina': { lat: 35.6301, lng: -79.8064, radius: 1.5 }, 'North Dakota': { lat: 47.5289, lng: -99.7840, radius: 1.8 }, Ohio: { lat: 40.3888, lng: -82.7649, radius: 1.2 }, Oklahoma: { lat: 35.5653, lng: -96.9289, radius: 1.6 }, Oregon: { lat: 44.5720, lng: -122.0709, radius: 2.0 }, Pennsylvania: { lat: 40.5908, lng: -77.2098, radius: 1.2 }, 'Rhode Island': { lat: 41.6809, lng: -71.5118, radius: 0.25 }, 'South Carolina': { lat: 33.8569, lng: -80.9450, radius: 1.1 }, 'South Dakota': { lat: 44.2998, lng: -99.4388, radius: 1.8 }, Tennessee: { lat: 35.7478, lng: -86.6923, radius: 1.4 }, Texas: { lat: 31.0545, lng: -97.5635, radius: 3.0 }, Utah: { lat: 40.1500, lng: -111.8624, radius: 1.7 }, Vermont: { lat: 44.0459, lng: -72.7107, radius: 0.7 }, Virginia: { lat: 37.7693, lng: -78.1700, radius: 1.3 }, Washington: { lat: 47.4009, lng: -121.4905, radius: 1.5 }, 'West Virginia': { lat: 38.4912, lng: -80.9545, radius: 1.0 }, Wisconsin: { lat: 44.2685, lng: -89.6165, radius: 1.4 }, Wyoming: { lat: 42.7560, lng: -107.3025, radius: 2.0 }
+};
+const countryMarkerAnchors = {
+    USA: { lat: 39.8283, lng: -98.5795, radius: 8 }, Canada: { lat: 56.1304, lng: -106.3468, radius: 10 }, Mexico: { lat: 23.6345, lng: -102.5528, radius: 5 }
+};
+function optionalCoordinate(value) {
+    if (value === undefined || value === null || value === '')
+        return null;
+    const numericValue = Number(Array.isArray(value) ? value[0] : value);
+    return Number.isFinite(numericValue) ? numericValue : null;
+}
+function resolveCandidatePoint(country, state, lat, lng) {
+    const providedLat = optionalCoordinate(lat);
+    const providedLng = optionalCoordinate(lng);
+    if (providedLat !== null && providedLng !== null)
+        return { lat: providedLat, lng: providedLng };
+    const anchor = stateMarkerAnchors[state] || countryMarkerAnchors[country] || { lat: 20, lng: 0, radius: 12 };
+    const angle = Math.random() * Math.PI * 2;
+    const distance = Math.sqrt(Math.random()) * anchor.radius;
+    return { lat: anchor.lat + Math.sin(angle) * distance, lng: anchor.lng + Math.cos(angle) * distance };
+}
+function resolveOffice(value) {
+    return Array.isArray(value) ? value.join(', ') : String(value || '');
+}
 /**
  * Normalize a raw BASE_PATH or BASE_URL value so it is always a safe single pathname.
  *
@@ -269,6 +323,84 @@ router.get('/api/candidates', async (req, res) => {
     catch (error) {
         console.error('Failed to get candidates:', error);
         res.status(500).json({ message: 'Failed to retrieve candidates' });
+    }
+});
+router.post('/api/candidates', requireUhubAuth, candidateImageUpload.single('image'), async (req, res) => {
+    try {
+        const { name, country, state, office, office_type, website, lat, lng, show_on_map } = req.body;
+        const resolvedOffice = resolveOffice(office || office_type);
+        if (!name?.trim() || !country || !resolvedOffice) {
+            return res.status(400).json({ message: 'Name, country, and office are required.' });
+        }
+        const markerPoint = resolveCandidatePoint(country, state || '', lat, lng);
+        const user = req.user;
+        const candidate = await db.insertInto('candidates').values({
+            name: name.trim(), country, state: state || '', office: resolvedOffice, website: website?.trim() || null,
+            lat: markerPoint.lat, lng: markerPoint.lng, party: '', district: null,
+            image_url: req.file ? `/pantry-api/candidate-images/${req.file.filename}` : null,
+            user_id: user.userId, username: user.username, show_on_map: show_on_map === 'no' ? 0 : 1,
+            created_at: new Date().toISOString(),
+        }).returningAll().executeTakeFirstOrThrow();
+        res.status(201).json(candidate);
+    }
+    catch (error) {
+        console.error('Failed to create candidate:', error);
+        res.status(500).json({ message: 'Failed to create candidate' });
+    }
+});
+router.put('/api/candidates/:id', requireUhubAuth, candidateImageUpload.single('image'), async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const candidate = await db.selectFrom('candidates').selectAll().where('id', '=', id).executeTakeFirst();
+        if (!candidate)
+            return res.status(404).json({ message: 'Candidate not found.' });
+        if (candidate.user_id !== req.user.userId)
+            return res.status(403).json({ message: 'You can only edit your own candidate card.' });
+        const { name, country, state, office, website, lat, lng, show_on_map } = req.body;
+        const nextCountry = country || candidate.country || '';
+        const nextState = state ?? candidate.state;
+        const providedLat = optionalCoordinate(lat);
+        const providedLng = optionalCoordinate(lng);
+        if ((providedLat === null) !== (providedLng === null)) {
+            return res.status(400).json({ message: 'Latitude and longitude must be provided together.' });
+        }
+        const regionChanged = nextCountry !== (candidate.country || '') || nextState !== candidate.state;
+        const markerPoint = providedLat !== null && providedLng !== null
+            ? { lat: providedLat, lng: providedLng }
+            : regionChanged
+                ? resolveCandidatePoint(nextCountry, nextState, undefined, undefined)
+                : { lat: candidate.lat, lng: candidate.lng };
+        const updated = await db.updateTable('candidates').set({
+            name: name?.trim() || candidate.name, country: nextCountry, state: nextState,
+            office: office || candidate.office, website: website?.trim() || null,
+            lat: markerPoint.lat,
+            lng: markerPoint.lng,
+            show_on_map: show_on_map === undefined ? candidate.show_on_map : show_on_map === 'no' ? 0 : 1,
+            image_url: req.file ? `/pantry-api/candidate-images/${req.file.filename}` : candidate.image_url,
+        }).where('id', '=', id).returningAll().executeTakeFirstOrThrow();
+        res.json(updated);
+    }
+    catch (error) {
+        console.error('Failed to update candidate:', error);
+        res.status(500).json({ message: 'Failed to update candidate' });
+    }
+});
+router.delete('/api/candidates/:id', requireUhubAuth, async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        const candidate = await db.selectFrom('candidates').select(['user_id', 'image_url']).where('id', '=', id).executeTakeFirst();
+        if (!candidate)
+            return res.status(404).json({ message: 'Candidate not found.' });
+        if (candidate.user_id !== req.user.userId)
+            return res.status(403).json({ message: 'You can only delete your own candidate card.' });
+        await db.deleteFrom('candidates').where('id', '=', id).execute();
+        if (candidate.image_url)
+            fs.unlink(path.join(candidateImageDirectory, path.basename(candidate.image_url)), () => { });
+        res.json({ message: 'Candidate deleted.' });
+    }
+    catch (error) {
+        console.error('Failed to delete candidate:', error);
+        res.status(500).json({ message: 'Failed to delete candidate' });
     }
 });
 router.get('/api/geocode', async (req, res) => {
