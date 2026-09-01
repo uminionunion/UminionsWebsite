@@ -12,7 +12,7 @@ import { Pencil } from 'lucide-react';
 
 const MainUhubFeatureV001Layout = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const { user, logout, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'signup' }>({ isOpen: false, mode: 'login' });
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
   const [sharedProfileUser, setSharedProfileUser] = useState<any>(null);
@@ -91,10 +91,6 @@ useEffect(() => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleLogout = async () => {
-    await logout();
-  };
-
   const handleOpenAuthModal = (mode: 'login' | 'signup') => {
     setAuthModal({ isOpen: true, mode });
   };
@@ -143,22 +139,7 @@ useEffect(() => {
         )}
       </Button>
 
-      {isAuthLoading ? (
-        <span id="loading-text">loading...</span>
-      ) : !user ? (
-        <>
-          <Button onClick={() => handleOpenAuthModal('signup')} className="bg-orange-400 hover:bg-orange-500 text-black uhub-launcher-signup">Sign Up?</Button>
-          <Button onClick={() => handleOpenAuthModal('login')} className="uhub-launcher-login">Log In?</Button>
-        </>
-      ) : (
-        <Button
-          onClick={handleLogout}
-          className="uhub-launcher-logout"
-          style={{ backgroundColor: '#3f464f', color: '#ef4444' }}
-        >
-          Log Out
-        </Button>
-      )}
+      {isAuthLoading && <span id="loading-text">loading...</span>}
 
       <a href="https://www.facebook.com/groups/uminion/" target="_blank" rel="noopener noreferrer" className="uhub-launcher-facebook">
         <Button>Find us on FB!</Button>
