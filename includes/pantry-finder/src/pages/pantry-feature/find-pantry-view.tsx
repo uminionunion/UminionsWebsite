@@ -63,10 +63,10 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
 
   return (
     <div>
-      <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <h4 className="pantry-finder-section-title font-medium mb-2">Find a:</h4>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {categoryTypes.map(type => (
               <div key={type.id} className="flex items-center space-x-2">
                 <Checkbox 
@@ -106,7 +106,7 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
 
         <div>
           <h4 className="pantry-finder-section-title font-medium mb-2">Country</h4>
-          <div className="max-h-20 overflow-y-auto space-y-2 p-2 border rounded-md">
+          <div className="max-h-[72px] overflow-y-auto space-y-2 p-2 border rounded-md">
             <RadioGroup value={selectedCountry || ''} onValueChange={handleCountryChange}>
               {sortedCountryList.map(country => (
                 <div key={country} className="flex items-center space-x-2">
@@ -121,7 +121,7 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
         {states && states.length > 0 && (
           <div>
             <h4 className="pantry-finder-section-title font-medium mb-2">{selectedCountry} States/Provinces</h4>
-            <div className="max-h-40 overflow-y-auto space-y-2 p-2 border rounded-md">
+            <div className="max-h-[72px] overflow-y-auto space-y-2 p-2 border rounded-md">
               <RadioGroup value={selectedState || ''} onValueChange={handleStateChange}>
                 {states.map(state => (
                   <div key={state} className="flex items-center space-x-2">

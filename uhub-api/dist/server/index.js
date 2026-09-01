@@ -13,6 +13,7 @@ import memesRouter from './memes.js';
 import socialPostsRouter from './social-posts.js';
 import broadcastsRouter from './broadcasts.js';
 import umiMatchRouter from './umimatch.js';
+import millionPixelRouter from './million-pixel.js';
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
@@ -148,6 +149,8 @@ app.use(socialPostsRouter);
 app.use(broadcastsRouter);
 // Register UmiMatch routes
 app.use(umiMatchRouter);
+// Register Million-Pixel routes
+app.use(millionPixelRouter);
 // NEW: User lookup route (accessible to all, no auth required)
 app.get('/api/users/by-username/:username', async (req, res) => {
     try {
@@ -530,6 +533,33 @@ app.post('/api/chat/mark-as-read', authMiddleware, async (req, res) => {
     catch (error) {
         console.error('[API] Error marking as read:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+app.post('/api/account/delete', authMiddleware, async (req, res) => {
+    try {
+        if (!req.user?.userId)
+            return res.status(401).json({ error: 'Not authenticated' });
+        const userId = req.user.userId;
+        const [userRecord, socialPosts, broadcasts, episodes, messages, products, userStores, umiMatchProfile, umiMatchSwipes, umiMatchMessages] = await Promise.all([
+            db.selectFrom('users').selectAll().where('id', '=', userId).executeTakeFirst(),
+            db.selectFrom('SocialMediaPosts').selectAll().where('user_id', '=', userId).execute(),
+            db.selectFrom('UserBroadcasts').selectAll().where('user_id', '=', userId).execute(),
+            db.selectFrom('UserBroadcastEpisodes').selectAll().where('user_id', '=', userId).execute(),
+            db.selectFrom('messages').selectAll().where('user_id', '=', userId).execute(),
+            db.selectFrom('MainHubUpgradeV001ForProducts').selectAll().where('user_id', '=', userId).execute(),
+            db.selectFrom('user_stores').selectAll().where('user_id', '=', userId).execute(),
+            db.selectFrom('UmiMatchProfiles').selectAll().where('user_id', '=', userId).executeTakeFirst(),
+            db.selectFrom('UmiMatchSwipes').selectAll().where(eb => eb.or([eb('user_id', '=', userId), eb('target_user_id', '=', userId)])).execute(),
+            db.selectFrom('UmiMatchMessages').selectAll().where(eb => eb.or([eb('sender_id', '=', userId), eb('receiver_id', '=', userId)])).execute(),
+        ]);
+        await db.insertInto('DeletedUserAccounts').values({ user_id: userId, user_json: JSON.stringify({ user: userRecord || null, socialPosts, broadcasts, episodes, messages, products, userStores, umiMatchProfile, umiMatchSwipes, umiMatchMessages }) }).execute();
+        await db.updateTable('users').set({ username: `deleted_user_${userId}`, email: null, phone_number: null, profile_image_url: null, cover_photo_url: null, password: '' }).where('id', '=', userId).execute();
+        res.clearCookie('token');
+        res.json({ success: true });
+    }
+    catch (error) {
+        console.error('[ACCOUNT] Error deleting account:', error);
+        res.status(500).json({ error: 'Failed to delete account' });
     }
 });
 export async function startServer(port) {

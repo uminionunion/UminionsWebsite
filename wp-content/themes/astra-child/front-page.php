@@ -149,6 +149,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             #BannerAtBottomOfPage,
             .scene00002,
             .scene0000002,
+            .scene,
             .BetaButtonV001-root,
             #uhub-launcher-layout .uhub-launcher-facebook {
                 display: none !important;

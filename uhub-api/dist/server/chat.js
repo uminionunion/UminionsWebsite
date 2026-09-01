@@ -252,22 +252,25 @@ export function setupChat(io) {
                 io.to(room).emit('messagesCleared');
             }
             try {
-                // Load last 50 messages from this room
-                const messages = await db
-                    .selectFrom('messages')
-                    .leftJoin('users', 'users.id', 'messages.user_id')
-                    .where('room', '=', room)
-                    .orderBy('timestamp', 'asc')
-                    .limit(50)
-                    .select([
-                    'messages.id',
-                    'messages.content',
-                    'messages.is_anonymous',
-                    'messages.timestamp',
-                    'users.username',
-                    'messages.anonymous_username'
-                ])
-                    .execute();
+                const [{ count }, messagesDesc] = await Promise.all([
+                    db.selectFrom('messages').select(db.fn.countAll().as('count')).where('room', '=', room).executeTakeFirstOrThrow(),
+                    db
+                        .selectFrom('messages')
+                        .leftJoin('users', 'users.id', 'messages.user_id')
+                        .where('room', '=', room)
+                        .orderBy('id', 'desc')
+                        .limit(50)
+                        .select([
+                        'messages.id',
+                        'messages.content',
+                        'messages.is_anonymous',
+                        'messages.timestamp',
+                        'users.username',
+                        'messages.anonymous_username'
+                    ])
+                        .execute(),
+                ]);
+                const messages = messagesDesc.reverse();
                 const formattedMessages = messages.map(msg => {
                     let displayUsername;
                     if (msg.is_anonymous || !msg.username) {
@@ -284,10 +287,43 @@ export function setupChat(io) {
                         timestamp: msg.timestamp,
                     };
                 });
-                socket.emit('loadMessages', formattedMessages);
+                socket.emit('loadMessages', { messages: formattedMessages, hasMore: Number(count) > formattedMessages.length });
             }
             catch (error) {
                 console.error(`Error loading messages for room ${room}:`, error);
+            }
+        });
+        socket.on('loadPreviousMessages', async (data) => {
+            const { room, beforeId } = data;
+            try {
+                const messagesDesc = await db
+                    .selectFrom('messages')
+                    .leftJoin('users', 'users.id', 'messages.user_id')
+                    .where('room', '=', room)
+                    .where('messages.id', '<', beforeId)
+                    .orderBy('messages.id', 'desc')
+                    .limit(50)
+                    .select([
+                    'messages.id',
+                    'messages.content',
+                    'messages.is_anonymous',
+                    'messages.timestamp',
+                    'users.username',
+                    'messages.anonymous_username'
+                ])
+                    .execute();
+                const formattedMessages = messagesDesc.reverse().map(msg => ({
+                    id: msg.id,
+                    content: msg.content,
+                    username: msg.is_anonymous || !msg.username ? msg.anonymous_username || 'Anonymous' : msg.username,
+                    is_anonymous: msg.is_anonymous,
+                    timestamp: msg.timestamp,
+                }));
+                socket.emit('loadedPreviousMessages', { messages: formattedMessages, hasMore: messagesDesc.length === 50 });
+            }
+            catch (error) {
+                console.error(`Error loading previous messages for ${room}:`, error);
+                socket.emit('error', { message: 'Failed to load previous messages' });
             }
         });
         // NEW: Load archived messages
