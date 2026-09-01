@@ -220,7 +220,7 @@ async function buildMergedFeed(userIds, offset, limit, viewerUserId) {
     if (userIds.length === 0) {
         return { items: [], total: 0 };
     }
-    const [memePosts, socialPosts, memeCount, socialCount] = await Promise.all([
+    const [memePosts, socialPosts, episodes, memeCount, socialCount, episodeCount] = await Promise.all([
         db
             .selectFrom('MemeImplementation001Posts')
             .selectAll()
@@ -235,8 +235,17 @@ async function buildMergedFeed(userIds, offset, limit, viewerUserId) {
             .orderBy('created_at', 'desc')
             .limit(FEED_SOURCE_FETCH_CAP)
             .execute(),
+        db
+            .selectFrom('UserBroadcastEpisodes')
+            .selectAll()
+            .where('user_id', 'in', userIds)
+            .orderBy('scheduled_at', 'desc')
+            .orderBy('created_at', 'desc')
+            .limit(FEED_SOURCE_FETCH_CAP)
+            .execute(),
         db.selectFrom('MemeImplementation001Posts').select(db.fn.countAll().as('count')).where('user_id', 'in', userIds).executeTakeFirstOrThrow(),
         db.selectFrom('SocialMediaPosts').select(db.fn.countAll().as('count')).where('user_id', 'in', userIds).executeTakeFirstOrThrow(),
+        db.selectFrom('UserBroadcastEpisodes').select(db.fn.countAll().as('count')).where('user_id', 'in', userIds).executeTakeFirstOrThrow(),
     ]);
     const memeItems = await Promise.all(memePosts.map(async (post) => {
         const images = await db
@@ -294,10 +303,38 @@ async function buildMergedFeed(userIds, offset, limit, viewerUserId) {
             createdAt: post.created_at,
         };
     }));
-    const merged = [...memeItems, ...socialItems].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    const episodeItems = await Promise.all(episodes.map(async (episode) => {
+        const author = await db.selectFrom('users').select('username').where('id', '=', episode.user_id).executeTakeFirst();
+        let userVote = null;
+        let isFavorited = false;
+        if (viewerUserId) {
+            const vote = await db.selectFrom('UserBroadcastEpisodeVotes').select('vote_type').where('episode_id', '=', episode.id).where('user_id', '=', viewerUserId).executeTakeFirst();
+            userVote = vote?.vote_type ?? null;
+            const favorite = await db.selectFrom('UserBroadcastEpisodeFavorites').select('id').where('episode_id', '=', episode.id).where('user_id', '=', viewerUserId).executeTakeFirst();
+            isFavorited = !!favorite;
+        }
+        return {
+            type: 'episode',
+            id: episode.id,
+            userId: episode.user_id,
+            username: author?.username || 'Anonymous',
+            name: episode.name,
+            description: episode.description,
+            media_url: episode.media_url,
+            cover_image_url: episode.cover_image_url,
+            upvotes: episode.upvotes,
+            downvotes: episode.downvotes,
+            isEdited: !!episode.is_edited,
+            userVote,
+            isFavorited,
+            scheduledAt: episode.scheduled_at,
+            createdAt: episode.created_at,
+        };
+    }));
+    const merged = [...memeItems, ...socialItems, ...episodeItems].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     return {
         items: merged.slice(offset, offset + limit),
-        total: Number(memeCount.count) + Number(socialCount.count),
+        total: Number(memeCount.count) + Number(socialCount.count) + Number(episodeCount.count),
     };
 }
 router.get('/api/feed/friends', requireAuth, async (req, res) => {

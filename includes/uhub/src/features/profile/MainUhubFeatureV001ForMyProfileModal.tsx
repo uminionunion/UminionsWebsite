@@ -169,6 +169,219 @@ const ProductBox = ({ product, onMagnify, onAddToCart }) => {
     );
 };
 
+const UnionRadioPlayer = () => {
+  const [nowPlaying, setNowPlaying] = useState<any>(null);
+  const [mediaIndex, setMediaIndex] = useState(0);
+  const [replayEpisode, setReplayEpisode] = useState<any>(null);
+  const [replayMediaIndex, setReplayMediaIndex] = useState(0);
+  const [recentlyPlayed, setRecentlyPlayed] = useState<any[]>([]);
+  const [archiveMode, setArchiveMode] = useState<'recent' | 'popular' | 'random'>('recent');
+  const [archiveEpisodes, setArchiveEpisodes] = useState<any[]>([]);
+  const [calendarEpisodes, setCalendarEpisodes] = useState<any[]>([]);
+  const playerRef = useRef<HTMLMediaElement | null>(null);
+  const replayPlayerRef = useRef<HTMLMediaElement | null>(null);
+  const checkingScheduleRef = useRef(false);
+
+  const loadArchive = useCallback(async (mode: 'recent' | 'popular' | 'random') => {
+    const response = await fetch(`/api/episode-archive/${mode}`, { credentials: 'include' });
+    if (response.ok) setArchiveEpisodes((await response.json()).episodes || []);
+  }, []);
+
+  const loadCalendar = useCallback(async () => {
+    const response = await fetch('/api/episodes/calendar', { credentials: 'include' });
+    if (response.ok) setCalendarEpisodes((await response.json()).episodes || []);
+  }, []);
+
+  const findDueEpisode = useCallback(async () => {
+    if (nowPlaying || checkingScheduleRef.current) return;
+    checkingScheduleRef.current = true;
+    try {
+      const response = await fetch('/api/episodes/scheduled', { credentials: 'include' });
+      if (!response.ok) return;
+      const { episode } = await response.json();
+      if (episode) {
+        setMediaIndex(0);
+        setNowPlaying(episode);
+      }
+    } finally {
+      checkingScheduleRef.current = false;
+    }
+  }, [nowPlaying]);
+
+  useEffect(() => {
+    findDueEpisode();
+    const interval = window.setInterval(findDueEpisode, 15000);
+    return () => window.clearInterval(interval);
+  }, [findDueEpisode]);
+
+  useEffect(() => {
+    loadArchive(archiveMode);
+  }, [archiveMode, loadArchive]);
+
+  useEffect(() => {
+    loadCalendar();
+    const interval = window.setInterval(loadCalendar, 30000);
+    return () => window.clearInterval(interval);
+  }, [loadCalendar]);
+
+  const finishEpisode = async () => {
+    if (!nowPlaying) return;
+    await fetch(`/api/episodes/${nowPlaying.id}/played`, { method: 'POST', credentials: 'include' });
+    setRecentlyPlayed((items) => [nowPlaying, ...items.filter((item) => item.id !== nowPlaying.id)].slice(0, 3));
+    setNowPlaying(null);
+    setMediaIndex(0);
+    loadArchive(archiveMode);
+    loadCalendar();
+  };
+
+  const handleMediaEnded = () => {
+    const media = nowPlaying?.media || [];
+    if (mediaIndex + 1 < media.length) setMediaIndex((index) => index + 1);
+    else finishEpisode();
+  };
+
+  const handleReplayEnded = () => {
+    const replayMedia = replayEpisode?.media || [];
+    if (replayMediaIndex + 1 < replayMedia.length) {
+      setReplayMediaIndex((index) => index + 1);
+      return;
+    }
+    setReplayEpisode(null);
+    setReplayMediaIndex(0);
+    playerRef.current?.play().catch(() => {});
+  };
+
+  const replay = (episode: any) => {
+    if (playerRef.current && !playerRef.current.paused) playerRef.current.pause();
+    setReplayMediaIndex(0);
+    setReplayEpisode(episode);
+  };
+
+  const vote = async (episodeId: number, direction: 'upvote' | 'downvote') => {
+    const response = await fetch(`/api/episodes/${episodeId}/${direction}`, { method: 'POST', credentials: 'include' });
+    if (response.ok) loadArchive(archiveMode);
+  };
+
+  const media = nowPlaying?.media?.[mediaIndex];
+  const replayMedia = replayEpisode?.media?.[replayMediaIndex];
+  const toLocalDayKey = (value: Date | string) => {
+    const date = new Date(value);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+  const calendarStart = new Date();
+  calendarStart.setDate(1);
+  calendarStart.setHours(0, 0, 0, 0);
+  calendarStart.setDate(calendarStart.getDate() - calendarStart.getDay());
+  const calendarDays = Array.from({ length: 35 }, (_, index) => new Date(calendarStart.getFullYear(), calendarStart.getMonth(), calendarStart.getDate() + index));
+  return (
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(220px,1fr)]">
+      <section className="min-w-0 border rounded-md p-4 bg-gray-950">
+        <h4 className="font-semibold text-orange-400 mb-3">Now Playing</h4>
+        {nowPlaying && media ? (
+          <div className="space-y-3">
+            <div>
+              <p className="font-semibold">{nowPlaying.name}</p>
+              {nowPlaying.description && <p className="text-sm text-muted-foreground">{nowPlaying.description}</p>}
+            </div>
+            {media.media_type === 'video' ? (
+              <video key={`${nowPlaying.id}-${media.id}`} ref={playerRef as React.RefObject<HTMLVideoElement>} className={`w-full max-h-[420px] bg-black ${replayEpisode ? 'hidden' : ''}`} controls autoPlay={!replayEpisode} playsInline onEnded={handleMediaEnded}>
+                <source src={media.media_url} />
+              </video>
+            ) : (
+              <audio key={`${nowPlaying.id}-${media.id}`} ref={playerRef as React.RefObject<HTMLAudioElement>} className={replayEpisode ? 'hidden' : 'w-full'} controls autoPlay={!replayEpisode} onEnded={handleMediaEnded}>
+                <source src={media.media_url} />
+              </audio>
+            )}
+            {replayMedia && (replayMedia.media_type === 'video' ? (
+              <video key={`replay-${replayEpisode.id}-${replayMedia.id}`} ref={replayPlayerRef as React.RefObject<HTMLVideoElement>} className="w-full max-h-[420px] bg-black" controls autoPlay playsInline onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></video>
+            ) : (
+              <audio key={`replay-${replayEpisode.id}-${replayMedia.id}`} ref={replayPlayerRef as React.RefObject<HTMLAudioElement>} className="w-full" controls autoPlay onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></audio>
+            ))}
+          </div>
+        ) : replayMedia ? (
+          <div className="space-y-3">
+            <div>
+              <p className="font-semibold">{replayEpisode.name}</p>
+              {replayEpisode.description && <p className="text-sm text-muted-foreground">{replayEpisode.description}</p>}
+            </div>
+            {replayMedia.media_type === 'video' ? (
+              <video key={`replay-${replayEpisode.id}-${replayMedia.id}`} ref={replayPlayerRef as React.RefObject<HTMLVideoElement>} className="w-full max-h-[420px] bg-black" controls autoPlay playsInline onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></video>
+            ) : (
+              <audio key={`replay-${replayEpisode.id}-${replayMedia.id}`} ref={replayPlayerRef as React.RefObject<HTMLAudioElement>} className="w-full" controls autoPlay onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></audio>
+            )}
+          </div>
+        ) : <p className="text-sm text-muted-foreground">No scheduled episode is playing.</p>}
+      </section>
+
+      <section className="border rounded-md p-4 bg-gray-950">
+        <h4 className="font-semibold text-cyan-400 mb-3">Recently Played</h4>
+        <div className="space-y-2">
+          {recentlyPlayed.length ? recentlyPlayed.map((episode) => (
+            <div key={episode.id} className="flex items-center gap-2 text-xs">
+              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => replay(episode)} title={`Replay ${episode.name}`}><Play className="h-3 w-3" /></Button>
+              <span className="min-w-0 flex-1 truncate">{episode.name}</span>
+              <button type="button" className="text-green-400" onClick={() => vote(episode.id, 'upvote')}>+{episode.upvotes || 0}</button>
+              <button type="button" className="text-red-400" onClick={() => vote(episode.id, 'downvote')}>-{episode.downvotes || 0}</button>
+            </div>
+          )) : <p className="text-xs text-muted-foreground">Nothing has finished playing yet.</p>}
+        </div>
+      </section>
+
+      <section className="lg:col-span-2 border rounded-md p-4 bg-gray-950">
+        <div className="flex items-center gap-2 mb-3">
+          <h4 className="font-semibold text-cyan-400 mr-auto">Archive</h4>
+          {(['recent', 'popular', 'random'] as const).map((mode) => <Button key={mode} variant={archiveMode === mode ? 'default' : 'outline'} size="sm" onClick={() => setArchiveMode(mode)}>{mode}</Button>)}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {archiveEpisodes.map((episode) => (
+            <div key={episode.id} className="border rounded p-2 text-sm">
+              <p className="font-semibold truncate">{episode.name}</p>
+              <div className="flex gap-2 mt-2">
+                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => replay(episode)} title={`Replay ${episode.name}`}><Play className="h-3 w-3" /></Button>
+                <button type="button" className="text-xs text-green-400" onClick={() => vote(episode.id, 'upvote')}>Up {episode.upvotes}</button>
+                <button type="button" className="text-xs text-red-400" onClick={() => vote(episode.id, 'downvote')}>Down {episode.downvotes}</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="lg:col-span-2 border rounded-md p-4 bg-gray-950">
+        <h4 className="font-semibold text-cyan-400 mb-3">Broadcast Calendar</h4>
+        <div className="grid grid-cols-7 gap-1 text-xs">
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <div key={day} className="p-2 text-center font-semibold text-muted-foreground">{day}</div>)}
+          {calendarDays.map((day) => {
+            const dayKey = toLocalDayKey(day);
+            const entries = calendarEpisodes.filter((episode) => episode.scheduled_at && toLocalDayKey(episode.scheduled_at) === dayKey);
+            return (
+              <div key={dayKey} className="min-h-24 border border-gray-700 p-1 bg-black/30">
+                <p className="mb-1 text-right text-muted-foreground">{day.getDate()}</p>
+                {entries.map((episode) => {
+                  const played = !!episode.last_played_at;
+                  return (
+                    <div key={episode.id} className="mb-1 border-l-2 border-orange-400 bg-gray-900 p-1">
+                      <div className="flex items-center gap-1">
+                        {episode.cover_image_url && <img src={episode.cover_image_url} alt="" className="h-5 w-5 object-cover" />}
+                        <span className="min-w-0 flex-1 truncate">{episode.name}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">{new Date(episode.scheduled_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
+                      {played && <div className="flex items-center gap-1 mt-1">
+                        <Button variant="outline" size="icon" className="h-5 w-5" onClick={() => replay(episode)} title={`Replay ${episode.name}`}><Play className="h-3 w-3" /></Button>
+                        <button type="button" className="text-[10px] text-green-400" onClick={() => vote(episode.id, 'upvote')}>+{episode.upvotes}</button>
+                        <button type="button" className="text-[10px] text-red-400" onClick={() => vote(episode.id, 'downvote')}>-{episode.downvotes}</button>
+                      </div>}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  );
+};
+
 
 const BroadcastView = ({ 
   broadcast, 
@@ -195,6 +408,8 @@ const BroadcastView = ({
   MainUhubFeatureV001ForSisterUnionPages,
   MainUhubFeatureV001ForModalColors,
 }) => {
+  if (broadcastView === 'UnionRadio#15') return <UnionRadioPlayer />;
+
   const handleReorderLeft = async (imageId: number) => {
     try {
       const response = await fetch(`/api/broadcasts/union-news-14/images/${imageId}/move-left`, {
@@ -3289,7 +3504,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         key={buttonNumber}
         variant="outline"
         size="sm"
-        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [3, 4, 5, 6, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''} ${typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 ? 'text-[0.65rem] text-gray-500 opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
+        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [3, 4, 5, 7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''} ${typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 ? 'text-[0.65rem] text-gray-500 opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
         style={{ color: '#ffffff', backgroundColor: 'transparent' }}
         onClick={() => {
           if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')) {
@@ -3404,6 +3619,15 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
           if (customizableButtonPage === 1 && buttonNumber === 8) {
             setAreProfileSurfacesOpaque(prev => !prev);
+            return;
+          }
+
+          // Microphone toggle: 1st click opens Broadcasts-UnionRadio#15, 2nd click opens MyBroadcasts.
+          if (customizableButtonPage === 1 && buttonNumber === 6) {
+            const nextMicrophoneState = !areFeatureIconsActive.microphone;
+            setAreFeatureIconsActive(prev => ({ ...prev, microphone: nextMicrophoneState }));
+            setCenterView('broadcasts');
+            setBroadcastView(nextMicrophoneState ? 'UnionRadio#15' : 'MyBroadcasts');
             return;
           }
 

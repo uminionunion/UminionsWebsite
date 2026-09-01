@@ -157,4 +157,77 @@ db.exec(`
 `);
 console.log('[init-data] SocialMediaPosts tables verified.');
 
+// Real user-created broadcasts/episodes (separate from MainHubUpgradeV001ForBroadcasts, which is
+// already used unfiltered for the UnionNews14 image carousel - reusing it here would leak into that carousel).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS UserBroadcasts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS UserBroadcastEpisodes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    broadcast_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    media_url TEXT,
+    media_type TEXT,
+    cover_image_url TEXT,
+    scheduled_at TEXT,
+    tags TEXT,
+    website TEXT,
+    upvotes INTEGER NOT NULL DEFAULT 0,
+    downvotes INTEGER NOT NULL DEFAULT 0,
+    is_edited INTEGER NOT NULL DEFAULT 0,
+    last_played_at TEXT,
+    play_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS UserBroadcastEpisodePlays (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    episode_id INTEGER NOT NULL,
+    completed_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE TABLE IF NOT EXISTS UserBroadcastEpisodeMedia (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    episode_id INTEGER NOT NULL,
+    media_url TEXT NOT NULL,
+    media_type TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS UserBroadcastEpisodeVotes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    episode_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    vote_type INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(episode_id, user_id)
+  );
+  CREATE TABLE IF NOT EXISTS UserBroadcastEpisodeFavorites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    episode_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(episode_id, user_id)
+  );
+  CREATE TABLE IF NOT EXISTS UserBroadcastEpisodeComments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    episode_id INTEGER NOT NULL,
+    user_id INTEGER,
+    content TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+const episodeColumns = db.prepare('PRAGMA table_info(UserBroadcastEpisodes)').all().map((c) => c.name);
+if (!episodeColumns.includes('last_played_at')) {
+  db.exec('ALTER TABLE UserBroadcastEpisodes ADD COLUMN last_played_at TEXT');
+}
+if (!episodeColumns.includes('play_count')) {
+  db.exec('ALTER TABLE UserBroadcastEpisodes ADD COLUMN play_count INTEGER NOT NULL DEFAULT 0');
+}
+console.log('[init-data] UserBroadcasts/UserBroadcastEpisodes tables verified.');
+
 db.close();

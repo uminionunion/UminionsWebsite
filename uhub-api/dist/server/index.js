@@ -11,6 +11,7 @@ import jwt from 'jsonwebtoken';
 import { db } from './db.js';
 import memesRouter from './memes.js';
 import socialPostsRouter from './social-posts.js';
+import broadcastsRouter from './broadcasts.js';
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
@@ -111,6 +112,27 @@ const authMiddleware = (req, res, next) => {
         res.status(401).json({ error: 'Invalid token' });
     }
 };
+app.post('/api/upload', authMiddleware, async (req, res) => {
+    try {
+        const uploadedFile = req.files?.file;
+        const file = Array.isArray(uploadedFile) ? uploadedFile[0] : uploadedFile;
+        if (!file)
+            return res.status(400).json({ error: 'A file is required' });
+        const uploadsDirectory = path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'uploads');
+        fs.mkdirSync(uploadsDirectory, { recursive: true });
+        const extension = path.extname(file.name).toLowerCase();
+        const allowedExtensions = new Set(['.mp3', '.mp4', '.webm', '.wav', '.m4a', '.ogg', '.jpg', '.jpeg', '.png', '.gif']);
+        if (!allowedExtensions.has(extension))
+            return res.status(400).json({ error: 'Unsupported file type' });
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${extension}`;
+        await file.mv(path.join(uploadsDirectory, fileName));
+        res.status(201).json({ url: `/api/uploads/${fileName}`, name: file.name, mimeType: file.mimetype });
+    }
+    catch (error) {
+        console.error('[UPLOAD] Failed to store file:', error);
+        res.status(500).json({ error: 'File upload failed' });
+    }
+});
 const authRouter = (authMod && authMod.default) ? authMod.default : authMod;
 const friendsRouter = (friendsMod && friendsMod.default) ? friendsMod.default : friendsMod;
 const productsRouter = (productsMod && productsMod.default) ? productsMod.default : productsMod;
@@ -121,6 +143,8 @@ app.use('/api/products', productsRouter);
 app.use(memesRouter);
 // Register social media posts + feed routes
 app.use(socialPostsRouter);
+// Register broadcast/episode routes
+app.use(broadcastsRouter);
 // NEW: User lookup route (accessible to all, no auth required)
 app.get('/api/users/by-username/:username', async (req, res) => {
     try {

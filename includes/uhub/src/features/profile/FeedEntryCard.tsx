@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
-import { ThumbsUp, ThumbsDown, MessageCircle, Star } from 'lucide-react';
 
 // Renders a single entry (MemeBox post or Social Media post) inside "My Feed" / "Union Announcements",
 // with vote/favorite/comment controls per C.2. Both post types share the same vote/favorite/comment
@@ -15,7 +14,7 @@ const FeedEntryCard: React.FC<FeedEntryCardProps> = ({ entry, onChanged }) => {
   const [commentText, setCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
-  const basePath = entry.type === 'meme' ? `/api/memes/posts/${entry.id}` : `/api/social-posts/${entry.id}`;
+  const basePath = entry.type === 'meme' ? `/api/memes/posts/${entry.id}` : entry.type === 'social' ? `/api/social-posts/${entry.id}` : `/api/episodes/${entry.id}`;
 
   const vote = async (direction: 'upvote' | 'downvote') => {
     try {
@@ -59,7 +58,7 @@ const FeedEntryCard: React.FC<FeedEntryCardProps> = ({ entry, onChanged }) => {
     <div className="border rounded p-2 bg-gray-900/50">
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xs font-semibold text-cyan-400">{entry.username}</span>
-        <span className="text-[10px] text-gray-500 uppercase">{entry.type === 'meme' ? 'MemeBox' : 'Social'}</span>
+        <span className="text-[10px] text-gray-500 uppercase">{entry.type === 'meme' ? 'MemeBox' : entry.type === 'social' ? 'Social' : 'Episode'}</span>
       </div>
 
       {entry.type === 'meme' ? (
@@ -77,41 +76,45 @@ const FeedEntryCard: React.FC<FeedEntryCardProps> = ({ entry, onChanged }) => {
             )}
           </div>
         </div>
-      ) : (
+      ) : entry.type === 'social' ? (
         <p className="text-xs text-gray-200 whitespace-pre-wrap mb-2">{entry.content}</p>
+      ) : (
+        <div className="flex items-center gap-2 mb-2">
+          {entry.cover_image_url && (
+            <img src={entry.cover_image_url} alt={entry.name} className="w-10 h-10 rounded object-cover flex-shrink-0" />
+          )}
+          <div className="min-w-0">
+            <p className="font-semibold truncate text-xs">{entry.name}</p>
+            {entry.description && (
+              <p className="text-xs text-gray-500 truncate">
+                {entry.description}
+                {entry.isEdited ? ' -edited' : ''}
+              </p>
+            )}
+          </div>
+        </div>
       )}
       {entry.type === 'social' && entry.isEdited && (
         <p className="text-right text-[10px] text-gray-500 mb-1">edited</p>
       )}
 
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          className={`flex items-center gap-1 text-xs ${entry.userVote === 1 ? 'text-green-400' : 'text-gray-400'}`}
-          onClick={() => vote('upvote')}
-        >
-          <ThumbsUp className="h-3 w-3" /> {entry.upvotes}
+      {/* Same grayish-black background (#222222) and green emoji icons the MemeBox voteSection uses. */}
+      <div className="flex items-center justify-around gap-2 p-2 rounded" style={{ backgroundColor: '#222222' }}>
+        <button type="button" className="flex flex-col items-center gap-1" onClick={() => vote('upvote')}>
+          <img src="/EmojisForUminionWebsite/GreenEmoji002ThumbsUp.png" width="20" alt="Upvote" />
+          <span className="text-xs font-bold" style={{ color: '#00ff00' }}>{entry.upvotes}</span>
         </button>
-        <button
-          type="button"
-          className={`flex items-center gap-1 text-xs ${entry.userVote === -1 ? 'text-red-400' : 'text-gray-400'}`}
-          onClick={() => vote('downvote')}
-        >
-          <ThumbsDown className="h-3 w-3" /> {entry.downvotes}
+        <button type="button" className="flex flex-col items-center gap-1" onClick={() => vote('downvote')}>
+          <img src="/EmojisForUminionWebsite/GreenEmoji003ThumbsDown.png" width="20" alt="Downvote" />
+          <span className="text-xs font-bold" style={{ color: '#00ff00' }}>{entry.downvotes}</span>
         </button>
-        <button
-          type="button"
-          className="flex items-center gap-1 text-xs text-gray-400"
-          onClick={() => setIsCommentBoxOpen((prev) => !prev)}
-        >
-          <MessageCircle className="h-3 w-3" /> Comment
+        <button type="button" className="flex flex-col items-center gap-1" onClick={() => setIsCommentBoxOpen((prev) => !prev)}>
+          <img src="/EmojisForUminionWebsite/GreenEmoji004CommentOrChat.png" width="20" alt="Comment" />
+          <span className="text-xs" style={{ color: '#999999' }}>Comment</span>
         </button>
-        <button
-          type="button"
-          className={`flex items-center gap-1 text-xs ${entry.isFavorited ? 'text-yellow-400' : 'text-gray-400'}`}
-          onClick={toggleFavorite}
-        >
-          <Star className="h-3 w-3" /> Favorite
+        <button type="button" className="flex flex-col items-center gap-1" onClick={toggleFavorite}>
+          <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="20" alt="Favorite" />
+          <span className="text-xs" style={{ color: entry.isFavorited ? '#00ff00' : '#999999' }}>Favorite</span>
         </button>
       </div>
 
