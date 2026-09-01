@@ -310,6 +310,18 @@ export interface UserBroadcastEpisodeVotes {
   created_at: Generated<string | null>;
 }
 
+export interface UhubManagedCarouselItems {
+  id: Generated<number>;
+  slot: 'left' | 'right';
+  image_url: string;
+  title: string | null;
+  description: string | null;
+  price: string | null;
+  website: string | null;
+  display_order: number;
+  created_at: Generated<string | null>;
+}
+
 export interface UserBroadcastEpisodeFavorites {
   id: Generated<number>;
   episode_id: number;
@@ -415,6 +427,7 @@ export interface DB {
     UserBroadcastEpisodePlays: UserBroadcastEpisodePlays;
   UserBroadcastEpisodeMedia: UserBroadcastEpisodeMedia;
   UserBroadcastEpisodeVotes: UserBroadcastEpisodeVotes;
+  UhubManagedCarouselItems: UhubManagedCarouselItems;
   UserBroadcastEpisodeFavorites: UserBroadcastEpisodeFavorites;
   UserBroadcastEpisodeComments: UserBroadcastEpisodeComments;
 }

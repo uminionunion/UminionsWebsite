@@ -92,7 +92,7 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
     : [];
 
   return (
-    <div className="grid h-full min-h-[620px] w-full grid-cols-[24%_42%_34%] bg-background">
+    <div className="grid h-full min-h-[520px] w-full grid-cols-[24%_42%_34%] bg-background">
       <div className="h-full border-r overflow-y-auto p-4 flex flex-col gap-4">
         <Button className="w-full justify-center text-center" onClick={() => setActiveView('find')} variant={'default'}>
           Find a Pantry
@@ -110,7 +110,7 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
           Running for Office?
         </Button>
       </div>
-      <div className="h-full min-h-[620px] overflow-hidden">
+      <div className="h-full min-h-[520px] overflow-hidden">
         <PantryMap
           pantries={filteredPantries}
           politicians={filteredPoliticians}

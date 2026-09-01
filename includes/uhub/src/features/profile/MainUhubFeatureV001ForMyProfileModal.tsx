@@ -138,6 +138,15 @@ interface PoliticalCandidate {
   show_on_map?: number;
 }
 
+interface ManagedCarouselItem {
+  id?: number;
+  image_url: string;
+  title?: string | null;
+  description?: string | null;
+  price?: string | null;
+  website?: string | null;
+}
+
 const UnionPoliticCandidates = ({ filtersOpen }: { filtersOpen: boolean }) => {
   const { user } = useAuth();
   const [candidates, setCandidates] = useState<PoliticalCandidate[]>([]);
@@ -539,60 +548,103 @@ const RotatingUnionEventCard = () => {
 };
 
 const headerStoreItems = [
-  { title: 'Ukraine Poster', image: '/StoreProductsAndImagery/UkraineLogo001.png', action: 'u24.gov.ua', url: 'https://u24.gov.ua', cart: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton004.001AAA' },
-  { title: 'BYO Tapestry', image: '/StoreProductsAndImagery/TapestryVersion001.png', action: '+$1,499.95 BYO Tapestry', cart: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.001AAAAA' },
-  { title: 'Union Shirts', image: '/StoreProductsAndImagery/Tshirtbatchversion001.png', action: 'View Cart', cart: 'https://page001.uminion.com/cart/' },
+  { image_url: '/StoreProductsAndImagery/UkraineLogo001.png', title: 'Ukraine Poster', price: 'u24.gov.ua', website: 'https://u24.gov.ua' },
+  { image_url: '/StoreProductsAndImagery/TapestryVersion001.png', title: 'BYO Tapestry', price: '$1,499.95 BYO Tapestry', website: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.001AAAAA' },
+  { image_url: '/StoreProductsAndImagery/Tshirtbatchversion001.png', title: 'Union Shirts', price: 'View Cart', website: 'https://page001.uminion.com/cart/' },
 ];
 
-const HeaderProductCarousel = () => {
+const useManagedCarouselItems = (slot: 'left' | 'right', fallbackItems: ManagedCarouselItem[]) => {
+  const [items, setItems] = useState<ManagedCarouselItem[]>(fallbackItems);
+  const loadItems = useCallback(() => {
+    fetch(`/api/carousels/${slot}/items`, { credentials: 'include' })
+      .then(response => response.ok ? response.json() : { items: [] })
+      .then(data => setItems(Array.isArray(data.items) && data.items.length ? data.items : fallbackItems))
+      .catch(() => setItems(fallbackItems));
+  }, [slot, fallbackItems]);
+  useEffect(() => loadItems(), [loadItems]);
+  useEffect(() => {
+    const handleUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ slot: 'left' | 'right' }>).detail;
+      if (detail?.slot === slot) loadItems();
+    };
+    window.addEventListener('uhub-managed-carousel-updated', handleUpdated);
+    return () => window.removeEventListener('uhub-managed-carousel-updated', handleUpdated);
+  }, [loadItems, slot]);
+  return { items, refresh: loadItems };
+};
+
+const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: 'left' | 'right'; fallbackItems: ManagedCarouselItem[] }) => {
+  const { items } = useManagedCarouselItems(slot, fallbackItems);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   useEffect(() => {
     if (paused) return;
-    const timer = window.setInterval(() => setIndex(value => (value + 1) % headerStoreItems.length), 3000);
+    const timer = window.setInterval(() => setIndex(value => (value + 1) % items.length), 3000);
     return () => window.clearInterval(timer);
-  }, [paused]);
-  const item = headerStoreItems[index];
+  }, [paused, items.length]);
+  useEffect(() => setIndex(0), [items]);
+  const item = items[index] || fallbackItems[0];
   return <div className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
-    <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + headerStoreItems.length) % headerStoreItems.length)}>‹</button>
-    <img src={item.image} alt={item.title} />
+    <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + items.length) % items.length)}>‹</button>
+    <img src={item.image_url} alt={item.title || 'Carousel image'} />
     <div className="uhub-header-product-overlay">
-      <span>{item.title}</span>
+      {item.title && <span>{item.title}</span>}
+      {item.description && <small>{item.description}</small>}
       <div className="flex gap-1">
-        {item.url && <button type="button" onClick={() => window.open(item.url, '_blank')}>{item.action}</button>}
-        <button type="button" onClick={() => window.open(item.cart, '_blank')}>{item.url ? '+ Cart' : item.action}</button>
+        {item.price && <button type="button" onClick={() => item.website && window.open(item.website, '_blank')}>{item.price}</button>}
       </div>
     </div>
-    <button type="button" className="uhub-mini-carousel-arrow right" onClick={() => setIndex(value => (value + 1) % headerStoreItems.length)}>›</button>
+    <button type="button" className="uhub-mini-carousel-arrow right" onClick={() => setIndex(value => (value + 1) % items.length)}>›</button>
   </div>;
 };
 
 const footerPosterItems = [
-  { title: 'Sister Union #14: Union News - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo014.00.2024Classic.png', sku: 'UStoreButton005.026.01A' },
-  { title: 'Sister Union #15: Union Radio - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo015.00.2024Classic.png', sku: 'UStoreButton005.027.01A' },
-  { title: 'Sister Union #16: Union Drive - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo016.00.2024Classic.png', sku: 'UStoreButton005.028.01A' },
-  { title: 'Sister Union #17: Union Archive - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo017.00.2024Classic.png', sku: 'UStoreButton005.029.01A' },
-  { title: 'Sister Union #18: Union Tech - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo018.00.2024Classic.png', sku: 'UStoreButton005.030.01A' },
-  { title: 'Sister Union #19: Union Politic - 2024 Classic', image: '/StoreProductsAndImagery/UminionLogo019.00.2024Classic.png', sku: 'UStoreButton005.031.01A' },
+  { image_url: '/StoreProductsAndImagery/UminionLogo014.00.2024Classic.png', title: 'Sister Union #14: Union News - 2024 Classic', price: '$69.95', website: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.026.01A' },
+  { image_url: '/StoreProductsAndImagery/UminionLogo015.00.2024Classic.png', title: 'Sister Union #15: Union Radio - 2024 Classic', price: '$69.95', website: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.027.01A' },
+  { image_url: '/StoreProductsAndImagery/UminionLogo016.00.2024Classic.png', title: 'Sister Union #16: Union Drive - 2024 Classic', price: '$69.95', website: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.028.01A' },
 ];
 
-const FooterPosterCarousel = () => {
-  const [index, setIndex] = useState(0);
-  const visible = Array.from({ length: 3 }, (_, offset) => footerPosterItems[(index + offset) % footerPosterItems.length]);
-  return <div className="uhub-footer-poster-carousel">
-    <button type="button" className="uhub-footer-poster-arrow" onClick={() => setIndex(value => (value - 1 + footerPosterItems.length) % footerPosterItems.length)}>‹</button>
-    <div className="uhub-footer-poster-strip">{visible.map(item => <div key={item.sku} className="uhub-footer-poster-card">
-      <img src={item.image} alt={item.title} />
-      <div className="uhub-footer-poster-overlay">
-        <button type="button" aria-label="Previous poster variant">▲</button>
-        <span>{item.title}</span>
-        <button type="button" aria-label="Next poster variant">▼</button>
-        <button type="button" onClick={() => window.open(`https://page001.uminion.com/cart/?add-to-cart=${encodeURIComponent(item.sku)}`, '_blank')}>+ Cart</button>
-        <input type="number" aria-label="Quantity" />
-        <strong>$69.95</strong>
+const HeaderProductCarousel = () => <ManagedProductCarousel slot="left" fallbackItems={headerStoreItems} />;
+const FooterPosterCarousel = () => <ManagedProductCarousel slot="right" fallbackItems={footerPosterItems} />;
+
+const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: 'left' | 'right' | null; onClose: () => void }) => {
+  const [files, setFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  if (!slot) return null;
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!files.length) return alert('Add at least one image.');
+    setIsSubmitting(true);
+    const formData = new FormData(event.currentTarget);
+    formData.delete('images');
+    files.slice(0, 100).forEach(file => formData.append('images', file));
+    try {
+      const response = await fetch(`/api/carousels/${slot}/items/replace`, { method: 'POST', credentials: 'include', body: formData });
+      if (!response.ok) throw new Error((await response.json()).error || 'Upload failed');
+      window.dispatchEvent(new CustomEvent('uhub-managed-carousel-updated', { detail: { slot } }));
+      onClose();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Upload failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  return <div className="fixed inset-0 z-[100300] flex items-center justify-center bg-black/75 p-4">
+    <form onSubmit={handleSubmit} className="max-h-[86vh] w-[92vw] max-w-3xl overflow-y-auto rounded-md border bg-black p-4 text-white">
+      <div className="mb-3 flex items-center justify-between"><h3 className="font-bold">Replace {slot === 'left' ? 'left header' : 'right footer'} carousel</h3><Button type="button" variant="outline" size="sm" onClick={onClose}>Close</Button></div>
+      <input name="images" type="file" accept="image/*" multiple onChange={(event) => setFiles(Array.from(event.target.files || []).slice(0, 100))} />
+      <p className="my-2 text-xs text-muted-foreground">Add up to 100 images. Metadata rows match the selected image order.</p>
+      <div className="space-y-2">
+        {files.map((file, index) => <div key={`${file.name}-${index}`} className="grid grid-cols-4 gap-2 rounded border p-2 text-xs">
+          <strong className="col-span-4 truncate">{index + 1}. {file.name}</strong>
+          <input name={`title_${index}`} placeholder="Optional title" className="bg-gray-900 border rounded p-1" />
+          <input name={`description_${index}`} placeholder="Optional description" className="bg-gray-900 border rounded p-1" />
+          <input name={`price_${index}`} placeholder="Optional price/button text" className="bg-gray-900 border rounded p-1" />
+          <input name={`website_${index}`} placeholder="Optional website" className="bg-gray-900 border rounded p-1" />
+        </div>)}
       </div>
-    </div>)}</div>
-    <button type="button" className="uhub-footer-poster-arrow" onClick={() => setIndex(value => (value + 1) % footerPosterItems.length)}>›</button>
+      <Button type="submit" className="mt-3" disabled={isSubmitting || !files.length}>{isSubmitting ? 'Saving...' : 'Submit carousel'}</Button>
+    </form>
   </div>;
 };
 
@@ -603,6 +655,7 @@ const BroadcastView = ({
   broadcastView, 
   unionNews14Images, 
   onOpenUnionNews14Modal, 
+  onOpenManagedCarouselAdmin,
   onImageZoom,
   broadcastDividerDragging,
   setBroadcastDividerDragging,
@@ -787,13 +840,17 @@ const BroadcastView = ({
             </div>
             <div className="flex items-center gap-2 mb-4">
               <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-sm">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
-              {user?.is_high_high_high_admin === 1 && (
+              {user?.id === 1 && (
+                <>
                 <Button 
                   className="bg-green-700 hover:bg-green-800 text-white text-sm"
                   onClick={() => onOpenUnionNews14Modal()}
                 >
                   Add Images?
                 </Button>
+                <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-sm" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
+                </>
               )}
             </div>
             <div className="flex-1 overflow-hidden">
@@ -827,13 +884,17 @@ if (isMobile) {
           </div>
           <div className="flex items-center gap-2 mb-2">
             <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-xs">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
-            {user?.is_high_high_high_admin === 1 && (
+            {user?.id === 1 && (
+              <>
               <Button 
                 className="bg-green-700 hover:bg-green-800 text-white text-xs h-8"
                 onClick={() => onOpenUnionNews14Modal()}
               >
                 Add
               </Button>
+              <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
+              </>
             )}
           </div>
 
@@ -986,13 +1047,17 @@ if (isMobile) {
             </div>
             <div className="flex items-center gap-2 mb-2">
               <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-xs">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
-              {user?.is_high_high_high_admin === 1 && (
+              {user?.id === 1 && (
+                <>
                 <Button 
                   className="bg-green-700 hover:bg-green-800 text-white text-xs h-8"
                   onClick={() => onOpenUnionNews14Modal()}
                 >
                   Add
                 </Button>
+                <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
+                </>
               )}
             </div>
 
@@ -2243,6 +2308,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const { user, logout } = useAuth();
   const [isPoliticFilterOpen, setPoliticFilterOpen] = useState(false);
   const [isPoliticFilterPressed, setPoliticFilterPressed] = useState(false);
+  const [managedCarouselAdminSlot, setManagedCarouselAdminSlot] = useState<'left' | 'right' | null>(null);
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
   const [customizableButtonPage, setCustomizableButtonPage] = useState(1);
   const CustomButtonsPage001sNextPageButton = 'CustomButtonsPage001sNextPageButton';
@@ -3529,6 +3595,7 @@ return (
   broadcastView={broadcastView}
   unionNews14Images={unionNews14Images}
   onOpenUnionNews14Modal={() => setIsUnionNews14ModalOpen(true)}
+  onOpenManagedCarouselAdmin={setManagedCarouselAdminSlot}
   onImageZoom={(imageUrl: string, title: string, items: BroadcastItem[], currentIndex: number) => {
     console.log('[PROFILE MODAL] Broadcast carousel image zoom:', title, 'Index:', currentIndex);
     setBroadcastZoomState({
@@ -3977,7 +4044,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     )}
   </div>
     <div className="absolute bottom-0 right-0 flex items-center gap-2">
-      {user ? <button type="button" className={showLogout ? 'rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700' : 'flex items-center gap-1 rounded bg-transparent px-2 py-1 text-xs text-gray-400 hover:text-gray-200'} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }}>{showLogout ? 'Log Out?' : <><span className="h-2 w-2 rounded-full bg-green-500" /> Logged In</>}</button> : <div className="flex gap-1"><Button size="sm" className="h-7 text-xs" onClick={() => onOpenAuthModal('login')}>Log In</Button><Button size="sm" className="h-7 text-xs bg-orange-400 hover:bg-orange-500 text-black" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button></div>}
+      {user ? <button type="button" className={showLogout ? 'rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700' : 'uhub-login-status flex items-center gap-1 rounded bg-transparent px-2 py-1 text-xs text-gray-400 hover:text-gray-200'} style={{ border: 0, boxShadow: 'none', outline: 'none' }} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }}>{showLogout ? 'Log Out?' : <><span className="h-2 w-2 rounded-full bg-green-500" /> Logged In</>}</button> : <div className="flex gap-1"><Button size="sm" className="h-7 text-xs" onClick={() => onOpenAuthModal('login')}>Log In</Button><Button size="sm" className="h-7 text-xs bg-orange-400 hover:bg-orange-500 text-black" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button></div>}
   </div>
 </div>
          </div>
@@ -4396,6 +4463,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                   // Force avatar to update by updating the user object
                   // The Avatar component is bound to user.profile_image_url
                 }
+
+                <ManagedCarouselAdminModal slot={managedCarouselAdminSlot} onClose={() => setManagedCarouselAdminSlot(null)} />
                 
                 alert('Profile picture updated successfully!');
                 setIsEditingProfileImage(false);
