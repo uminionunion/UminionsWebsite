@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { db } from './db.js';
 import { requireAuth } from './auth-middleware.js';
+import fs from 'fs';
+import path from 'path';
 
 const router = Router();
 
@@ -12,6 +14,25 @@ const router = Router();
 const getString = (val: any): string => {
   if (Array.isArray(val)) return val[0];
   return String(val || '');
+};
+
+const normalizeSlot = (slot: any): 'left' | 'right' | null => {
+  const value = getString(slot);
+  return value === 'left' || value === 'right' ? value : null;
+};
+
+const getIndexedBodyValue = (body: any, name: string, index: number) => {
+  const direct = body?.[`${name}_${index}`];
+  if (direct !== undefined) return getString(direct).trim();
+  const grouped = body?.[name];
+  if (Array.isArray(grouped)) return getString(grouped[index]).trim();
+  return index === 0 ? getString(grouped).trim() : '';
+};
+
+const getUploadedFiles = (req: Request) => {
+  const uploaded = (req as any).files?.images || (req as any).files?.image;
+  if (!uploaded) return [];
+  return Array.isArray(uploaded) ? uploaded : [uploaded];
 };
 
 async function attachEpisodeMedia(episodes: any[]) {
@@ -27,6 +48,63 @@ async function attachEpisodeMedia(episodes: any[]) {
     media: media.filter((item) => item.episode_id === episode.id),
   }));
 }
+
+router.get('/api/carousels/:slot/items', async (req: Request, res: Response) => {
+  try {
+    const slot = normalizeSlot(req.params.slot);
+    if (!slot) return res.status(400).json({ error: 'Invalid carousel slot' });
+    const items = await db
+      .selectFrom('UhubManagedCarouselItems')
+      .selectAll()
+      .where('slot', '=', slot)
+      .orderBy('display_order', 'asc')
+      .execute();
+    res.json({ items });
+  } catch (error) {
+    console.error('[CAROUSELS] Error loading carousel items:', error);
+    res.status(500).json({ error: 'Failed to load carousel items' });
+  }
+});
+
+router.post('/api/carousels/:slot/items/replace', requireAuth, async (req: Request, res: Response) => {
+  try {
+    if ((req as any).user?.userId !== 1) return res.status(403).json({ error: 'Admin only' });
+    const slot = normalizeSlot(req.params.slot);
+    if (!slot) return res.status(400).json({ error: 'Invalid carousel slot' });
+    const files = getUploadedFiles(req).slice(0, 100);
+    if (!files.length) return res.status(400).json({ error: 'Add at least one image' });
+
+    const carouselDirectory = path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'uploads', 'managed-carousels', slot);
+    fs.mkdirSync(carouselDirectory, { recursive: true });
+    const allowedExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
+    const values = [];
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      const extension = path.extname(file.name).toLowerCase();
+      if (!allowedExtensions.has(extension)) return res.status(400).json({ error: 'Only image uploads are allowed' });
+      const fileName = `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 10)}${extension}`;
+      await file.mv(path.join(carouselDirectory, fileName));
+      values.push({
+        slot,
+        image_url: `/api/uploads/managed-carousels/${slot}/${fileName}`,
+        title: getIndexedBodyValue(req.body, 'title', index) || null,
+        description: getIndexedBodyValue(req.body, 'description', index) || null,
+        price: getIndexedBodyValue(req.body, 'price', index) || null,
+        website: getIndexedBodyValue(req.body, 'website', index) || null,
+        display_order: index,
+      });
+    }
+
+    await db.transaction().execute(async (trx) => {
+      await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).execute();
+      await trx.insertInto('UhubManagedCarouselItems').values(values).execute();
+    });
+    res.status(201).json({ items: values });
+  } catch (error) {
+    console.error('[CAROUSELS] Error replacing carousel items:', error);
+    res.status(500).json({ error: 'Failed to replace carousel items' });
+  }
+});
 
 // Create a new broadcast (the container; episodes go inside).
 router.post('/api/broadcasts', requireAuth, async (req: Request, res: Response) => {

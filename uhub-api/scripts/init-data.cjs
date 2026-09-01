@@ -230,4 +230,19 @@ if (!episodeColumns.includes('play_count')) {
 }
 console.log('[init-data] UserBroadcasts/UserBroadcastEpisodes tables verified.');
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS UhubManagedCarouselItems (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slot TEXT NOT NULL,
+    image_url TEXT NOT NULL,
+    title TEXT,
+    description TEXT,
+    price TEXT,
+    website TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+console.log('[init-data] UhubManagedCarouselItems table verified.');
+
 db.close();

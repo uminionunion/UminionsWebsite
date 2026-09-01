@@ -121,52 +121,14 @@
   font-size: 10px;
 }
 
-.uhub-root .uhub-footer-logo-carousel {
-  display: flex;
-  min-height: 54px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  background: transparent;
-  padding: 4px;
-}
-
-.uhub-root .uhub-footer-logo-carousel > button {
-  display: flex;
-  height: 42px;
-  width: 22px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-}
-
-.uhub-root .uhub-footer-logo-carousel > div {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  justify-content: space-evenly;
-  gap: 4px;
-  overflow: hidden;
-}
-
-.uhub-root .uhub-footer-logo-carousel a {
-  display: flex;
-  height: 42px;
-  width: 42px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.92);
-  padding: 5px;
-}
-
-.uhub-root .uhub-footer-logo-carousel img {
-  max-height: 100%;
-  max-width: 100%;
-  object-fit: contain;
+.uhub-root .uhub-login-status,
+.uhub-root .uhub-login-status:hover,
+.uhub-root .uhub-login-status:focus,
+.uhub-root .uhub-login-status:active {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 .uhub-root .uhub-footer-poster-carousel {
