@@ -26,7 +26,6 @@ import { renderTheMemeBox, unmountTheMemeBox } from '@/TheMemeBoxRenderer';
 import { additionalHardCodedCustomButtonPages } from './additional-hard-coded-custom-button-pages';
 import { TheFoodPantryFeature } from '../../../../pantry-finder/src/pages/pantry-feature/the-food-pantry-feature';
 import { pantryApiUrl } from '@/lib/api';
-import 'leaflet/dist/leaflet.css';
 
 
 
@@ -2587,6 +2586,13 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [isQuadrantsModalOpen, setIsQuadrantsModalOpen] = useState(false);
   const [isHomeModalOpen, setIsHomeModalOpen] = useState(false);
   const [areProfileSurfacesOpaque, setAreProfileSurfacesOpaque] = useState(true);
+  const [isButton18Active, setIsButton18Active] = useState(false);
+  const [isSnakeModalOpen, setIsSnakeModalOpen] = useState(false);
+  const [snakeGamePhase, setSnakeGamePhase] = useState<'idle' | 'playing' | 'over'>('idle');
+  const [snakeGameScore, setSnakeGameScore] = useState(0);
+  const [snakeSegments, setSnakeSegments] = useState<Array<{ x: number; y: number }>>([]);
+  const [snakeDirection, setSnakeDirection] = useState<'up' | 'down' | 'left' | 'right'>('right');
+  const [snakeCherry, setSnakeCherry] = useState<{ x: number; y: number }>({ x: 10, y: 5 });
   const [areFeatureIconsActive, setAreFeatureIconsActive] = useState({
     heart: false,
     palm: false,
@@ -3284,14 +3290,23 @@ const resetRightSection = () => {
   const MainUhubFeatureV001ForModalColors = Array.from({ length: 30 }, (_, i) => `hsl(${i * 12}, 70%, 50%)`);
 
   const handleUHomeHubClick = (buttonNumber: number) => {
-  setActiveChatModal(buttonNumber);
-  // Clear the green circle for this chatroom
-  setUnreadChatrooms(prev => {
-    const newSet = new Set(prev);
-    newSet.delete(buttonNumber);
-    return newSet;
-  });
-};
+    if (buttonNumber === 18) {
+      setIsButton18Active((currentValue) => {
+        const nextValue = !currentValue;
+        setIsSnakeModalOpen(nextValue);
+        return nextValue;
+      });
+      return;
+    }
+
+    setActiveChatModal(buttonNumber);
+    // Clear the green circle for this chatroom
+    setUnreadChatrooms(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(buttonNumber);
+      return newSet;
+    });
+  };
   const handleCloseChatModal = async () => {
   if (activeChatModal !== null) {
     // Mark chatroom as read
@@ -3796,6 +3811,154 @@ return (
         
     }
   };
+
+  const getRandomCherryPosition = useCallback((currentSnake: Array<{ x: number; y: number }>) => {
+    const boardSize = 16;
+    const occupied = new Set(currentSnake.map(segment => `${segment.x},${segment.y}`));
+    const availableCells: Array<{ x: number; y: number }> = [];
+
+    for (let y = 0; y < boardSize; y += 1) {
+      for (let x = 0; x < boardSize; x += 1) {
+        if (!occupied.has(`${x},${y}`)) {
+          availableCells.push({ x, y });
+        }
+      }
+    }
+
+    if (availableCells.length === 0) {
+      return { x: 0, y: 0 };
+    }
+
+    return availableCells[Math.floor(Math.random() * availableCells.length)];
+  }, []);
+
+  const resetSnakeGameState = useCallback(() => {
+    setSnakeGamePhase('idle');
+    setSnakeGameScore(0);
+    setSnakeDirection('right');
+    setSnakeSegments([
+      { x: 5, y: 8 },
+      { x: 4, y: 8 },
+      { x: 3, y: 8 },
+    ]);
+    setSnakeCherry(getRandomCherryPosition([
+      { x: 5, y: 8 },
+      { x: 4, y: 8 },
+      { x: 3, y: 8 },
+    ]));
+  }, [getRandomCherryPosition]);
+
+  useEffect(() => {
+    if (!isSnakeModalOpen) {
+      resetSnakeGameState();
+    }
+  }, [isSnakeModalOpen, resetSnakeGameState]);
+
+  const startSnakeGame = useCallback(() => {
+    const initialSnake = [
+      { x: 5, y: 8 },
+      { x: 4, y: 8 },
+      { x: 3, y: 8 },
+    ];
+    setSnakeSegments(initialSnake);
+    setSnakeDirection('right');
+    setSnakeGameScore(0);
+    setSnakeGamePhase('playing');
+    setSnakeCherry(getRandomCherryPosition(initialSnake));
+  }, [getRandomCherryPosition]);
+
+  const handleSnakeDirectionChange = useCallback((nextDirection: 'up' | 'down' | 'left' | 'right') => {
+    setSnakeDirection((currentDirection) => {
+      const oppositeMap = {
+        up: 'down',
+        down: 'up',
+        left: 'right',
+        right: 'left',
+      } as const;
+
+      if (oppositeMap[currentDirection] === nextDirection) {
+        return currentDirection;
+      }
+
+      return nextDirection;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (snakeGamePhase !== 'playing') return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const keyMap: Record<string, 'up' | 'down' | 'left' | 'right'> = {
+        ArrowUp: 'up',
+        ArrowDown: 'down',
+        ArrowLeft: 'left',
+        ArrowRight: 'right',
+      };
+
+      const nextDirection = keyMap[event.key];
+      if (nextDirection) {
+        event.preventDefault();
+        handleSnakeDirectionChange(nextDirection);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [snakeGamePhase, handleSnakeDirectionChange]);
+
+  useEffect(() => {
+    if (snakeGamePhase !== 'playing') return;
+
+    const gameTick = window.setInterval(() => {
+      setSnakeSegments((currentSnake) => {
+        if (currentSnake.length === 0) {
+          return currentSnake;
+        }
+
+        const head = currentSnake[0];
+        const deltaMap: Record<'up' | 'down' | 'left' | 'right', { x: number; y: number }> = {
+          up: { x: 0, y: -1 },
+          down: { x: 0, y: 1 },
+          left: { x: -1, y: 0 },
+          right: { x: 1, y: 0 },
+        };
+
+        const delta = deltaMap[snakeDirection];
+        const nextHead = {
+          x: head.x + delta.x,
+          y: head.y + delta.y,
+        };
+
+        const collidedWithWall = nextHead.x < 0 || nextHead.x >= 16 || nextHead.y < 0 || nextHead.y >= 16;
+        const collidedWithSelf = currentSnake.some((segment) => segment.x === nextHead.x && segment.y === nextHead.y);
+
+        if (collidedWithWall || collidedWithSelf) {
+          setSnakeGamePhase('over');
+          return currentSnake;
+        }
+
+        const nextSnake = [nextHead, ...currentSnake];
+        const ateCherry = nextHead.x === snakeCherry.x && nextHead.y === snakeCherry.y;
+
+        if (ateCherry) {
+          setSnakeGameScore((currentScore) => currentScore + 1);
+          setSnakeCherry(getRandomCherryPosition(nextSnake));
+          return nextSnake;
+        }
+
+        nextSnake.pop();
+        return nextSnake;
+      });
+    }, 150);
+
+    return () => window.clearInterval(gameTick);
+  }, [snakeGamePhase, snakeDirection, snakeCherry, getRandomCherryPosition]);
+
+  const closeSnakeGame = useCallback(() => {
+    setIsSnakeModalOpen(false);
+    setIsButton18Active(false);
+    resetSnakeGameState();
+  }, [resetSnakeGameState]);
 
   const handleTopLeftButtonClick = (view: string) => {
     if (!user) {
@@ -4321,24 +4484,34 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         <RotatingUnionEventCard />
         <h3 className="text-center font-bold mb-2 md:mb-4 text-xs md:text-base">uHome-Hub:</h3>
         <div className="grid grid-cols-2 gap-1 md:gap-2">
-          {MainUhubFeatureV001ForUHomeHubButtons.map(num => (
-            <div key={num} className="relative">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="md:h-auto h-6 text-xs w-full text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" 
-                style={{ color: '#ffffff', backgroundColor: 'transparent' }}
-                onClick={() => handleUHomeHubClick(num)}
-              >
-                #{String(num).padStart(2, '0')}
-              </Button>
-              
-              {/* Green unread message badge */}
-              {unreadChatrooms.has(num) && (
-                <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full border border-green-600 z-10"></div>
-              )}
-            </div>
-          ))}
+          {MainUhubFeatureV001ForUHomeHubButtons.map(num => {
+            const isButton18 = num === 18;
+            const isThisButton18Active = isButton18 && isButton18Active;
+
+            return (
+              <div key={num} className="relative">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="md:h-auto h-6 text-xs w-full text-white border-gray-700 hover:bg-gray-700 hover:text-white"
+                  style={{
+                    color: '#ffffff',
+                    backgroundColor: isThisButton18Active ? '#22c55e' : 'transparent',
+                    borderColor: isThisButton18Active ? '#22c55e' : '#374151',
+                    boxShadow: isThisButton18Active ? '0 0 0 2px rgba(34, 197, 94, 0.4)' : 'none',
+                  }}
+                  onClick={() => handleUHomeHubClick(num)}
+                >
+                  {isButton18 ? (isThisButton18Active ? '𓆗' : '𓆙') : `#${String(num).padStart(2, '0')}`}
+                </Button>
+                
+                {/* Green unread message badge */}
+                {unreadChatrooms.has(num) && !isThisButton18Active && (
+                  <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full border border-green-600 z-10"></div>
+                )}
+              </div>
+            );
+          })}
         </div>
         <div className="mt-4"><HeaderProductCarousel /></div>
       </div>
@@ -4442,6 +4615,119 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         </div>
 
       
+        {isSnakeModalOpen && (
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/75 p-4">
+            <div className="relative w-full max-w-[520px] rounded-2xl border border-white/10 bg-[#0b0b0f] p-4 shadow-2xl shadow-green-500/30">
+              <button
+                type="button"
+                onClick={closeSnakeGame}
+                className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black text-xl font-bold text-white ring-1 ring-white/20 transition hover:bg-gray-800"
+                aria-label="Close snake game"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="mb-4 flex items-center justify-between gap-3 pr-10">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-green-400">uHub Arcade</p>
+                  <h2 className="text-2xl font-black text-white">Snake Game</h2>
+                </div>
+                <div className="rounded-full border border-green-400/40 bg-green-500/10 px-3 py-1 text-sm font-semibold text-green-300">
+                  Score: {snakeGameScore}
+                </div>
+              </div>
+
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm text-gray-300">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-400" />
+                  Eat the cherry. Don&apos;t hit the wall or yourself.
+                </div>
+                {snakeGamePhase !== 'playing' && (
+                  <Button
+                    type="button"
+                    onClick={startSnakeGame}
+                    className="bg-green-500 text-black hover:bg-green-400"
+                  >
+                    Play a Snake Game?
+                  </Button>
+                )}
+              </div>
+
+              <div className="relative mx-auto flex w-full max-w-[420px] items-center justify-center">
+                <div
+                  className="grid gap-[2px] rounded-xl border border-white/10 bg-[#111827] p-2"
+                  style={{
+                    gridTemplateColumns: 'repeat(16, minmax(0, 1fr))',
+                    width: '100%',
+                    maxWidth: '420px',
+                    aspectRatio: '1 / 1',
+                  }}
+                >
+                  {Array.from({ length: 16 * 16 }, (_, index) => {
+                    const x = index % 16;
+                    const y = Math.floor(index / 16);
+                    const isHead = snakeSegments[0]?.x === x && snakeSegments[0]?.y === y;
+                    const isBody = snakeSegments.some((segment, segmentIndex) => segmentIndex > 0 && segment.x === x && segment.y === y);
+                    const isCherry = snakeCherry.x === x && snakeCherry.y === y;
+
+                    return (
+                      <div
+                        key={`${x}-${y}`}
+                        className="rounded-[3px]"
+                        style={{
+                          backgroundColor: isHead
+                            ? '#22c55e'
+                            : isBody
+                              ? '#86efac'
+                              : isCherry
+                                ? '#f43f5e'
+                                : '#1f2937',
+                          boxShadow: isCherry ? 'inset 0 0 0 1px rgba(255,255,255,0.2)' : 'none',
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+
+                {snakeGamePhase === 'over' && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-black/70 p-4">
+                    <div className="w-full max-w-[280px] rounded-xl border border-red-500/40 bg-[#111827] p-4 text-center shadow-lg shadow-red-500/20">
+                      <p className="text-sm uppercase tracking-[0.2em] text-red-300">Game Over</p>
+                      <p className="mt-2 text-xl font-bold text-white">Score: {snakeGameScore}</p>
+                      <Button
+                        type="button"
+                        onClick={startSnakeGame}
+                        className="mt-4 w-full bg-red-500 text-white hover:bg-red-400"
+                      >
+                        Play again?
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex justify-end gap-2 md:hidden">
+                <button
+                  type="button"
+                  onClick={() => handleSnakeDirectionChange('left')}
+                  className="flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 bg-gray-800 text-2xl font-bold text-white"
+                  aria-label="Move left"
+                >
+                  ←
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSnakeDirectionChange('right')}
+                  className="flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 bg-gray-800 text-2xl font-bold text-white"
+                  aria-label="Move right"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isAddProductModalOpen && (
   <MainUhubFeatureV001ForAddProductModal 
     isOpen={isAddProductModalOpen} 
