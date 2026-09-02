@@ -4127,8 +4127,32 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         variant="outline"
         size="sm"
         className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''} ${customizableButtonPage === 1 && buttonNumber === 4 && user?.id !== 1 ? 'opacity-50 cursor-not-allowed' : ''} ${typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 ? 'text-[0.65rem] text-gray-500 opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
-        style={{ color: '#ffffff', backgroundColor: customizableButtonPage === 1 && buttonNumber === 3 && areFeatureIconsActive.heart ? '#dc2626' : customizableButtonPage === 1 && buttonNumber === 4 && areFeatureIconsActive.palm ? '#facc15' : customizableButtonPage === 1 && buttonNumber === 5 ? '#2563eb' : 'transparent' }}
+        style={{
+          color: '#ffffff',
+          backgroundColor: buttonNumber === 18 && isButton18Active
+            ? '#22c55e'
+            : customizableButtonPage === 1 && buttonNumber === 3 && areFeatureIconsActive.heart
+              ? '#dc2626'
+              : customizableButtonPage === 1 && buttonNumber === 4 && areFeatureIconsActive.palm
+                ? '#facc15'
+                : customizableButtonPage === 1 && buttonNumber === 5
+                  ? '#2563eb'
+                  : 'transparent',
+          borderColor: buttonNumber === 18
+            ? isButton18Active ? '#22c55e' : '#374151'
+            : undefined,
+          boxShadow: buttonNumber === 18 && isButton18Active ? '0 0 0 2px rgba(34, 197, 94, 0.45)' : 'none',
+        }}
         onClick={() => {
+          if (buttonNumber === 18) {
+            setIsButton18Active((currentValue) => {
+              const nextValue = !currentValue;
+              setIsSnakeModalOpen(nextValue);
+              return nextValue;
+            });
+            return;
+          }
+
           if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')) {
             setCustomizableButtonPage(page => Math.max(1, page - 1));
             return;
@@ -4334,7 +4358,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               : `Custom ${buttonNumber}`}
       >
         <span className={customizableButtonPage === 1 && [3, 4, 5, 6, 7, 8, 15, 16].includes(buttonNumber) ? 'text-[1.5625rem] leading-none' : 'text-xl leading-none'}>
-          {customizableButtonPage === 1 && buttonNumber === 3 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
+          {buttonNumber === 18 ? (isButton18Active ? '𓆗' : '𓆙') :
+            customizableButtonPage === 1 && buttonNumber === 3 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
             customizableButtonPage === 1 && buttonNumber === 4 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
             customizableButtonPage === 1 && buttonNumber === 5 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
             customizableButtonPage === 1 && buttonNumber === 6 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
@@ -4616,8 +4641,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
       
         {isSnakeModalOpen && (
-          <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/75 p-4">
-            <div className="relative w-full max-w-[520px] rounded-2xl border border-white/10 bg-[#0b0b0f] p-4 shadow-2xl shadow-green-500/30">
+          <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/75 p-4">
+            <div className="relative z-[2147483647] w-full max-w-[520px] rounded-2xl border border-white/10 bg-[#0b0b0f] p-4 shadow-2xl shadow-green-500/30">
               <button
                 type="button"
                 onClick={closeSnakeGame}
