@@ -484,7 +484,7 @@ const formatMessageTime = (isoString: string): string => {
                 <Button
                   key={i}
                   variant={activeTab === i ? 'secondary' : 'ghost'}
-                  className="rounded-none text-white flex-shrink-0"
+                  className={`uhub-chat-tab rounded-none text-white flex-shrink-0 ${activeTab === i ? 'uhub-chat-tab-active' : ''}`}
                   onClick={() => handleTabClick(i)}
                   disabled={tab.isLoginRequired && !user}
                 >

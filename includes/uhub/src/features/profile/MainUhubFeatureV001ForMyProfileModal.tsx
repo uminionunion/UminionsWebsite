@@ -27,6 +27,8 @@ import { renderTheMemeBox, unmountTheMemeBox } from '@/TheMemeBoxRenderer';
 import { additionalHardCodedCustomButtonPages } from './additional-hard-coded-custom-button-pages';
 const TheFoodPantryFeature = React.lazy(async () => ({ default: (await import('../../../../pantry-finder/src/pages/pantry-feature/the-food-pantry-feature')).TheFoodPantryFeature }));
 import { pantryApiUrl } from '@/lib/api';
+import 'leaflet/dist/leaflet.css';
+import '../../../../pantry-finder/src/index.css';
 
 
 
@@ -810,6 +812,14 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: 'left' | 'right
       image.src = nextItem.image_url;
     }
   }, [index, items]);
+  useEffect(() => {
+    items.slice(0, 20).forEach((preloadItem) => {
+      if (!preloadItem.image_url) return;
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = preloadItem.image_url;
+    });
+  }, [items]);
   return <div ref={carouselRef} className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
     <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + items.length) % items.length)}>‹</button>
     <img key={item.image_url} src={item.image_url} alt={item.title || 'Carousel image'} className="uhub-carousel-image" />

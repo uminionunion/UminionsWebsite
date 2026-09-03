@@ -1067,6 +1067,14 @@ const submitComment = async () => {
   }, [filteredPosts, currentPostIndex]);
 
   useEffect(() => {
+    displayPost?.images?.slice(0, 20).forEach((mediaUrl) => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.src = mediaUrl;
+    });
+  }, [displayPost]);
+
+  useEffect(() => {
     autoplayFreshPosts.current.clear();
     setCurrentPostIndex(0);
   }, [currentPage]);
