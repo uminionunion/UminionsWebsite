@@ -2,6 +2,13 @@ import { Router } from 'express';
 import { db } from './db.js';
 import { authenticate } from './auth-middleware.js';
 const router = Router();
+export async function isBlockedPair(userId, otherUserId) {
+    const blocked = await db.selectFrom('blocked_users').select('id').where(eb => eb.or([
+        eb.and([eb('blocker_id', '=', userId), eb('blocked_id', '=', otherUserId)]),
+        eb.and([eb('blocker_id', '=', otherUserId), eb('blocked_id', '=', userId)]),
+    ])).executeTakeFirst();
+    return !!blocked;
+}
 // Get pending friend requests for the logged-in user
 router.get('/requests/pending', authenticate, async (req, res) => {
     const userId = req.user.userId;
@@ -37,11 +44,13 @@ router.get('/', authenticate, async (req, res) => {
             res.json([]);
             return;
         }
+        const blockedIds = await db.selectFrom('blocked_users').select('blocked_id').where('blocker_id', '=', userId).execute();
+        const hiddenIds = new Set(blockedIds.map(item => item.blocked_id));
         const friendUsers = await db.selectFrom('users')
             .where('id', 'in', friendIds)
             .select(['id', 'username', 'profile_image_url'])
             .execute();
-        res.json(friendUsers);
+        res.json(friendUsers.filter(friend => !hiddenIds.has(friend.id)));
     }
     catch (error) {
         console.error('Error fetching friends:', error);

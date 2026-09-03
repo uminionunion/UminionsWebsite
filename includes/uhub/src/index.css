@@ -25,6 +25,79 @@
   min-height: 260px;
 }
 
+.uhub-root .uhub-app-root {
+  min-height: 0;
+  height: 100vh;
+  background: #000 url('/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg') center / cover no-repeat;
+}
+
+.uhub-root .uhub-launcher-header {
+  height: 72px;
+  min-height: 72px;
+  background: #000;
+}
+
+.uhub-root .uhub-launcher-body {
+  min-height: 0;
+  background: rgba(0, 0, 0, 0.68);
+}
+
+.uhub-root .uhub-launcher-footer {
+  height: 52px;
+  min-height: 52px;
+  background: #000;
+}
+
+.uhub-root .uhub-launcher-uhub {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 10000;
+}
+
+.uhub-root .uhub-social-icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+}
+
+.uhub-root .uhub-social-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.uhub-root .uhub-chat-dialog .uhub-chat-tabs,
+.uhub-root .uhub-chat-dialog .uhub-chat-options {
+  scrollbar-width: thin;
+  scrollbar-color: #64748b #111827;
+}
+
+.uhub-root .uhub-chat-dialog .uhub-chat-tabs > button {
+  min-width: 88px;
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0;
+  background: rgba(17, 24, 39, 0.8);
+  color: #fff;
+}
+
+.uhub-root .uhub-chat-dialog .uhub-chat-tabs > button[data-state='active'],
+.uhub-root .uhub-chat-dialog .uhub-chat-tabs > button:hover {
+  background: #334155;
+  color: #fff;
+}
+
+.uhub-root .uhub-chat-dialog input {
+  min-height: 36px;
+  background: #111827;
+  color: #fff;
+}
+
+.uhub-root .uhub-chat-dialog [data-radix-popper-content-wrapper] {
+  z-index: 2147483647 !important;
+}
+
 .uhub-root .uhub-event-rotator {
   position: relative;
   height: 118px;

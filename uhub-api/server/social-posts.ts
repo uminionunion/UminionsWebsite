@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from './db.js';
 import { requireAuth } from './auth-middleware.js';
+import { isBlockedPair } from './friends.js';
 
 const router = Router();
 
@@ -399,8 +400,12 @@ router.get('/api/feed/friends', requireAuth, async (req: Request, res: Response)
       .execute();
 
     const friendIds = friendships.map((f) => (f.user_id1 === userId ? f.user_id2 : f.user_id1));
+    const visibleFriendIds = [];
+    for (const friendId of friendIds) {
+      if (!(await isBlockedPair(userId, friendId))) visibleFriendIds.push(friendId);
+    }
 
-    const feed = await buildMergedFeed(friendIds, offset, limit, userId);
+    const feed = await buildMergedFeed(visibleFriendIds, offset, limit, userId);
     res.json(feed);
   } catch (error) {
     console.error('[FEED] Error fetching friends feed:', error);

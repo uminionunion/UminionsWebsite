@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Users, Megaphone, Code, Settings, Facebook, Youtube, Twitch, Instagram, Github, MessageSquare, ShoppingCart, Eye, ChevronLeft, ChevronRight, Plus, Minus, Search, Play, X, Mountain, Home, ChevronDown, ChevronUp, Trash2, Anvil, Pencil } from 'lucide-react';
+import { autoRotation_Control_Hub } from '../../lib/autoRotation_Control_Hub';
 import MainUhubFeatureV001ForChatModal from '../uminion/MainUhubFeatureV001ForChatModal';
 import { useAuth } from '../../hooks/useAuth';
 import { usePaginatedFeed } from '../../hooks/usePaginatedFeed';
@@ -101,7 +102,7 @@ const socialLinksRight = [
 ];
 
 const MainUhubFeatureV001ForSocialIcon = ({ href, children }: { href: string, children: React.ReactNode }) => (
-  <a href={href} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+  <a href={href} target="_blank" rel="noopener noreferrer" className="uhub-social-icon text-muted-foreground hover:text-foreground">
     {children}
   </a>
 );
@@ -730,15 +731,7 @@ const RotatingUnionEventCard = () => {
     { image: '/includes/WYSad001.png', text: 'AD - Sponsored By: WhatsYorStory.com', url: 'https://WhatsYorStory.com' },
   ];
   useEffect(() => {
-    if (paused) return;
-    let interval: number | undefined;
-    const startTimer = window.setTimeout(() => {
-      interval = window.setInterval(() => setIndex(value => (value + 1) % faces.length), 4500);
-    }, 7000);
-    return () => {
-      window.clearTimeout(startTimer);
-      if (interval) window.clearInterval(interval);
-    };
+    return autoRotation_Control_Hub.register('union-event-card', 7000, () => setIndex(value => (value + 1) % faces.length), () => !paused);
   }, [paused, faces.length]);
   const activeFace = faces[index];
   return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeFace.url && window.open(activeFace.url, '_blank')}>
@@ -780,15 +773,8 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: 'left' | 'right
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   useEffect(() => {
-    if (paused) return;
-    let interval: number | undefined;
-    const startTimer = window.setTimeout(() => {
-      interval = window.setInterval(() => setIndex(value => (value + 1) % items.length), 3000);
-    }, 7000);
-    return () => {
-      window.clearTimeout(startTimer);
-      if (interval) window.clearInterval(interval);
-    };
+    if (items.length < 2) return;
+    return autoRotation_Control_Hub.register(`managed-carousel-${slot}`, 3000, () => setIndex(value => (value + 1) % items.length), () => !paused);
   }, [paused, items.length]);
   useEffect(() => setIndex(0), [items]);
   const item = items[index] || fallbackItems[0];
@@ -2943,8 +2929,9 @@ useEffect(() => {
     }
   }, [user, isOpen]);
 
- // Fetch database products for all stores
-useEffect(() => {
+/* DEBUG ONLY: Product data is intentionally disabled while the product tables are unavailable.
+ * Remove this comment wrapper to re-enable product-database diagnostics. */
+/* useEffect(() => {
   const fetchAllProducts = async () => {
     setIsLoadingProducts(true);
     try {
@@ -3021,7 +3008,7 @@ useEffect(() => {
   if (isOpen) {
     fetchAllProducts();
   }
-}, [user, isOpen]);
+}, [user, isOpen]); */
 
   
 

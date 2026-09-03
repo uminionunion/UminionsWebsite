@@ -14,6 +14,8 @@ import socialPostsRouter from './social-posts.js';
 import broadcastsRouter from './broadcasts.js';
 import umiMatchRouter from './umimatch.js';
 import millionPixelRouter from './million-pixel.js';
+import directMessagesRouter from './direct-messages.js';
+import { isBlockedPair } from './friends.js';
 
 dotenv.config();
 
@@ -166,6 +168,7 @@ const productsRouter: Router = (productsMod && (productsMod as any).default) ? (
 
 app.use('/api/auth', authRouter);
 app.use('/api/friends', friendsRouter);
+app.use('/api/direct-messages', directMessagesRouter);
 app.use('/api/products', productsRouter);
 
 // Register meme routes
@@ -214,6 +217,11 @@ app.get('/api/users/by-username/:username', async (req: Request, res: Response) 
 
     if (!user) {
       console.log(`[API] User not found: ${username}`);
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    if (req.user?.userId && await isBlockedPair(req.user.userId, user.id)) {
       res.status(404).json({ error: 'User not found' });
       return;
     }

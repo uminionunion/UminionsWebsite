@@ -357,6 +357,16 @@ export interface UmiMatchMessages {
   created_at: Generated<string | null>;
 }
 
+export interface DirectMessages {
+  id: Generated<number>;
+  sender_id: number;
+  receiver_id: number;
+  content: string;
+  attachment_url: string | null;
+  attachment_type: string | null;
+  created_at: Generated<string | null>;
+}
+
 export interface DeletedUmiMatchAccounts {
   id: Generated<number>;
   user_id: number;
@@ -511,6 +521,7 @@ export interface DB {
   UmiMatchProfiles: UmiMatchProfiles;
   UmiMatchSwipes: UmiMatchSwipes;
   UmiMatchMessages: UmiMatchMessages;
+  DirectMessages: DirectMessages;
   DeletedUmiMatchAccounts: DeletedUmiMatchAccounts;
   DeletedUserAccounts: DeletedUserAccounts;
   MillionPixels: MillionPixels;
