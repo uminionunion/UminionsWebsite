@@ -376,6 +376,14 @@ const UnionRadioPlayer = () => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
   const calendarStart = new Date();
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('uhub-now-playing-changed', {
+      detail: nowPlaying && media ? { episode: nowPlaying, media } : null,
+    }));
+    return () => {
+      window.dispatchEvent(new CustomEvent('uhub-now-playing-changed', { detail: null }));
+    };
+  }, [nowPlaying, media]);
   calendarStart.setDate(1);
   calendarStart.setHours(0, 0, 0, 0);
   calendarStart.setDate(calendarStart.getDate() - calendarStart.getDay());
@@ -487,6 +495,37 @@ const UnionRadioPlayer = () => {
       </div>}
     </div>
   );
+};
+
+const GlobalNowPlaying = () => {
+  const [current, setCurrent] = useState<{ episode: any; media: any } | null>(null);
+
+  useEffect(() => {
+    const handleChanged = (event: Event) => {
+      setCurrent((event as CustomEvent<{ episode: any; media: any } | null>).detail || null);
+    };
+    window.addEventListener('uhub-now-playing-changed', handleChanged);
+    return () => window.removeEventListener('uhub-now-playing-changed', handleChanged);
+  }, []);
+
+  if (!current) return null;
+  const { episode, media } = current;
+  return <section className="mb-4 rounded-md border border-orange-400/40 bg-gray-950 p-3">
+    <div className="mb-2 flex items-center justify-between gap-2">
+      <h4 className="font-semibold text-orange-400">Now Playing</h4>
+      <span className="text-xs text-muted-foreground">Audio/video broadcast</span>
+    </div>
+    <p className="mb-2 truncate text-sm font-semibold">{episode.name}</p>
+    {media.media_type === 'video' ? (
+      <video key={`global-${episode.id}-${media.id}`} className="w-full max-h-40 bg-black" controls autoPlay playsInline>
+        <source src={media.media_url} />
+      </video>
+    ) : (
+      <audio key={`global-${episode.id}-${media.id}`} className="w-full" controls autoPlay>
+        <source src={media.media_url} />
+      </audio>
+    )}
+  </section>;
 };
 
 const PantryFinderBroadcastView = () => {
@@ -692,8 +731,14 @@ const RotatingUnionEventCard = () => {
   ];
   useEffect(() => {
     if (paused) return;
-    const timer = window.setInterval(() => setIndex(value => (value + 1) % faces.length), 4500);
-    return () => window.clearInterval(timer);
+    let interval: number | undefined;
+    const startTimer = window.setTimeout(() => {
+      interval = window.setInterval(() => setIndex(value => (value + 1) % faces.length), 4500);
+    }, 7000);
+    return () => {
+      window.clearTimeout(startTimer);
+      if (interval) window.clearInterval(interval);
+    };
   }, [paused, faces.length]);
   const activeFace = faces[index];
   return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeFace.url && window.open(activeFace.url, '_blank')}>
@@ -736,8 +781,14 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: 'left' | 'right
   const [paused, setPaused] = useState(false);
   useEffect(() => {
     if (paused) return;
-    const timer = window.setInterval(() => setIndex(value => (value + 1) % items.length), 3000);
-    return () => window.clearInterval(timer);
+    let interval: number | undefined;
+    const startTimer = window.setTimeout(() => {
+      interval = window.setInterval(() => setIndex(value => (value + 1) % items.length), 3000);
+    }, 7000);
+    return () => {
+      window.clearTimeout(startTimer);
+      if (interval) window.clearInterval(interval);
+    };
   }, [paused, items.length]);
   useEffect(() => setIndex(0), [items]);
   const item = items[index] || fallbackItems[0];
@@ -1135,18 +1186,6 @@ if (isMobile) {
       )}
 
       {/* BOTTOM: uHome-Hub Chat Modal (MOBILE ONLY) - NOW INTEGRATED INSIDE */}
-      {activeChatModal !== null && (
-        <div className="flex-shrink-0 flex flex-col w-full border-t border-gray-700 mt-4">
-          <MainUhubFeatureV001ForChatModal
-            isOpen={activeChatModal !== null}
-            onClose={onCloseChatModal}
-            pageName={MainUhubFeatureV001ForSisterUnionPages[activeChatModal - 1]}
-            backgroundColor={MainUhubFeatureV001ForModalColors[activeChatModal - 1]}
-            modalNumber={activeChatModal}
-          />
-        </div>
-      )}
-
       {/* SPACER for bottom padding */}
       <div className="h-8 flex-shrink-0" />
     </div>
@@ -2634,7 +2673,8 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
       'Million-Pixel#23': { title: 'Million-Pixel#23', creator: 'Uminion Union', subtitle: 'One million pixels, powered by PixelTickets.', logo: '', extraImages: [], description: 'Million-Pixel', website: 'https://uminion.com' },
       'Beta-Button-10,011': { title: 'Beta-Button-10,011', creator: 'Uminion Union', subtitle: 'Features in Development', logo: '', extraImages: [], description: 'Beta Pages', website: 'https://uminion.com' },
   };
-  const broadcastKeys = ['MyBroadcasts', ...Object.keys(broadcasts)];
+  // Button-launched features are temporary center takeovers, not carousel stops.
+  const broadcastKeys = ['UnionNews#14', 'UnionRadio#15', 'MyBroadcasts'];
   const [selectedFriendForModal, setSelectedFriendForModal] = useState<any>(null);
   const [isFriendProfileModalOpen, setIsFriendProfileModalOpen] = useState(false);
   const [isEditingProfileImage, setIsEditingProfileImage] = useState(false);
@@ -3011,14 +3051,14 @@ useEffect(() => {
 
 // When you want to render UnionNews#14:
 useEffect(() => {
-  if (isOpen && broadcasts['UnionNews#14']) {
+  if (isOpen && broadcastView === 'UnionNews#14' && broadcasts['UnionNews#14']) {
     renderTheMemeBox(broadcasts['UnionNews#14']);
   }
   
   return () => {
     unmountTheMemeBox();
   };
-}, [isOpen]);
+}, [isOpen, broadcastView]);
 
 
 
@@ -3325,6 +3365,14 @@ const resetRightSection = () => {
   setActiveChatModal(null);
 };
 
+  const navigateBroadcast = (direction: 'left' | 'right') => {
+    const currentIndex = broadcastKeys.indexOf(broadcastView);
+    const startIndex = currentIndex === -1 ? 0 : currentIndex;
+    const nextIndex = (startIndex + (direction === 'right' ? 1 : -1) + broadcastKeys.length) % broadcastKeys.length;
+    setAreFeatureIconsActive({ heart: false, palm: false, lion: false, microphone: false, steeringWheel: false, movie: false });
+    setBroadcastView(broadcastKeys[nextIndex]);
+  };
+
   const navigateCenterRight = (direction: 'left' | 'right') => {
     const currentIndex = ALL_STORES.findIndex(s => s.id === centerRightView.id);
     const nextIndex = (currentIndex + (direction === 'right' ? 1 : -1) + ALL_STORES.length) % ALL_STORES.length;
@@ -3395,7 +3443,8 @@ const resetRightSection = () => {
     const isUnionPolitic19 = centerRightView.number === 19;
 
     return (
-        <>
+          <>
+            <GlobalNowPlaying />
            {isUnionSAM20 && (
   <>
     <div id="MainUhubFeatureV001ForUnionStore" className="border rounded-md p-2">
@@ -3646,19 +3695,11 @@ return (
   <>
     <div className="flex items-center justify-between mb-4">
   <div className="flex items-center gap-2">
-    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => {
-      const currentIndex = broadcastKeys.indexOf(broadcastView);
-      const nextIndex = (currentIndex - 1 + broadcastKeys.length) % broadcastKeys.length;
-      setBroadcastView(broadcastKeys[nextIndex]);
-    }}>
+    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateBroadcast('left')}>
       <ChevronLeft />
     </Button>
     <h3 className="text-center font-bold">{currentBroadcast?.title || 'MyBroadcasts'}</h3>
-    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => {
-      const currentIndex = broadcastKeys.indexOf(broadcastView);
-      const nextIndex = (currentIndex + 1) % broadcastKeys.length;
-      setBroadcastView(broadcastKeys[nextIndex]);
-    }}>
+    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateBroadcast('right')}>
       <ChevronRight />
     </Button>
   </div>
@@ -5036,6 +5077,16 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
       
       
+        {activeChatModal !== null && (
+          <MainUhubFeatureV001ForChatModal
+            isOpen
+            onClose={handleCloseChatModal}
+            pageName={MainUhubFeatureV001ForSisterUnionPages[activeChatModal - 1]}
+            backgroundColor={MainUhubFeatureV001ForModalColors[activeChatModal - 1]}
+            modalNumber={activeChatModal}
+          />
+        )}
+
         <HomeModal 
           isOpen={isHomeModalOpen}
           onClose={() => setIsHomeModalOpen(false)}
