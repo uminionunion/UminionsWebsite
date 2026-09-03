@@ -26,14 +26,15 @@
 }
 
 .uhub-root .uhub-app-root {
-  min-height: 0;
-  height: 100vh;
+  min-height: 100vh !important;
+  height: 100vh !important;
   background: #000 url('/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg') center / cover no-repeat;
 }
 
 .uhub-root .uhub-launcher-header {
   height: 72px;
   min-height: 72px;
+  flex: 0 0 72px;
   background: #000;
 }
 
@@ -45,6 +46,7 @@
 .uhub-root .uhub-launcher-footer {
   height: 52px;
   min-height: 52px;
+  flex: 0 0 52px;
   background: #000;
 }
 

@@ -156,6 +156,21 @@ router.post('/reject', authenticate, async (req, res) => {
   }
 });
 
+// Remove an accepted friendship. This intentionally does not create a block.
+router.post('/remove', authenticate, async (req, res) => {
+  const otherUserId = Number(req.body.userId);
+  if (!Number.isInteger(otherUserId) || otherUserId <= 0 || otherUserId === req.user.userId) {
+    return res.status(400).json({ message: 'Invalid user ID.' });
+  }
+  const result = await db.deleteFrom('friends')
+    .where((eb) => eb.or([
+      eb.and([eb('user_id1', '=', req.user.userId), eb('user_id2', '=', otherUserId)]),
+      eb.and([eb('user_id1', '=', otherUserId), eb('user_id2', '=', req.user.userId)]),
+    ])).where('status', '=', 'accepted').executeTakeFirst();
+  if (!result.numDeletedRows) return res.status(404).json({ message: 'Accepted friendship not found.' });
+  res.json({ message: 'Friendship removed.' });
+});
+
 // Block a user
 router.post('/block', authenticate, async (req, res) => {
     const { userId: blockedId } = req.body;
