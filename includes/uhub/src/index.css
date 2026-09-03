@@ -115,6 +115,8 @@
 .uhub-root .uhub-chat-dialog .uhub-chat-header-actions button {
   background: transparent !important;
   background-color: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
   box-shadow: none !important;
 }
 
