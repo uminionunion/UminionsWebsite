@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, UserX, ShieldAlert, Paperclip, Send, ThumbsUp } from 'lucide-react';
+import { MessageSquare, UserX, ShieldAlert, Paperclip, Send, ThumbsUp, UserMinus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const FriendRequestItem = ({ request, onAccept, onReject, onBlock, onReport }) => (
@@ -142,6 +142,17 @@ const MainUhubFeatureV001ForFriendsView = ({ pendingRequests, setPendingRequests
     setFeed(current => current.map(item => item.type === entry.type && item.id === entry.id ? { ...item, upvotes: item.upvotes + 1 } : item));
   };
 
+  const removeFriend = async (friendId) => {
+    const response = await fetch('/api/friends/remove', {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: friendId }),
+    });
+    if (response.ok) {
+      setFriends(current => current.filter(friend => friend.id !== friendId));
+      if (selectedFriend?.id === friendId) setSelectedFriend(null);
+    }
+  };
+
   return (
     <div className="grid grid-cols-3 h-full gap-4">
       <div className="col-span-1 border-r pr-4 overflow-y-auto">
@@ -180,9 +191,10 @@ const MainUhubFeatureV001ForFriendsView = ({ pendingRequests, setPendingRequests
                   <p className="font-semibold">{friend.username}</p>
                 </div>
               </div>
-              <Button variant="ghost" size="icon">
-                <MessageSquare className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={(event) => { event.stopPropagation(); void removeFriend(friend.id); }} title="Unfriend">
+                <UserMinus className="h-5 w-5" />
               </Button>
+              <Button variant="ghost" size="sm" onClick={(event) => { event.stopPropagation(); void removeFriend(friend.id); }}>Unfriend</Button>
             </div>
           )) : <p className="text-sm text-muted-foreground">No friends yet.</p>}
         </div>

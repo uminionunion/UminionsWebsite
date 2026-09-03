@@ -11,9 +11,11 @@ function idFrom(value: unknown) {
 }
 
 async function areFriends(userId: number, otherUserId: number) {
-  const [user_id1, user_id2] = [userId, otherUserId].sort((a, b) => a - b);
   const friendship = await db.selectFrom('friends').select('id')
-    .where('user_id1', '=', user_id1).where('user_id2', '=', user_id2).where('status', '=', 'accepted')
+    .where((eb) => eb.or([
+      eb.and([eb('user_id1', '=', userId), eb('user_id2', '=', otherUserId)]),
+      eb.and([eb('user_id1', '=', otherUserId), eb('user_id2', '=', userId)]),
+    ])).where('status', '=', 'accepted')
     .executeTakeFirst();
   return !!friendship;
 }
