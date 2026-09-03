@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db } from './db.js';
 import { requireAuth } from './auth-middleware.js';
+import { broadcastEvents } from './broadcast-events.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -131,6 +132,7 @@ router.post('/api/broadcasts', requireAuth, async (req: Request, res: Response) 
       .returning('id')
       .executeTakeFirstOrThrow();
 
+    broadcastEvents.emit('broadcastUpdated', { kind: 'broadcast-created', id: result.id });
     res.status(201).json({ id: result.id, message: 'Broadcast created' });
   } catch (error) {
     console.error('[BROADCASTS] Error creating broadcast:', error);
@@ -225,6 +227,7 @@ router.post('/api/broadcasts/:broadcastId/episodes', requireAuth, async (req: Re
       return episode;
     });
 
+    broadcastEvents.emit('broadcastUpdated', { kind: 'episode-created', id: result.id, broadcastId });
     res.status(201).json({ id: result.id, message: 'Episode created' });
   } catch (error) {
     console.error('[BROADCASTS] Error creating episode:', error);

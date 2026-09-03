@@ -16,6 +16,7 @@ import umiMatchRouter from './umimatch.js';
 import millionPixelRouter from './million-pixel.js';
 import directMessagesRouter from './direct-messages.js';
 import { isBlockedPair } from './friends.js';
+import { broadcastEvents } from './broadcast-events.js';
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
@@ -26,6 +27,9 @@ const io = new SocketIOServer(server, {
             : `http://localhost:${process.env.VITE_PORT || 3000}`,
         credentials: true,
     },
+});
+broadcastEvents.on('broadcastUpdated', (payload) => {
+    io.emit('broadcastUpdated', payload);
 });
 function sanitizeStringRoute(s) {
     if (!s || typeof s !== 'string')

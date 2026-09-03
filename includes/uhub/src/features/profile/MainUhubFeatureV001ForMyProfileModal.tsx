@@ -3,6 +3,7 @@ import { Button } from '../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Users, Megaphone, Code, Settings, Facebook, Youtube, Twitch, Instagram, Github, MessageSquare, ShoppingCart, Eye, ChevronLeft, ChevronRight, Plus, Minus, Search, Play, X, Mountain, Home, ChevronDown, ChevronUp, Trash2, Anvil, Pencil } from 'lucide-react';
 import { autoRotation_Control_Hub } from '../../lib/autoRotation_Control_Hub';
+import { mountControlHub } from '../../lib/mountControlHub';
 const MainUhubFeatureV001ForChatModal = React.lazy(() => import('../uminion/MainUhubFeatureV001ForChatModal'));
 import { useAuth } from '../../hooks/useAuth';
 import { usePaginatedFeed } from '../../hooks/usePaginatedFeed';
@@ -255,6 +256,7 @@ const UnionRadioPlayer = () => {
   const playerRef = useRef<HTMLMediaElement | null>(null);
   const replayPlayerRef = useRef<HTMLMediaElement | null>(null);
   const checkingScheduleRef = useRef(false);
+  const radioSocketRef = useRef<import('socket.io-client').Socket | null>(null);
 
   const loadArchive = useCallback(async (mode: 'recent' | 'popular' | 'random') => {
     const response = await fetch(`/api/episode-archive/${mode}`, { credentials: 'include' });
@@ -284,8 +286,20 @@ const UnionRadioPlayer = () => {
 
   useEffect(() => {
     findDueEpisode();
-    const interval = window.setInterval(findDueEpisode, 15000);
-    return () => window.clearInterval(interval);
+    const connectToBroadcastUpdates = async () => {
+      const { io } = await import('socket.io-client');
+      const socket = io(window.location.origin, { withCredentials: true, transports: ['websocket', 'polling'], reconnectionAttempts: 3 });
+      radioSocketRef.current = socket;
+      socket.on('broadcastUpdated', () => {
+        void findDueEpisode();
+        void loadCalendar();
+      });
+    };
+    void connectToBroadcastUpdates();
+    return () => {
+      radioSocketRef.current?.disconnect();
+      radioSocketRef.current = null;
+    };
   }, [findDueEpisode]);
 
   useEffect(() => {
@@ -294,8 +308,6 @@ const UnionRadioPlayer = () => {
 
   useEffect(() => {
     loadCalendar();
-    const interval = window.setInterval(loadCalendar, 30000);
-    return () => window.clearInterval(interval);
   }, [loadCalendar]);
 
   const finishEpisode = async () => {
@@ -723,6 +735,8 @@ const getNextUnionEventDateLabel = (short = false) => {
 const RotatingUnionEventCard = () => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const cardRef = useRef<HTMLDivElement>(null);
   const faces = [
     { image: '/includes/Uminionad001.png', text: `Next Union Event: ${getNextUnionEventDateLabel()} 9am to 9pm` },
     { image: '/includes/WYSad001.png', text: 'AD - Sponsored By: WhatsYorStory.com', url: 'https://WhatsYorStory.com' },
@@ -730,10 +744,15 @@ const RotatingUnionEventCard = () => {
     { image: '/includes/WYSad001.png', text: 'AD - Sponsored By: WhatsYorStory.com', url: 'https://WhatsYorStory.com' },
   ];
   useEffect(() => {
-    return autoRotation_Control_Hub.register('union-event-card', 7000, () => setIndex(value => (value + 1) % faces.length), () => !paused);
-  }, [paused, faces.length]);
+    const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), { threshold: 0.1 });
+    if (cardRef.current) observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    return autoRotation_Control_Hub.register('union-event-card', 7000, () => setIndex(value => (value + 1) % faces.length), () => !paused && isVisible && document.visibilityState === 'visible');
+  }, [paused, isVisible, faces.length]);
   const activeFace = faces[index];
-  return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeFace.url && window.open(activeFace.url, '_blank')}>
+  return <div ref={cardRef} className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeFace.url && window.open(activeFace.url, '_blank')}>
     <button type="button" className="uhub-event-arrow left" onClick={(event) => { event.stopPropagation(); setIndex(value => (value - 1 + faces.length) % faces.length); }}>‹</button>
     <img src={activeFace.image} alt="Next Union Event" />
     <p>{activeFace.text}</p>
@@ -771,15 +790,29 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: 'left' | 'right
   const { items } = useManagedCarouselItems(slot, fallbackItems);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const carouselRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (items.length < 2) return;
-    return autoRotation_Control_Hub.register(`managed-carousel-${slot}`, 3000, () => setIndex(value => (value + 1) % items.length), () => !paused);
-  }, [paused, items.length]);
+    return autoRotation_Control_Hub.register(`managed-carousel-${slot}`, 3000, () => setIndex(value => (value + 1) % items.length), () => !paused && isVisible && document.visibilityState === 'visible');
+  }, [paused, isVisible, items.length, slot]);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), { threshold: 0.1 });
+    if (carouselRef.current) observer.observe(carouselRef.current);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => setIndex(0), [items]);
   const item = items[index] || fallbackItems[0];
-  return <div className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+  useEffect(() => {
+    const nextItem = items[(index + 1) % items.length];
+    if (nextItem?.image_url) {
+      const image = new Image();
+      image.src = nextItem.image_url;
+    }
+  }, [index, items]);
+  return <div ref={carouselRef} className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
     <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + items.length) % items.length)}>‹</button>
-    <img src={item.image_url} alt={item.title || 'Carousel image'} />
+    <img key={item.image_url} src={item.image_url} alt={item.title || 'Carousel image'} className="uhub-carousel-image" />
     <div className="uhub-header-product-overlay">
       {item.title && <span>{item.title}</span>}
       {item.description && <small>{item.description}</small>}
@@ -3037,7 +3070,11 @@ useEffect(() => {
 // When you want to render UnionNews#14:
 useEffect(() => {
   if (isOpen && broadcastView === 'UnionNews#14' && broadcasts['UnionNews#14']) {
-    renderTheMemeBox(broadcasts['UnionNews#14']);
+    const releaseQueue = mountControlHub.enqueue('memebox-union-news-14', () => renderTheMemeBox(broadcasts['UnionNews#14']), 10);
+    return () => {
+      releaseQueue();
+      unmountTheMemeBox();
+    };
   }
   
   return () => {
@@ -3081,7 +3118,9 @@ useEffect(() => {
 
   
 
-// Fetch user stores data (all user stores with products)
+// DEBUG ONLY: Product/user-store loading is intentionally disabled while product data is absent.
+// Remove the comment wrappers to re-enable these diagnostics.
+/* Fetch user stores data (all user stores with products)
   useEffect(() => {
     const fetchUserStoresData = async () => {
       try {
@@ -3142,6 +3181,7 @@ useEffect(() => {
 
 
 // Listen for badge zoom events from nested chatroom
+*/
 useEffect(() => {
   const handleShowBadgeZoom = (event: Event) => {
     const customEvent = event as CustomEvent;

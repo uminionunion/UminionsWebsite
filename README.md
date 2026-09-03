@@ -225,6 +225,12 @@ uHub owns the medium center console through `MainUhubFeatureV001ForMyProfileModa
 
 All eligible uHub carousels and MemeBox instances register with `includes/uhub/src/lib/autoRotation_Control_Hub.ts`. The hub grants at most one rotation every three seconds, honors each component's own ready interval, and leaves busy/paused entries queued for a later tick. New rotating surfaces should register there rather than creating their own `setInterval` loop.
 
+### Mount scheduling
+
+`includes/uhub/src/lib/mountControlHub.ts` limits expensive asynchronous feature loads to two active tasks. Feed requests use priority 20, while the initial MemeBox mount uses priority 10. Product diagnostics are currently disabled because product data is intentionally unavailable; the marked debug wrappers document how to restore those requests later.
+
+The embedded Vite applications must keep deployment-specific `base` paths: uHub uses `/uhub/dist/` and Pantry Finder uses `/pantry-finder/dist/`. Without these values, lazy chunks are requested from the site root and the embedded app can appear to launch and then fail with 404 errors.
+
 Use this architecture as the placement guide:
 
 - A visual React feature belongs under `includes/<feature-name>`, with its own build output and a mount point in the WordPress template.
