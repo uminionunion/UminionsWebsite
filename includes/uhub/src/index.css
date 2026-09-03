@@ -90,6 +90,19 @@
   color: #fff;
 }
 
+.uhub-root .uhub-chat-dialog .uhub-chat-tabs > button.uhub-chat-tab-active {
+  background: #1f2937 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 -2px 0 #ffffff;
+}
+
+.uhub-root .uhub-pantry-finder .pantry-finder-country-list {
+  height: 72px !important;
+  max-height: 72px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
 .uhub-root .uhub-chat-dialog input {
   min-height: 36px;
   background: #111827;

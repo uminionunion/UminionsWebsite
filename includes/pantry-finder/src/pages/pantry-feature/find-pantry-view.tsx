@@ -106,7 +106,7 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
 
         <div>
           <h4 className="pantry-finder-section-title font-medium mb-2">Country</h4>
-          <div className="h-[92px] max-h-[92px] overflow-x-hidden overflow-y-auto space-y-2 border rounded-md p-2">
+          <div className="pantry-finder-country-list h-[92px] max-h-[92px] overflow-x-hidden overflow-y-auto space-y-2 border rounded-md p-2">
             <RadioGroup value={selectedCountry || ''} onValueChange={handleCountryChange}>
               {sortedCountryList.map(country => (
                 <div key={country} className="flex items-center space-x-2">
