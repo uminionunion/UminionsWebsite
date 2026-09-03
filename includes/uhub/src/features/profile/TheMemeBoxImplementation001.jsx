@@ -46,10 +46,23 @@ export default function TheMemeBoxImplementation001({ postSource = "all", embedd
   const touchStartY = useRef(0);
   const SWIPE_THRESHOLD = 50;
   const MAX_UPLOAD_IMAGES = 50;
-  const ROTATION_IMAGE_DELAY_MS = 3000;
-  const ROTATION_MOTION_DELAY_MS = 8000; // Videos/GIFs autoplay on their own, so give them more time before rotating.
+  const ROTATION_IMAGE_DELAY_MS = 10000;
+  const ROTATION_MOTION_DELAY_MS = 10000;
   const toastTimerRef = useRef(null);
   const [toastMessage, setToastMessage] = useState("");
+  const visibilityRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const element = visibilityRef.current;
+    if (!element || typeof IntersectionObserver === "undefined") {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(([entry]) => setIsVisible(entry.isIntersecting), { threshold: 0.1 });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   const showToast = useCallback((message) => {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
@@ -240,6 +253,7 @@ const EMOJIS = {
   // =====================================================
 
   useEffect(() => {
+   if (!isVisible) return;
    const fetchPostsFromDatabase = async () => {
      try {
        console.log("[MEMEBOX] Fetching posts from database...");
@@ -260,11 +274,12 @@ const EMOJIS = {
        const allDbPosts = postSource === "user-submitted"
          ? userSubmittedPosts
          : [...viralPosts, ...userSubmittedPosts];
+       const recentDbPosts = allDbPosts.slice(0, 20);
 
-       if (allDbPosts.length > 0) {
+       if (recentDbPosts.length > 0) {
          // ✅ FIXED: Fetch comments for each post during initial load
          const formattedPosts = await Promise.all(
-           allDbPosts.map(async (post) => {
+           recentDbPosts.map(async (post) => {
              let comments = [];
              try {
                const commentRes = await fetch(`/api/memes/posts/${post.id}/comments`, {
@@ -320,7 +335,7 @@ const EMOJIS = {
    };
 
    fetchPostsFromDatabase();
- }, [postSource]);
+ }, [postSource, isVisible]);
 
 
   
@@ -1082,7 +1097,7 @@ const submitComment = async () => {
   }, [currentPage]);
 
   useEffect(() => {
-    if (isMemeBoxHovered || filteredPosts.length < 2 || isUploadDialogOpen || isCommentDialogOpen || isViewCommentsDialogOpen || isFavoritesGridOpen || isZoomModalOpen) {
+    if (!isVisible || isMemeBoxHovered || filteredPosts.length < 2 || isUploadDialogOpen || isCommentDialogOpen || isViewCommentsDialogOpen || isFavoritesGridOpen || isZoomModalOpen) {
       return;
     }
 
@@ -1127,7 +1142,7 @@ const submitComment = async () => {
     scheduleNextRotation();
 
     return () => window.clearTimeout(rotationTimeout);
-  }, [filteredPosts.length, currentPostIndex, isMemeBoxHovered, isUploadDialogOpen, isCommentDialogOpen, isViewCommentsDialogOpen, isFavoritesGridOpen, isZoomModalOpen]);
+  }, [filteredPosts.length, currentPostIndex, isVisible, isMemeBoxHovered, isUploadDialogOpen, isCommentDialogOpen, isViewCommentsDialogOpen, isFavoritesGridOpen, isZoomModalOpen]);
 
   // =====================================================
   // STYLES
@@ -2466,6 +2481,7 @@ const renderUserProfileModal = () => {
 
   return (
     <div
+      ref={visibilityRef}
       style={styles.container}
       onMouseEnter={() => setIsMemeBoxHovered(true)}
       onMouseLeave={() => setIsMemeBoxHovered(false)}
