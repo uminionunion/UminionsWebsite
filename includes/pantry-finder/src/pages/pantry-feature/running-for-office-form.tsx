@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { countries } from './countries-data';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../../../../uhub/src/hooks/useAuth';
 import { pantryApiUrl } from '@/lib/api';
 
 const officeTypes = [
