@@ -26,15 +26,17 @@
 }
 
 .uhub-root .uhub-app-root {
-  min-height: 100vh !important;
-  height: 100vh !important;
+  min-height: 0 !important;
+  height: auto !important;
+  width: fit-content !important;
+  display: block !important;
   background: #000 url('/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg') center / cover no-repeat;
 }
 
 .uhub-root .uhub-launcher-header {
   height: 72px;
   min-height: 72px;
-  flex: 0 0 72px;
+  flex: 0 0 72px !important;
   background: #000;
 }
 
@@ -46,7 +48,7 @@
 .uhub-root .uhub-launcher-footer {
   height: 52px;
   min-height: 52px;
-  flex: 0 0 52px;
+  flex: 0 0 52px !important;
   background: #000;
 }
 
@@ -107,6 +109,23 @@
   min-height: 36px;
   background: #111827;
   color: #fff;
+}
+
+.uhub-root .uhub-chat-dialog .uhub-chat-header-actions,
+.uhub-root .uhub-chat-dialog .uhub-chat-header-actions button {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.uhub-root .uhub-pantry-finder,
+.uhub-root .uhub-pantry-finder.pantry-finder-root {
+  display: block !important;
+  width: 100% !important;
+  height: 70vh !important;
+  min-height: 620px !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
 }
 
 .uhub-root .uhub-chat-dialog [data-radix-popper-content-wrapper] {
