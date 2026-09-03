@@ -3290,15 +3290,6 @@ const resetRightSection = () => {
   const MainUhubFeatureV001ForModalColors = Array.from({ length: 30 }, (_, i) => `hsl(${i * 12}, 70%, 50%)`);
 
   const handleUHomeHubClick = (buttonNumber: number) => {
-    if (buttonNumber === 18) {
-      setIsButton18Active((currentValue) => {
-        const nextValue = !currentValue;
-        setIsSnakeModalOpen(nextValue);
-        return nextValue;
-      });
-      return;
-    }
-
     setActiveChatModal(buttonNumber);
     // Clear the green circle for this chatroom
     setUnreadChatrooms(prev => {
@@ -4510,9 +4501,6 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         <h3 className="text-center font-bold mb-2 md:mb-4 text-xs md:text-base">uHome-Hub:</h3>
         <div className="grid grid-cols-2 gap-1 md:gap-2">
           {MainUhubFeatureV001ForUHomeHubButtons.map(num => {
-            const isButton18 = num === 18;
-            const isThisButton18Active = isButton18 && isButton18Active;
-
             return (
               <div key={num} className="relative">
                 <Button 
@@ -4521,17 +4509,17 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                   className="md:h-auto h-6 text-xs w-full text-white border-gray-700 hover:bg-gray-700 hover:text-white"
                   style={{
                     color: '#ffffff',
-                    backgroundColor: isThisButton18Active ? '#22c55e' : 'transparent',
-                    borderColor: isThisButton18Active ? '#22c55e' : '#374151',
-                    boxShadow: isThisButton18Active ? '0 0 0 2px rgba(34, 197, 94, 0.4)' : 'none',
+                    backgroundColor: 'transparent',
+                    borderColor: '#374151',
+                    boxShadow: 'none',
                   }}
                   onClick={() => handleUHomeHubClick(num)}
                 >
-                  {isButton18 ? (isThisButton18Active ? '𓆗' : '𓆙') : `#${String(num).padStart(2, '0')}`}
+                  #{String(num).padStart(2, '0')}
                 </Button>
                 
                 {/* Green unread message badge */}
-                {unreadChatrooms.has(num) && !isThisButton18Active && (
+                {unreadChatrooms.has(num) && (
                   <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full border border-green-600 z-10"></div>
                 )}
               </div>
