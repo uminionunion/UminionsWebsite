@@ -63,7 +63,7 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 md:grid-cols-[1.35fr_0.9fr_0.9fr]">
         <div>
           <h4 className="pantry-finder-section-title font-medium mb-2">Find a:</h4>
           <div className="grid grid-cols-2 gap-3">
@@ -106,7 +106,7 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
 
         <div>
           <h4 className="pantry-finder-section-title font-medium mb-2">Country</h4>
-          <div className="max-h-[72px] overflow-y-auto space-y-2 p-2 border rounded-md">
+          <div className="max-h-[170px] overflow-y-auto space-y-2 border rounded-md p-2">
             <RadioGroup value={selectedCountry || ''} onValueChange={handleCountryChange}>
               {sortedCountryList.map(country => (
                 <div key={country} className="flex items-center space-x-2">
@@ -118,10 +118,10 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
           </div>
         </div>
 
-        {states && states.length > 0 && (
+        {(states && states.length > 0) ? (
           <div>
             <h4 className="pantry-finder-section-title font-medium mb-2">{selectedCountry} States/Provinces</h4>
-            <div className="max-h-[72px] overflow-y-auto space-y-2 p-2 border rounded-md">
+            <div className="max-h-[170px] overflow-y-auto space-y-2 border rounded-md p-2">
               <RadioGroup value={selectedState || ''} onValueChange={handleStateChange}>
                 {states.map(state => (
                   <div key={state} className="flex items-center space-x-2">
@@ -130,6 +130,12 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
                   </div>
                 ))}
               </RadioGroup>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start">
+            <div className="w-full rounded-md border border-dashed p-2 text-xs text-muted-foreground">
+              Select a country to load states/provinces.
             </div>
           </div>
         )}

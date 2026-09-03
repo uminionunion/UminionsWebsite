@@ -3062,15 +3062,18 @@ useEffect(() => {
       try {
         const res = await fetch('/api/products/stores/all/with-products');
         if (!res.ok) {
-          console.log('[PRODUCTS] User stores fetch failed, status:', res.status);
+          // DEBUG NOTE: re-enable only when checking user-store fetch issues.
+          // console.log('[PRODUCTS] User stores fetch failed, status:', res.status);
           setUserStoresData([]);
           return;
         }
         const data = await res.json();
         setUserStoresData(Array.isArray(data) ? data : []);
-        console.log(`[PRODUCTS] Fetched ${data.length} user stores with products`);
+        // DEBUG NOTE: re-enable only when checking user-store counts.
+        // console.log(`[PRODUCTS] Fetched ${data.length} user stores with products`);
       } catch (error) {
-        console.error('[PRODUCTS] Error fetching user stores:', error);
+        // DEBUG NOTE: re-enable only when checking user-store errors.
+        // console.error('[PRODUCTS] Error fetching user stores:', error);
         setUserStoresData([]);
       }
     };

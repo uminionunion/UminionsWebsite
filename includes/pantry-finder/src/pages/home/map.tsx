@@ -19,13 +19,13 @@ export function PantryMap({ pantries = [], politicians = [], candidates = [], on
   const markerRefs = React.useRef<{ [key: string]: L.Marker | null }>({});
   
   React.useEffect(() => {
-    const senators = politicians.filter(p => p.office === 'Senate');
-    console.log('Map rendering - Politicians:', politicians.length, 'Senators:', senators.length);
-    const stateCount: { [key: string]: number } = {};
-    senators.forEach(s => {
-      stateCount[s.state] = (stateCount[s.state] || 0) + 1;
-    });
-    console.log('Map - Senators per state:', stateCount);
+    // DEBUG NOTE: re-enable only when debugging map marker density.
+    // const senators = politicians.filter(p => p.office === 'Senate');
+    // const stateCount: { [key: string]: number } = {};
+    // senators.forEach(s => {
+    //   stateCount[s.state] = (stateCount[s.state] || 0) + 1;
+    // });
+    // console.log('Map - Senators per state:', stateCount);
   }, [politicians]);
 
   const handleMarkerClick = (pantry: Pantry) => {
@@ -37,13 +37,23 @@ export function PantryMap({ pantries = [], politicians = [], candidates = [], on
   };
 
   React.useEffect(() => {
-    if (mapRef.current) {
-      // Invalidate size after a short delay to ensure container is sized
-      setTimeout(() => {
-        mapRef.current?.invalidateSize();
-      }, 100);
-    }
-  }, []);
+    if (!mapRef.current) return;
+
+    const resizeMap = () => {
+      mapRef.current?.invalidateSize();
+    };
+
+    resizeMap();
+    const timeoutId = window.setTimeout(resizeMap, 120);
+    const observer = new ResizeObserver(() => resizeMap());
+    const container = mapRef.current.getContainer?.();
+    if (container) observer.observe(container);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      observer.disconnect();
+    };
+  }, [pantries.length, politicians.length, candidates.length]);
 
   return (
     <MapContainer

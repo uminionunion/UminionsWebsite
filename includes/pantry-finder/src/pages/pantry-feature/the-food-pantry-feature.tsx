@@ -32,9 +32,8 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
     fetch(pantryApiUrl('/api/politicians'))
        .then(res => res.json())
        .then(data => {
-         console.log('Fetched politicians:', data.length, 'total');
-         const senatorsCount = data.filter((p: Politician) => p.office === 'Senate').length;
-         console.log('Senators count:', senatorsCount);
+         // DEBUG NOTE: re-enable only when you need to inspect politician load counts.
+         // console.log('Fetched politicians:', data.length, 'total');
          setPoliticians(data);
        })
        .catch(console.error);
@@ -72,13 +71,13 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
     : [];
   
   React.useEffect(() => {
-    const senators = filteredPoliticians.filter(p => p.office === 'Senate');
-    console.log('Filtered politicians - total:', filteredPoliticians.length, 'senators:', senators.length);
-    const stateCount: { [key: string]: number } = {};
-    senators.forEach(s => {
-      stateCount[s.state] = (stateCount[s.state] || 0) + 1;
-    });
-    console.log('Senators per state:', stateCount);
+    // DEBUG NOTE: re-enable only when debugging politician filtering.
+    // const senators = filteredPoliticians.filter(p => p.office === 'Senate');
+    // const stateCount: { [key: string]: number } = {};
+    // senators.forEach(s => {
+    //   stateCount[s.state] = (stateCount[s.state] || 0) + 1;
+    // });
+    // console.log('Senators per state:', stateCount);
   }, [filteredPoliticians]);
 
   const filteredCandidates = selectedCategories.includes('candidates') 
