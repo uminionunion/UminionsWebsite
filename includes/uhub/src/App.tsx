@@ -105,7 +105,7 @@ useEffect(() => {
   return (
     // Compact horizontal bar (instead of page007's full-page header/main/footer layout)
     // so the 5 buttons sit in a single row inside page001's "FrontPage001" mount div.
-    <div className="uhub-app-root relative flex min-h-screen w-full flex-col">
+    <div className="uhub-app-root relative flex w-full flex-col">
       <header className="uhub-launcher-header flex h-[72px] items-center justify-end border-b border-white/10 px-3">
         <div onClick={handleProfileImageClick} className="relative cursor-pointer group uhub-launcher-avatar">
         <Avatar className="h-[60px] w-[60px] border-2 border-orange-400 group-hover:border-orange-600 transition">

@@ -91,7 +91,7 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
     : [];
 
   return (
-    <div className="grid h-full min-h-[520px] w-full grid-rows-[auto_minmax(380px,1fr)] bg-background">
+    <div className="grid h-full min-h-[520px] w-full min-w-0 grid-rows-[auto_minmax(380px,1fr)] bg-background">
       <div className="grid min-w-0 grid-cols-[26%_74%] gap-3 border-b p-3">
       <div className="flex flex-col gap-3">
         <Button className="w-full justify-center text-center" onClick={() => setActiveView('find')} variant={'default'}>
