@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { MemoryRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MainUhubFeatureV001ForSisterUnionRoutes from '@/features/uminion/MainUhubFeatureV001ForSisterUnionRoutes';
 import { AuthProvider, useAuth } from './hooks/useAuth.tsx';
 import AuthModal from './features/auth/AuthModal';
-import MainUhubFeatureV001ForMyProfileModal from '@/features/profile/MainUhubFeatureV001ForMyProfileModal';
+const MainUhubFeatureV001ForMyProfileModal = React.lazy(() => import('@/features/profile/MainUhubFeatureV001ForMyProfileModal'));
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import MainUhubFeatureV001ForUserProfileModal from './features/profile/MainUhubFeatureV001ForUserProfileModal';
 import BadgeZoomToast from './features/profile/BadgeZoomToast';
@@ -16,9 +16,7 @@ const MainUhubFeatureV001Layout = () => {
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'login' | 'signup' }>({ isOpen: false, mode: 'login' });
   const [isProfileModalOpen, setProfileModalOpen] = useState(false);
   const [sharedProfileUser, setSharedProfileUser] = useState<any>(null);
-  const [countdown, setCountdown] = useState<number | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [autoLaunch, setAutoLaunch] = useState(true);
+  const [isLauncherLoading, setLauncherLoading] = useState(true);
   const [zoomedBadge, setZoomedBadge] = useState<{ url: string; name: string } | null>(null);
   const [isLauncherImageUploadOpen, setLauncherImageUploadOpen] = useState(false);
 
@@ -52,37 +50,12 @@ useEffect(() => {
 }, []);
   
   useEffect(() => {
-    if (autoLaunch) {
-      handleAutoLaunch();
-    }
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [autoLaunch]);
-
-  const handleAutoLaunch = () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    setCountdown(1);
-    timerRef.current = setInterval(() => {
-      setCountdown(prev => {
-        if (prev === null || prev <= 1) {
-          if(timerRef.current) clearInterval(timerRef.current);
-          setProfileModalOpen(true);
-          setCountdown(null);
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
+    const timer = window.setTimeout(() => setLauncherLoading(false), 1500);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const handleOpenModalManually = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      setCountdown(null);
-    }
+    setLauncherLoading(false);
     setProfileModalOpen(true);
   };
 
@@ -152,19 +125,14 @@ useEffect(() => {
         </div>
       </header>
 
-      <main className="uhub-launcher-body flex flex-1 items-center justify-center">
-        <Avatar className="h-24 w-24 border-2 border-orange-400">
-          <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="uHub" />
-          <AvatarFallback>U</AvatarFallback>
-        </Avatar>
-      </main>
+      <main className="uhub-launcher-body flex-1" />
 
       <footer className="uhub-launcher-footer flex h-[52px] items-center justify-start border-t border-white/10 px-3">
         <Button onClick={handleOpenModalManually} className="relative uhub-launcher-uhub">
           uHub
-          {countdown !== null && (
-            <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {countdown}
+          {isLauncherLoading && (
+            <div className="absolute -right-16 -top-2 rounded-full bg-green-500 px-2 py-1 text-xs text-white">
+              Loading...
             </div>
           )}
         </Button>
@@ -188,12 +156,14 @@ useEffect(() => {
               onBadgeZoomOpen={(badge) => setZoomedBadge(badge)}
             />
           ) : (
-            <MainUhubFeatureV001ForMyProfileModal
+            <Suspense fallback={<div className="fixed inset-0 z-[100200] flex items-center justify-center bg-black/70 text-white">Loading uHub...</div>}>
+              <MainUhubFeatureV001ForMyProfileModal
               isOpen={isProfileModalOpen}
               onClose={() => setProfileModalOpen(false)}
               onOpenAuthModal={handleOpenAuthModal}
               onBadgeZoom={handleBadgeZoom}
-            />
+              />
+            </Suspense>
           )}
         </div>
       )}

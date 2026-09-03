@@ -42,6 +42,22 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
 
   const isOwnProfile = currentUser && user.id === currentUser.id;
 
+  const sendFriendRequest = async () => {
+    const response = await fetch('/api/friends/request', {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id }),
+    });
+    if (!response.ok) alert((await response.json()).message || 'Unable to send friend request.');
+  };
+
+  const blockProfile = async () => {
+    const response = await fetch('/api/friends/block', {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id }),
+    });
+    if (response.ok) onClose();
+  };
+
   const fetchMemePostsPage = useCallback(async (offset: number, limit: number) => {
     const res = await fetch(`/api/memes/posts/by-user/${user.id}?offset=${offset}&limit=${limit}`);
     if (!res.ok) return { items: [], total: 0 };
@@ -215,6 +231,8 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
               <Button variant="outline" className="w-full justify-start">List of Friends</Button>
               <Button variant="outline" className="w-full justify-start">Favorited Broadcasts</Button>
               <Button variant="outline" className="w-full justify-start">Created Chatrooms</Button>
+              {!isOwnProfile && <Button variant="outline" className="w-full justify-start" onClick={() => void sendFriendRequest()}>Add Friend</Button>}
+              {!isOwnProfile && <Button variant="outline" className="w-full justify-start" onClick={() => void blockProfile()}>Block</Button>}
               <Button variant="secondary" className="w-full justify-start"><MessageSquare className="mr-2 h-4 w-4"/>Direct Message</Button>
               
               {/* NEW: Edit button (only for own profile) */}

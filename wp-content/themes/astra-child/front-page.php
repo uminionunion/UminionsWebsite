@@ -122,8 +122,8 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             /* The retired menu location is now the uHub entry point. */
             #uhub-launcher-layout .uhub-launcher-uhub {
                 position: fixed;
-                top: 18px;
-                left: 132px;
+                left: 16px;
+                bottom: 16px;
                 z-index: 10000;
             }
             #uhub-launcher-layout .uhub-launcher-avatar {

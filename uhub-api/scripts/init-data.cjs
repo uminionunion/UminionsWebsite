@@ -123,6 +123,21 @@ if (memePostsTableExists) {
 
 // Social Media Posts ("My Posts" / "My Feed") tables.
 db.exec(`
+  CREATE TABLE IF NOT EXISTS DirectMessages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    sender_id INTEGER NOT NULL,
+    receiver_id INTEGER NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
+    attachment_url TEXT,
+    attachment_type TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_direct_messages_participants
+    ON DirectMessages(sender_id, receiver_id, created_at);
+`);
+console.log('[init-data] Direct message tables verified.');
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS SocialMediaPosts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
