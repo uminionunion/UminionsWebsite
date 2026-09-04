@@ -64,7 +64,7 @@ useEffect(() => {
 
   const handleAutoLaunch = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-    setCountdown(1);
+    setCountdown(3);
     timerRef.current = setInterval(() => {
       setCountdown(prev => {
         if (prev === null || prev <= 1) {
@@ -129,9 +129,23 @@ useEffect(() => {
   return (
     // Compact horizontal bar (instead of page007's full-page header/main/footer layout)
     // so the 5 buttons sit in a single row inside page001's "FrontPage001" mount div.
-    <div className="uhub-app-root relative flex min-h-screen w-full flex-col">
-      <header className="uhub-launcher-header flex h-[72px] items-center justify-end border-b border-white/10 px-3">
-        <div onClick={handleProfileImageClick} className="relative cursor-pointer group uhub-launcher-avatar">
+    <div className="uhub-app-root relative inline-flex flex-wrap items-center gap-3">
+      <Button onClick={handleOpenModalManually} className="relative uhub-launcher-uhub">
+        uHub
+        {countdown !== null && (
+          <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            {countdown}
+          </div>
+        )}
+      </Button>
+
+      {isAuthLoading && <span id="loading-text">loading...</span>}
+
+      <a href="https://www.facebook.com/groups/uminion/" target="_blank" rel="noopener noreferrer" className="uhub-launcher-facebook">
+        <Button>Find us on FB!</Button>
+      </a>
+
+      <div onClick={handleProfileImageClick} className="relative cursor-pointer group uhub-launcher-avatar">
         <Avatar className="h-[60px] w-[60px] border-2 border-orange-400 group-hover:border-orange-600 transition">
           <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="Profile" />
           <AvatarFallback>U</AvatarFallback>
@@ -149,26 +163,7 @@ useEffect(() => {
             <Pencil className="h-3 w-3" />
           </button>
         )}
-        </div>
-      </header>
-
-      <main className="uhub-launcher-body flex flex-1 items-center justify-center">
-        <Avatar className="h-24 w-24 border-2 border-orange-400">
-          <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="uHub" />
-          <AvatarFallback>U</AvatarFallback>
-        </Avatar>
-      </main>
-
-      <footer className="uhub-launcher-footer flex h-[52px] items-center justify-start border-t border-white/10 px-3">
-        <Button onClick={handleOpenModalManually} className="relative uhub-launcher-uhub">
-          uHub
-          {countdown !== null && (
-            <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {countdown}
-            </div>
-          )}
-        </Button>
-      </footer>
+      </div>
 
       <Routes>
         <Route path="/*" element={<MainUhubFeatureV001ForSisterUnionRoutes />} />
