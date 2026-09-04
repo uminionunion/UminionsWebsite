@@ -3,10 +3,10 @@ import { MemoryRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MainUhubFeatureV001ForSisterUnionRoutes from '@/features/uminion/MainUhubFeatureV001ForSisterUnionRoutes';
 import { AuthProvider, useAuth } from './hooks/useAuth.tsx';
-const AuthModal = React.lazy(() => import('./features/auth/AuthModal'));
+import AuthModal from './features/auth/AuthModal';
 const MainUhubFeatureV001ForMyProfileModal = React.lazy(() => import('@/features/profile/MainUhubFeatureV001ForMyProfileModal'));
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-const MainUhubFeatureV001ForUserProfileModal = React.lazy(() => import('./features/profile/MainUhubFeatureV001ForUserProfileModal'));
+import MainUhubFeatureV001ForUserProfileModal from './features/profile/MainUhubFeatureV001ForUserProfileModal';
 import BadgeZoomToast from './features/profile/BadgeZoomToast';
 import { Pencil } from 'lucide-react';
 
@@ -148,8 +148,7 @@ useEffect(() => {
       {isProfileModalOpen && (
         <div className="fixed inset-0 z-[100200] bg-black/50">
           {sharedProfileUser ? (
-            <Suspense fallback={<div className="fixed inset-0 z-[100200] flex items-center justify-center bg-black/70 text-white">Loading profile...</div>}>
-              <MainUhubFeatureV001ForUserProfileModal
+            <MainUhubFeatureV001ForUserProfileModal
               isOpen={isProfileModalOpen}
               onClose={() => {
                 setProfileModalOpen(false);
@@ -158,8 +157,7 @@ useEffect(() => {
               user={sharedProfileUser}
               currentUser={user}
               onBadgeZoomOpen={(badge) => setZoomedBadge(badge)}
-              />
-            </Suspense>
+            />
           ) : (
             <Suspense fallback={<div className="fixed inset-0 z-[100200] flex items-center justify-center bg-black/70 text-white">Loading uHub...</div>}>
               <MainUhubFeatureV001ForMyProfileModal
@@ -207,12 +205,12 @@ useEffect(() => {
       )}
 
       {authModal.isOpen && (
-        <Suspense fallback={null}><AuthModal
+        <AuthModal
           isOpen={authModal.isOpen}
           mode={authModal.mode}
           onClose={() => setAuthModal({ isOpen: false, mode: 'login' })}
           onSwitchMode={(newMode) => setAuthModal({ isOpen: true, mode: newMode })}
-        /></Suspense>
+        />
       )}
     </div>
   );

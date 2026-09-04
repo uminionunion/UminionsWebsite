@@ -1,13 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import TheMemeBoxImplementation001 from './features/profile/TheMemeBoxImplementation001';
 
 let memeBoxRoot: ReactDOM.Root | null = null;
 
-export async function renderTheMemeBox(data: any) {
+export function renderTheMemeBox(data: any) {
   const container = document.getElementById('TheReactMemeImplementationConnection001');
   if (!container) return;
-
-  const { default: TheMemeBoxImplementation001 } = await import('./features/profile/TheMemeBoxImplementation001');
 
   memeBoxRoot ||= ReactDOM.createRoot(container);
   memeBoxRoot.render(

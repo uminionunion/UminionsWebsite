@@ -118,15 +118,6 @@
   object-fit: cover;
 }
 
-.uhub-root .uhub-carousel-image {
-  animation: uhub-carousel-fade 260ms ease-in;
-}
-
-@keyframes uhub-carousel-fade {
-  from { opacity: 0.35; }
-  to { opacity: 1; }
-}
-
 .uhub-root .uhub-event-rotator p {
   position: absolute;
   bottom: 0;

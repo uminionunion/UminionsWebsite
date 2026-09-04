@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { db } from './db.js';
 import { requireAuth } from './auth-middleware.js';
-import { broadcastEvents } from './broadcast-events.js';
 import fs from 'fs';
 import path from 'path';
 const router = Router();
@@ -128,7 +127,6 @@ router.post('/api/broadcasts', requireAuth, async (req, res) => {
             .values({ user_id: userId, name: name.trim() })
             .returning('id')
             .executeTakeFirstOrThrow();
-        broadcastEvents.emit('broadcastUpdated', { kind: 'broadcast-created', id: result.id });
         res.status(201).json({ id: result.id, message: 'Broadcast created' });
     }
     catch (error) {
@@ -213,7 +211,6 @@ router.post('/api/broadcasts/:broadcastId/episodes', requireAuth, async (req, re
             }
             return episode;
         });
-        broadcastEvents.emit('broadcastUpdated', { kind: 'episode-created', id: result.id, broadcastId });
         res.status(201).json({ id: result.id, message: 'Episode created' });
     }
     catch (error) {

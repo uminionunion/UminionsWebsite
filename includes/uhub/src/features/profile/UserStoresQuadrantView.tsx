@@ -33,13 +33,11 @@ const UserStoresQuadrantView: React.FC<UserStoresQuadrantViewProps> = ({ isOpen,
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
-    /* DEBUG ONLY: Product store loading is disabled while product data is intentionally absent.
-      Remove this comment wrapper to re-enable this diagnostic view. */
-    /* useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       fetchUserStores();
     }
-  }, [isOpen]); */
+  }, [isOpen]);
 
   const fetchUserStores = async () => {
     try {
