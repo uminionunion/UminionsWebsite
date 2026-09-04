@@ -96,35 +96,25 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
 
         <style>
             #uhub-launcher-layout {
-                display: block !important;
-                position: relative !important;
-                width: 100% !important;
-                height: 124px !important;
-                min-height: 124px !important;
-                max-height: 124px !important;
-                overflow: visible !important;
+                display: grid;
+                grid-template-columns: max-content max-content;
+                grid-template-rows: repeat(3, minmax(36px, auto));
+                align-items: center;
+                gap: 4px 6px;
+                width: max-content;
             }
-            #uhub-launcher-layout #emojiLineForGitHubQuest54onFrontPage,
+            #uhub-launcher-layout #emojiLineForGitHubQuest54onFrontPage { grid-column: 1; grid-row: 1; }
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage001 { display: contents; }
+            #uhub-launcher-layout .uhub-app-root { display: contents; }
             #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage002,
             #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage003,
             #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage004,
-            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage005 { display: none !important; }
-            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage001 {
-                display: block !important;
-                width: 100% !important;
-                height: 124px !important;
-                min-height: 124px !important;
-                max-height: 124px !important;
-            }
-            #uhub-launcher-layout .uhub-app-root {
-                display: block !important;
-                width: 100% !important;
-                height: 124px !important;
-                min-height: 124px !important;
-                max-height: 124px !important;
-            }
-            #uhub-launcher-layout .uhub-launcher-uhub,
-            #uhub-launcher-layout .uhub-launcher-avatar { position: fixed !important; }
+            #uhub-launcher-layout #emojiLineForGitHubQuest34onFrontPage005 { display: none; }
+            #uhub-launcher-layout .uhub-launcher-uhub { grid-column: 1; grid-row: 2; }
+            #uhub-launcher-layout .uhub-launcher-login { grid-column: 2; grid-row: 2; }
+            #uhub-launcher-layout .uhub-launcher-facebook { grid-column: 1; grid-row: 3; }
+            #uhub-launcher-layout .uhub-launcher-signup { grid-column: 2; grid-row: 3; }
+            #uhub-launcher-layout .uhub-launcher-avatar { grid-column: 2; grid-row: 1; }
             #uhub-launcher-layout .uhub-launcher-uhub,
             #uhub-launcher-layout .uhub-launcher-facebook { width: 100px; }
             #uhub-launcher-layout .uhub-launcher-facebook > button { width: 100%; }

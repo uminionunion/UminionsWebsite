@@ -557,7 +557,7 @@ const PantryFinderBroadcastView = () => {
     return created;
   };
 
-  return <div className="uhub-pantry-finder pantry-finder-root dark min-h-[620px] h-[70vh] w-full overflow-hidden border rounded-md bg-gray-950"><TheFoodPantryFeature pantries={pantries} addPantry={addPantry} /></div>;
+  return <div className="uhub-pantry-finder pantry-finder-root dark min-h-[620px] h-[70vh] overflow-hidden border rounded-md bg-gray-950"><TheFoodPantryFeature pantries={pantries} addPantry={addPantry} /></div>;
 };
 
 const BetaButtonView = () => (
