@@ -1,9 +1,10 @@
 # --- Build Stage for uHub React App ---
 FROM node:22-alpine AS uhub-builder
 WORKDIR /app
-COPY ./includes/uhub/package*.json ./
+# Copy the entire includes folder to resolve relative paths between uhub and pantry-finder
+COPY ./includes ./includes
+WORKDIR /app/includes/uhub
 RUN npm install
-COPY ./includes/uhub ./
 RUN npm run build
 
 # --- Final Production Image ---
