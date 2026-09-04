@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import MainUhubFeatureV001ForUserProfileModal from "./MainUhubFeatureV001ForUserProfileModal";
-import { useAuth } from "../../hooks/useAuth";
-import { autoRotation_Control_Hub } from "../../lib/autoRotation_Control_Hub";
 
 export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, showExternalUploadButton = false, hideFooter = false }) {
-  const { user: authenticatedUser } = useAuth();
   // =====================================================
   // STATE VARIABLES
   // =====================================================
@@ -27,7 +24,7 @@ export default function TheMemeBoxImplementation001({ postSource = "all", embedd
   const [commentDescription, setCommentDescription] = useState("");
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadDescription, setUploadDescription] = useState("");
-  const currentUsername = authenticatedUser?.username || "DemoUser";
+  const [currentUsername, setCurrentUsername] = useState("DemoUser");
   const [isMemeBoxHovered, setIsMemeBoxHovered] = useState(false);
   const autoplayFreshPosts = useRef(new Set());
   const filteredPostsRef = useRef([]);
@@ -43,7 +40,7 @@ export default function TheMemeBoxImplementation001({ postSource = "all", embedd
  // For user profile modal integration
   const [isViewingUserProfile, setIsViewingUserProfile] = useState(false);
   const [viewingUserData, setViewingUserData] = useState(null);
-  const currentUser = authenticatedUser;
+  const [currentUser, setCurrentUser] = useState(null);
   
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -94,6 +91,34 @@ const EMOJIS = {
 };
 
   
+
+  // =====================================================
+  // AUTH STATUS CHECK
+  // =====================================================
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const res = await fetch("/api/auth/me", {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const user = await res.json();
+          setCurrentUsername(user.username);
+          setCurrentUser(user);
+          console.log("[MEMEBOX] ✅ Logged in as:", user.username);
+        } else if (res.status === 401) {
+          setCurrentUsername("DemoUser");
+          setCurrentUser(null);
+        }
+      } catch (error) {
+        setCurrentUsername("DemoUser");
+        setCurrentUser(null);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
 
   useEffect(() => {
     if (!showExternalUploadButton) return;
@@ -1076,9 +1101,14 @@ const submitComment = async () => {
       return;
     }
 
-    const currentPost = filteredPostsRef.current[currentPostIndexRef.current];
-    const delay = currentPost?.images?.some(isMotionMedia) ? ROTATION_MOTION_DELAY_MS : ROTATION_IMAGE_DELAY_MS;
-    return autoRotation_Control_Hub.register('meme-box', delay, () => {
+    let rotationTimeout = null;
+
+    const scheduleNextRotation = () => {
+      const posts = filteredPostsRef.current;
+      const currentPost = posts[currentPostIndexRef.current];
+      const delay = currentPost?.images?.some(isMotionMedia) ? ROTATION_MOTION_DELAY_MS : ROTATION_IMAGE_DELAY_MS;
+
+      rotationTimeout = window.setTimeout(() => {
         const latestPosts = filteredPostsRef.current;
         const freshCutoff = Date.now() - (100 * 60 * 60 * 1000);
         const freshPosts = latestPosts.filter((post) => new Date(post.timestamp).getTime() >= freshCutoff);
@@ -1105,7 +1135,13 @@ const submitComment = async () => {
           setCurrentPostIndex(nextIndex);
         }
 
-    });
+        scheduleNextRotation();
+      }, delay);
+    };
+
+    scheduleNextRotation();
+
+    return () => window.clearTimeout(rotationTimeout);
   }, [filteredPosts.length, currentPostIndex, isVisible, isMemeBoxHovered, isUploadDialogOpen, isCommentDialogOpen, isViewCommentsDialogOpen, isFavoritesGridOpen, isZoomModalOpen]);
 
   // =====================================================

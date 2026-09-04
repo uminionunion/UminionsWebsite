@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { db } from './db.js';
 import { requireAuth } from './auth-middleware.js';
-import { isBlockedPair } from './friends.js';
 const router = Router();
 // ==========================================
 // SOCIAL MEDIA POSTS ("My Posts" / "My Feed")
@@ -350,12 +349,7 @@ router.get('/api/feed/friends', requireAuth, async (req, res) => {
             .where((eb) => eb.or([eb('user_id1', '=', userId), eb('user_id2', '=', userId)]))
             .execute();
         const friendIds = friendships.map((f) => (f.user_id1 === userId ? f.user_id2 : f.user_id1));
-        const visibleFriendIds = [];
-        for (const friendId of friendIds) {
-            if (!(await isBlockedPair(userId, friendId)))
-                visibleFriendIds.push(friendId);
-        }
-        const feed = await buildMergedFeed(visibleFriendIds, offset, limit, userId);
+        const feed = await buildMergedFeed(friendIds, offset, limit, userId);
         res.json(feed);
     }
     catch (error) {

@@ -217,14 +217,6 @@ Routes could eventually be separated into route modules, with startup/configurat
 
 ## Adding the next feature
 
-### uHub medium-view integration
-
-uHub owns the medium center console through `MainUhubFeatureV001ForMyProfileModal`. Its `centerView` state selects the active center surface, while the left and right quadrants remain mounted around it. New button-launched experiences such as Find-a-Pantry, UmiMatch, Million-Pixel, and Beta Button 10,011 should update that center view instead of opening a separate full-page layout. Keep the launcher and quadrant controls outside the center surface, and preserve the existing `broadcastView` behavior for UnionNews#14, UnionRadio#15, and user broadcasts.
-
-### Shared autorotation
-
-All eligible uHub carousels and MemeBox instances register with `includes/uhub/src/lib/autoRotation_Control_Hub.ts`. The hub grants at most one rotation every three seconds, honors each component's own ready interval, and leaves busy/paused entries queued for a later tick. New rotating surfaces should register there rather than creating their own `setInterval` loop.
-
 Use this architecture as the placement guide:
 
 - A visual React feature belongs under `includes/<feature-name>`, with its own build output and a mount point in the WordPress template.
