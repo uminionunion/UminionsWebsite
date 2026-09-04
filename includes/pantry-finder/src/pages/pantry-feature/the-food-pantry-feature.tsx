@@ -110,7 +110,7 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
           Running for Office?
         </Button>
       </div>
-      <div className="min-w-0 overflow-visible">
+      <div className="max-h-28 overflow-y-auto">
         <PantryControls
           addPantry={addPantry}
           activeView="find"
@@ -128,8 +128,8 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
         />
       </div>
       </div>
-      <div className="grid min-h-[380px] grid-cols-[66%_34%]">
-      <div className="h-[min(58vh,620px)] min-h-[380px] overflow-hidden">
+      <div className="grid min-h-0 grid-cols-[66%_34%]">
+      <div className="h-full min-h-[360px] overflow-hidden">
         <PantryMap
           pantries={filteredPantries}
           politicians={filteredPoliticians}
