@@ -128,7 +128,7 @@ useEffect(() => {
         </div>
       </header>
 
-      <main className="uhub-launcher-body hidden" />
+      <main className="uhub-launcher-body flex-1" />
 
       <footer className="uhub-launcher-footer flex h-[52px] items-center justify-start border-t border-white/10 px-3">
         <Button onClick={handleOpenModalManually} className="relative uhub-launcher-uhub">

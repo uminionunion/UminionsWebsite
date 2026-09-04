@@ -473,7 +473,7 @@ const formatMessageTime = (isoString: string): string => {
           >
           <DialogHeader className="p-4 border-b border-white/20 flex-row justify-between items-center flex-shrink-0">
             <DialogTitle style={{ color: currentFontColor }}>{pageName} Chat</DialogTitle>
-            <div className="uhub-chat-header-actions flex gap-2">
+            <div className="flex gap-2">
               <Button variant="ghost" size="icon" onClick={changeFontColor}><Type className="h-4 w-4" /></Button>
               <Button variant="ghost" size="icon" onClick={changeBackgroundColor}><Palette className="h-4 w-4" /></Button>
             </div>
