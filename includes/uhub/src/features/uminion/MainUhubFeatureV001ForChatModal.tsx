@@ -85,19 +85,6 @@ const MainUhubFeatureV001ForChatModal: React.FC<MainUhubFeatureV001ForChatModalP
     modalNumber,
   }
 ) => {
-const sendFriendRequest = async (username: string) => {
-  const response = await fetch(`/api/users/by-username/${encodeURIComponent(username)}`, { credentials: 'include' });
-  if (!response.ok) return;
-  const profile = await response.json();
-  await fetch('/api/friends/request', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: profile.id }) });
-};
-
-const blockUser = async (username: string) => {
-  const response = await fetch(`/api/users/by-username/${encodeURIComponent(username)}`, { credentials: 'include' });
-  if (!response.ok) return;
-  const profile = await response.json();
-  await fetch('/api/friends/block', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: profile.id }) });
-};
 const [activeTab, setActiveTab] = useState(0);
 const [password, setPassword] = useState('');
 const [isUnlocked, setIsUnlocked] = useState(false);
@@ -468,7 +455,7 @@ const formatMessageTime = (isoString: string): string => {
     <>
        <Dialog open={isOpen} onOpenChange={onClose}>
           <DialogContent
-            className={`${isMobile ? 'w-[95vw] h-[85vh]' : 'w-[95vw] h-[85vh]'} uhub-chat-dialog flex flex-col p-0 text-white`}
+            className={`${isMobile ? 'w-[95vw] h-[85vh]' : 'w-[95vw] h-[85vh]'} flex flex-col p-0 text-white`}
             style={{ background: currentBg }}
           >
           <DialogHeader className="p-4 border-b border-white/20 flex-row justify-between items-center flex-shrink-0">
@@ -479,7 +466,7 @@ const formatMessageTime = (isoString: string): string => {
             </div>
           </DialogHeader>
           <div className="flex-grow flex flex-col overflow-hidden">
-            <div className="uhub-chat-tabs overflow-x-auto flex border-b border-white/20 flex-shrink-0">
+            <div className="overflow-x-auto flex border-b border-white/20 flex-shrink-0">
               {getChatTabs().map((tab, i) => (
                 <Button
                   key={i}
@@ -532,9 +519,9 @@ const formatMessageTime = (isoString: string): string => {
                 <PopoverContent className="w-48">
                   <div className="grid gap-2">
                     <Button variant="ghost" className="justify-start" onClick={() => handleViewProfile(msg.username)}>View Profile</Button>
-                    <Button variant="ghost" className="justify-start" onClick={() => void sendFriendRequest(msg.username)}><UserPlus className="mr-2 h-4 w-4" /> Add Friend</Button>
+                    <Button variant="ghost" className="justify-start"><UserPlus className="mr-2 h-4 w-4" /> Add Friend</Button>
                     <Button variant="ghost" className="justify-start"><MessageSquare className="mr-2 h-4 w-4" /> Direct Message</Button>
-                    <Button variant="ghost" className="justify-start" onClick={() => void blockUser(msg.username)}><UserX className="mr-2 h-4 w-4" /> Block/Ignore</Button>
+                    <Button variant="ghost" className="justify-start"><UserX className="mr-2 h-4 w-4" /> Block/Ignore</Button>
                     <Button variant="destructive" className="justify-start"><ShieldAlert className="mr-2 h-4 w-4" /> Report</Button>
                   </div>
                 </PopoverContent>
@@ -570,9 +557,9 @@ const formatMessageTime = (isoString: string): string => {
         <PopoverContent className="w-48">
           <div className="grid gap-2">
             <Button variant="ghost" className="justify-start" onClick={() => handleViewProfile(msg.username)}>View Profile</Button>
-            <Button variant="ghost" className="justify-start" onClick={() => void sendFriendRequest(msg.username)}><UserPlus className="mr-2 h-4 w-4" /> Add Friend</Button>
+            <Button variant="ghost" className="justify-start"><UserPlus className="mr-2 h-4 w-4" /> Add Friend</Button>
             <Button variant="ghost" className="justify-start"><MessageSquare className="mr-2 h-4 w-4" /> Direct Message</Button>
-            <Button variant="ghost" className="justify-start" onClick={() => void blockUser(msg.username)}><UserX className="mr-2 h-4 w-4" /> Block/Ignore</Button>
+            <Button variant="ghost" className="justify-start"><UserX className="mr-2 h-4 w-4" /> Block/Ignore</Button>
             <Button variant="destructive" className="justify-start"><ShieldAlert className="mr-2 h-4 w-4" /> Report</Button>
           </div>
         </PopoverContent>
@@ -624,7 +611,7 @@ const formatMessageTime = (isoString: string): string => {
                 <Input placeholder="Type a message..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} disabled={isChatDisabled} onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()} className="text-white" />
                 <Button onClick={handleSendMessage} disabled={isChatDisabled}>Send</Button>
               </div>
-              <div className="uhub-chat-options overflow-x-auto flex items-center justify-start gap-2 pb-2">
+              <div className="overflow-x-auto flex items-center justify-start gap-2 pb-2">
                 <Button size="icon" variant="ghost" onClick={() => setModalOptionPage(p => Math.max(0, p - 1))} disabled={modalOptionPage === 0}><ChevronLeft /></Button>
                 {visibleOptions.map((option, i) => (
                   <Button key={i} variant={option === "Post Anonymously?" && isAnonymous ? "secondary" : "outline"} size="sm" onClick={() => handleModalOptionClick(option)} className="flex-shrink-0">{option}</Button>

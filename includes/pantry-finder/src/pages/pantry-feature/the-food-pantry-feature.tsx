@@ -91,8 +91,8 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
     : [];
 
   return (
-    <div className="grid h-full min-h-[520px] w-full grid-rows-[auto_minmax(380px,1fr)] bg-background">
-      <div className="grid min-w-0 grid-cols-[26%_74%] gap-3 border-b p-3">
+    <div className="grid h-full min-h-[520px] w-full grid-rows-[auto_1fr] bg-background">
+      <div className="grid grid-cols-[26%_74%] gap-3 border-b p-3">
       <div className="flex flex-col gap-3">
         <Button className="w-full justify-center text-center" onClick={() => setActiveView('find')} variant={'default'}>
           Find a Pantry
@@ -110,7 +110,7 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
           Running for Office?
         </Button>
       </div>
-      <div className="min-w-0 max-h-[180px] overflow-y-auto">
+      <div className="min-w-0 overflow-visible">
         <PantryControls
           addPantry={addPantry}
           activeView="find"
@@ -128,8 +128,8 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
         />
       </div>
       </div>
-      <div className="grid min-h-[380px] min-w-0 grid-cols-[66%_34%]">
-      <div className="h-full min-h-[380px] min-w-0 overflow-hidden">
+      <div className="grid min-h-[380px] grid-cols-[66%_34%]">
+      <div className="h-[min(58vh,620px)] min-h-[380px] overflow-hidden">
         <PantryMap
           pantries={filteredPantries}
           politicians={filteredPoliticians}
