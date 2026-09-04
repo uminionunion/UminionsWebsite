@@ -34,9 +34,9 @@
 }
 
 .uhub-root .uhub-launcher-header {
-  height: 60px;
-  min-height: 60px;
-  flex: 0 0 60px !important;
+  height: 72px;
+  min-height: 72px;
+  flex: 0 0 72px !important;
   background: #000;
 }
 
@@ -46,9 +46,9 @@
 }
 
 .uhub-root .uhub-launcher-footer {
-  height: 36px;
-  min-height: 36px;
-  flex: 0 0 36px !important;
+  height: 52px;
+  min-height: 52px;
+  flex: 0 0 52px !important;
   background: #000;
 }
 
