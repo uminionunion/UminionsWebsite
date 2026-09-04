@@ -50,10 +50,7 @@ useEffect(() => {
 }, []);
   
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setLauncherLoading(false);
-      setProfileModalOpen(true);
-    }, 1000);
+    const timer = window.setTimeout(() => setLauncherLoading(false), 1500);
     return () => window.clearTimeout(timer);
   }, []);
 
