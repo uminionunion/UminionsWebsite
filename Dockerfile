@@ -1,12 +1,3 @@
-# --- Build Stage for uHub React App ---
-FROM node:22-alpine AS uhub-builder
-WORKDIR /app
-COPY ./includes/uhub/package*.json ./
-RUN npm install
-COPY ./includes/uhub ./
-RUN npm run build
-
-# --- Final Production Image ---
 FROM wordpress:php8.2-apache
 
 RUN a2enmod rewrite proxy proxy_http proxy_wstunnel
@@ -22,8 +13,7 @@ COPY ./wp-content/themes/astra-child /var/www/html/wp-content/themes/astra-child
 
 COPY ./includes/pantry-finder/dist /var/www/html/pantry-finder/dist
 
-# COPY the freshly compiled assets from the builder stage instead of the local dist folder
-COPY --from=uhub-builder /app/dist /var/www/html/uhub/dist
+COPY ./includes/uhub/dist /var/www/html/uhub/dist
 
 COPY ./includes/uhub/public/EmojisForUminionWebsite /var/www/html/EmojisForUminionWebsite
 COPY ./includes/uhub/public/defaultUminionUassets /var/www/html/defaultUminionUassets
