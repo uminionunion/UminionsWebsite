@@ -1,13 +1,10 @@
 # --- Build Stage for uHub React App ---
 FROM node:22-alpine AS uhub-builder
 WORKDIR /app
-# Copy both apps to resolve cross-imports and install all needed deps
+# Copy the entire includes folder to resolve relative paths between uhub and pantry-finder
 COPY ./includes ./includes
 WORKDIR /app/includes/uhub
 RUN npm install
-# Also install pantry-finder deps because uhub imports from it
-RUN cd ../pantry-finder && npm install
-WORKDIR /app/includes/uhub
 RUN npm run build
 
 # --- Final Production Image ---
