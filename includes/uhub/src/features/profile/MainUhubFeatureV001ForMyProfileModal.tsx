@@ -3,28 +3,29 @@ import { Button } from '../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Users, Megaphone, Code, Settings, Facebook, Youtube, Twitch, Instagram, Github, MessageSquare, ShoppingCart, Eye, ChevronLeft, ChevronRight, Plus, Minus, Search, Play, X, Mountain, Home, ChevronDown, ChevronUp, Trash2, Anvil, Pencil } from 'lucide-react';
 import { autoRotation_Control_Hub } from '../../lib/autoRotation_Control_Hub';
-const MainUhubFeatureV001ForChatModal = React.lazy(() => import('../uminion/MainUhubFeatureV001ForChatModal'));
+import MainUhubFeatureV001ForChatModal from '../uminion/MainUhubFeatureV001ForChatModal';
 import { useAuth } from '../../hooks/useAuth';
 import { usePaginatedFeed } from '../../hooks/usePaginatedFeed';
 import FeedEntryCard from './FeedEntryCard';
-const MainUhubFeatureV001ForAddProductModal = React.lazy(() => import('./MainUhubFeatureV001ForAddProductModal'));
+import MainUhubFeatureV001ForAddProductModal from './MainUhubFeatureV001ForAddProductModal';
 import MainUhubFeatureV001ForProductDetailModal from './MainUhubFeatureV001ForProductDetailModal';
-const MainUhubFeatureV001ForFriendsView = React.lazy(() => import('./MainUhubFeatureV001ForFriendsView'));
-const MainUhubFeatureV001ForSettingsView = React.lazy(() => import('./MainUhubFeatureV001ForSettingsView'));
+import MainUhubFeatureV001ForFriendsView from './MainUhubFeatureV001ForFriendsView';
+import MainUhubFeatureV001ForSettingsView from './MainUhubFeatureV001ForSettingsView';
 import { CreateBroadcastView } from './CreateBroadcastView';
-const BroadcastCarousel = React.lazy(() => import('./BroadcastCarousel'));
+import BroadcastCarousel from './BroadcastCarousel';
 import AdminProductsList from './AdminProductsList';
 import EverythingProductsList from './EverythingProductsList';
 import ProductSearchDropdown from './ProductSearchDropdown';
 import MainUhubFeatureV001ForEditProductModal from './MainUhubFeatureV001ForEditProductModal';
 import MainUhubFeatureV001ForUserProfileModal from './MainUhubFeatureV001ForUserProfileModal';
 import UserStoresQuadrantView from './UserStoresQuadrantView';
+import { io, Socket } from 'socket.io-client';
 import UnionNews14FrontPageAdminModal from './UnionNews14FrontPageAdminModal';
 import BroadcastCarouselZoomModal from './BroadcastCarouselZoomModal';
-const TheMemeBoxImplementation001 = React.lazy(() => import('./TheMemeBoxImplementation001'));
+import TheMemeBoxImplementation001 from './TheMemeBoxImplementation001';
 import { renderTheMemeBox, unmountTheMemeBox } from '@/TheMemeBoxRenderer';
 import { additionalHardCodedCustomButtonPages } from './additional-hard-coded-custom-button-pages';
-const TheFoodPantryFeature = React.lazy(async () => ({ default: (await import('../../../../pantry-finder/src/pages/pantry-feature/the-food-pantry-feature')).TheFoodPantryFeature }));
+import { TheFoodPantryFeature } from '../../../../pantry-finder/src/pages/pantry-feature/the-food-pantry-feature';
 import { pantryApiUrl } from '@/lib/api';
 
 
@@ -2664,6 +2665,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [isFriendProfileModalOpen, setIsFriendProfileModalOpen] = useState(false);
   const [isEditingProfileImage, setIsEditingProfileImage] = useState(false);
   const [unreadChatrooms, setUnreadChatrooms] = useState<Set<number>>(new Set());
+  const socketRef = useRef<Socket | null>(null);
 
 
 
@@ -3108,6 +3110,57 @@ useEffect(() => {
     }
   }, [isOpen]);
 
+
+// Initialize Socket.IO to listen for unread notifications globally
+useEffect(() => {
+  if (isOpen) {
+    // Connect to socket server if not already connected
+    const socket = io(
+      process.env.NODE_ENV === 'production'
+        ? window.location.origin
+        : 'http://localhost:3001',
+      {
+        withCredentials: true,
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 5,
+        transports: process.env.NODE_ENV === 'production' ? ['polling'] : ['websocket', 'polling'],
+        upgrade: process.env.NODE_ENV !== 'production',
+      }
+    );
+
+    socketRef.current = socket;
+
+    // Listen for unread notifications from any chatroom
+    socket.on('chatroomUnreadNotification', (notification: { room: string; hasUnread: boolean }) => {
+      // Extract the chatroom number from the room name
+      // Room name format: "SisterUnion001NewEngland-chatroom-1"
+      const match = notification.room.match(/SisterUnion(\d+)/);
+      if (match) {
+        const chatroomNum = parseInt(match[1], 10);
+        setUnreadChatrooms(prev => {
+          const newSet = new Set(prev);
+          if (notification.hasUnread) {
+            newSet.add(chatroomNum);
+          } else {
+            newSet.delete(chatroomNum);
+          }
+          return newSet;
+        });
+        console.log(`[PROFILE] Green circle updated for chatroom: ${chatroomNum}`);
+      }
+    });
+
+    return () => {
+      socket.off('chatroomUnreadNotification');
+      socket.disconnect();
+    };
+  }
+}, [isOpen]);
+
+
+  
 
 // Fetch user's custom stores when modal opens (for logged-in users)
 useEffect(() => {
@@ -4526,9 +4579,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     flexDirection: 'column',
     backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent'
   }}>
-    <React.Suspense fallback={<div className="flex min-h-32 items-center justify-center text-sm text-gray-400">Loading feature...</div>}>
-      {renderCenterContent()}
-    </React.Suspense>
+    {renderCenterContent()}
   </div>
 
   {/* RIGHT DIVIDER - ONLY SHOW IF RIGHT NOT COLLAPSED */}
@@ -5014,15 +5065,13 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       
       
         {activeChatModal !== null && (
-          <React.Suspense fallback={<div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/70 text-white">Loading chat...</div>}>
-            <MainUhubFeatureV001ForChatModal
+          <MainUhubFeatureV001ForChatModal
             isOpen
             onClose={handleCloseChatModal}
             pageName={MainUhubFeatureV001ForSisterUnionPages[activeChatModal - 1]}
             backgroundColor={MainUhubFeatureV001ForModalColors[activeChatModal - 1]}
             modalNumber={activeChatModal}
-            />
-          </React.Suspense>
+          />
         )}
 
         <HomeModal 
