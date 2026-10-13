@@ -247,6 +247,16 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
                 border-bottom: 2px solid #ccc;
 				min-width: 1275px;
 				overflow-x: auto;
+                overflow-y: hidden;
+            }
+
+            .header-container .header-left-container {
+                top: 0 !important;
+            }
+            .header-container .header-right-container {
+                min-height: 0 !important;
+                height: 0;
+                overflow: hidden;
             }
 
             .header-left-top-container {
@@ -381,11 +391,47 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
 
             .footer-container {
                 display: flex;
+                position: relative;
                 margin-top: auto;
                 
-                padding-top: 10px;
+                padding-top: 0;
                 background-color: #333333; /* Darker background for footer */
                 border-top: 2px solid #ccc;
+            }
+
+            #uhub-footer-launcher {
+                position: absolute;
+                bottom: 2px;
+                left: 18px;
+                z-index: 10000;
+            }
+            #uhub-footer-launcher .uhub-launcher-uhub {
+                position: static;
+                transform: none;
+                width: 100px;
+            }
+
+            #BodyContainer {
+                display: flex;
+                flex: 1 1 0;
+                min-height: 0;
+                box-sizing: border-box;
+            }
+            #uhub-body-avatar {
+                display: flex;
+                flex: 1;
+                align-items: center;
+                justify-content: center;
+                min-height: 0;
+            }
+            #uhub-body-avatar .uhub-body-avatar-image {
+                display: block;
+                height: 100%;
+                max-width: 100%;
+                width: auto;
+                object-fit: contain;
+                opacity: 0.5;
+                transform: translateY(-20px);
             }
 
             .archive-container, .extra-content-container {
@@ -404,7 +450,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
                 
             padding-top: 0;
             align-items: center;
-            height: 70px;
+            height: 48px;
             box-sizing: border-box;
             background-color: #333333;
             color: #fff;
@@ -3562,6 +3608,7 @@ button {
 
 <!-- Main container for the body section -->
 <div class="body-container" id="BodyContainer">
+    <div id="uhub-body-avatar" class="uhub-root dark"></div>
     <!-- Container for the schedule section -->
     <div class="schedule-container" id="scheduleContainer">
         <!-- Calendar grid will be dynamically generated here -->
@@ -3589,6 +3636,7 @@ button {
 		
 <!-- Main container for the footer section -->
 <footer class="footer-container">
+    <div id="uhub-footer-launcher" class="uhub-root dark"></div>
 
     <div class="archive-container">
         <!-- Archive container (currently only has the top archive container) -->
