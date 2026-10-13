@@ -98,7 +98,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             #uhub-launcher-layout {
                 display: grid;
                 grid-template-columns: max-content max-content;
-                grid-template-rows: repeat(3, minmax(36px, auto));
+                grid-template-rows: repeat(3, minmax(0, auto));
                 align-items: center;
                 gap: 4px 6px;
                 width: max-content;
@@ -121,15 +121,17 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
 
             /* The retired menu location is now the uHub entry point. */
             #uhub-launcher-layout .uhub-launcher-uhub {
-                position: fixed;
-                top: 18px;
-                left: 132px;
+                position: absolute;
+                top: 50%;
+                left: 18px;
+                transform: translateY(-50%);
                 z-index: 10000;
             }
             #uhub-launcher-layout .uhub-launcher-avatar {
-                position: fixed;
-                top: 16px;
-                right: 18px;
+                position: absolute;
+                top: 50%;
+                right: max(18px, calc(100% - 100vw + 36px));
+                transform: translateY(-50%);
                 z-index: 10000;
             }
 
@@ -229,6 +231,9 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
                 font-family: Arial, sans-serif;
                 background-color: #000000; /* Dark mode background */
                 color: #FFFFFF; /* White font color */
+                display: flex;
+                flex-direction: column;
+                min-height: calc(100vh - 16px);
 				min-width: 1275px;
 				overflow-x: auto;
             }
@@ -236,6 +241,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             .header-container {
                 display: flex;
                 justify-content: space-between; /* <<<<<<<<<<<<<<<<<<<< do i want this? Flex row layout */
+                position: relative;
                 padding: 10px;
                 background-color: #333333; /* Darker background for header */
                 border-bottom: 2px solid #ccc;
@@ -375,6 +381,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
 
             .footer-container {
                 display: flex;
+                margin-top: auto;
                 
                 padding-top: 10px;
                 background-color: #333333; /* Darker background for footer */
@@ -395,9 +402,10 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             .extra-content-container {
                 display: flex;
                 
-            padding-top: 180px;
+            padding-top: 0;
             align-items: center;
-            height: 60vh;
+            height: 70px;
+            box-sizing: border-box;
             background-color: #333333;
             color: #fff;
             margin: 0px;
@@ -2212,7 +2220,7 @@ button {
     <!-- Unlock this code to see more -->    
     <header class="header-container">
     
-    <div class="containerForTopLeftSection" style="display: flex; flex-direction: column; min-height: 650px; justify-content: space-between;"> <!-- This is related to:>>> HHHHHHHHHHHHHHHHHHHEEEEEEEEEEAAAAAAADDDDDDERRRRRRRRRRRRRRR Part 1 of 11  <<< which is to let me know: "the header's size' is modified in multiple locations. this being one of em. ill try to mark down where else i see em as time flows by. --> 
+    <div class="containerForTopLeftSection" style="display: flex; flex-direction: column; min-height: 60px; justify-content: space-between;"> <!-- This is related to:>>> HHHHHHHHHHHHHHHHHHHEEEEEEEEEEAAAAAAADDDDDDERRRRRRRRRRRRRRR Part 1 of 11  <<< which is to let me know: "the header's size' is modified in multiple locations. this being one of em. ill try to mark down where else i see em as time flows by. -->
         <div class="header-left-top-container">
 
             <!-- TESTING TESTING: "AD00002 PLACARD" IS BEING PLACED BELOW HERE! IT IS DISTINGUISHED WITH 00002 INFO! -->
