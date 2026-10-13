@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { MemoryRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MainUhubFeatureV001ForSisterUnionRoutes from '@/features/uminion/MainUhubFeatureV001ForSisterUnionRoutes';
@@ -21,6 +22,8 @@ const MainUhubFeatureV001Layout = () => {
   const [autoLaunch, setAutoLaunch] = useState(true);
   const [zoomedBadge, setZoomedBadge] = useState<{ url: string; name: string } | null>(null);
   const [isLauncherImageUploadOpen, setLauncherImageUploadOpen] = useState(false);
+  const [footerLauncher, setFooterLauncher] = useState<HTMLElement | null>(null);
+  const [bodyAvatar, setBodyAvatar] = useState<HTMLElement | null>(null);
 
   // Handler for badge zoom that works in ANY modal context
   const handleBadgeZoom = (badge: { url: string; name: string }) => {
@@ -91,6 +94,11 @@ useEffect(() => {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    setFooterLauncher(document.getElementById('uhub-footer-launcher'));
+    setBodyAvatar(document.getElementById('uhub-body-avatar'));
+  }, []);
+
   const handleOpenAuthModal = (mode: 'login' | 'signup') => {
     setAuthModal({ isOpen: true, mode });
   };
@@ -126,18 +134,30 @@ useEffect(() => {
     }
   };
 
+  const launcherButton = (
+    <Button onClick={handleOpenModalManually} className="relative uhub-launcher-uhub">
+      uHub
+      {countdown !== null && (
+        <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+          {countdown}
+        </div>
+      )}
+    </Button>
+  );
+
+  const bodyAvatarImage = (
+    <img
+      src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"}
+      alt=""
+      className="uhub-body-avatar-image"
+    />
+  );
+
   return (
     // Compact horizontal bar (instead of page007's full-page header/main/footer layout)
     // so the 5 buttons sit in a single row inside page001's "FrontPage001" mount div.
     <div className="uhub-app-root relative inline-flex flex-wrap items-center gap-3">
-      <Button onClick={handleOpenModalManually} className="relative uhub-launcher-uhub">
-        uHub
-        {countdown !== null && (
-          <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-            {countdown}
-          </div>
-        )}
-      </Button>
+      {footerLauncher ? createPortal(launcherButton, footerLauncher) : launcherButton}
 
       {isAuthLoading && <span id="loading-text">loading...</span>}
 
@@ -164,6 +184,7 @@ useEffect(() => {
           </button>
         )}
       </div>
+      {bodyAvatar && createPortal(bodyAvatarImage, bodyAvatar)}
 
       <Routes>
         <Route path="/*" element={<MainUhubFeatureV001ForSisterUnionRoutes />} />
