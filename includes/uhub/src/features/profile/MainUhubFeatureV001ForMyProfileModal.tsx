@@ -6,10 +6,12 @@ import MainUhubFeatureV001ForChatModal from '../uminion/MainUhubFeatureV001ForCh
 import { useAuth } from '../../hooks/useAuth';
 import { usePaginatedFeed } from '../../hooks/usePaginatedFeed';
 import FeedEntryCard from './FeedEntryCard';
+import WorldFeed from './WorldFeed';
 import MainUhubFeatureV001ForAddProductModal from './MainUhubFeatureV001ForAddProductModal';
 import MainUhubFeatureV001ForProductDetailModal from './MainUhubFeatureV001ForProductDetailModal';
 import MainUhubFeatureV001ForFriendsView from './MainUhubFeatureV001ForFriendsView';
 import MainUhubFeatureV001ForSettingsView from './MainUhubFeatureV001ForSettingsView';
+import WorldFeed from './WorldFeed';
 import { CreateBroadcastView } from './CreateBroadcastView';
 import BroadcastCarousel from './BroadcastCarousel';
 import AdminProductsList from './AdminProductsList';
@@ -2262,9 +2264,9 @@ const storePages = buildStorePages();
 
 // HOME MODAL
 const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen: boolean; onClose: () => void; userProducts?: any[]; user?: any }) => {
-  const [myAccountExpanded, setMyAccountExpanded] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
+  const [worldFeedRefreshKey, setWorldFeedRefreshKey] = useState(0);
 
   const fetchFriendsFeedPage = useCallback(async (offset: number, limit: number) => {
     if (!user) return { items: [], total: 0 };
@@ -2287,15 +2289,21 @@ const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen
     if (!newPostContent.trim()) return;
     setIsSubmittingPost(true);
     try {
-      await fetch('/api/social-posts', {
+      const response = await fetch('/api/social-posts', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: newPostContent.trim() }),
       });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || 'Could not create your post.');
+      }
       setNewPostContent('');
+      setWorldFeedRefreshKey(key => key + 1);
     } catch (error) {
       console.error('[HOME MODAL] Error creating post:', error);
+      window.alert(error instanceof Error ? error.message : 'Could not create your post.');
     } finally {
       setIsSubmittingPost(false);
     }
@@ -2314,41 +2322,7 @@ const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen
         </div>
 
         <div className="grid grid-cols-2 gap-4 h-[70vh]">
-          <div className="border rounded-lg p-4 overflow-auto flex flex-col">
-            <button
-              onClick={() => setMyAccountExpanded(!myAccountExpanded)}
-              className="flex items-center justify-between rounded bg-gray-700 px-2 py-1 font-bold mb-4 hover:text-orange-400 transition"
-              aria-expanded={myAccountExpanded}
-            >
-              <span>My Account {myAccountExpanded ? '-' : '+'}</span>
-              {myAccountExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </button>
-            
-            {myAccountExpanded && (
-              <div className="space-y-3 flex-1 overflow-y-auto">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-gray-700 border border-gray-600 cursor-pointer" />
-                  <span className="text-sm">Allow others to see friends list</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-gray-700 border border-gray-600 cursor-pointer" />
-                  <span className="text-sm">Allow non-logged in users to see posts</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-4 h-4 rounded bg-gray-700 border border-gray-600 cursor-pointer" />
-                  <span className="text-sm">Allow non-logged in users to see friends list</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-gray-700 border border-gray-600 cursor-pointer" />
-                  <span className="text-sm">Allow non-logged in users to like and comment on posts</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-gray-700 border border-gray-600 cursor-pointer" />
-                  <span className="text-sm">Only friends can see posts</span>
-                </label>
-              </div>
-            )}
-          </div>
+          <WorldFeed refreshKey={worldFeedRefreshKey} />
 
          <div className="border rounded-lg p-4 overflow-auto flex flex-col">
             <h3 className="font-bold mb-4">My Store</h3>
@@ -2387,10 +2361,14 @@ const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen
               style={{ color: '#ffffff' }}
               placeholder="Write a post..." 
               rows={3}
+              maxLength={1000}
               value={newPostContent}
               onChange={(e) => setNewPostContent(e.target.value)}
               disabled={!user}
             ></textarea>
+            <div className="mb-2 self-start text-xs text-gray-400" aria-live="polite">
+              {1000 - newPostContent.length}/1000
+            </div>
             <Button
               className="w-full bg-orange-400 hover:bg-orange-500"
               onClick={handleCreatePost}
@@ -3968,6 +3946,13 @@ return (
     setCenterView(view);
   };
 
+  const handleMicrophoneButtonClick = () => {
+    const nextMicrophoneState = !areFeatureIconsActive.microphone;
+    setAreFeatureIconsActive(prev => ({ ...prev, heart: false, lion: false, microphone: nextMicrophoneState }));
+    setCenterView('broadcasts');
+    setBroadcastView(nextMicrophoneState ? 'UnionRadio#15' : 'MyBroadcasts');
+  };
+
   const handleProfileImageClick = () => {
   if (!user) {
     onClose();
@@ -4066,9 +4051,10 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
              <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="HikingToAllStores" onClick={() => setIsQuadrantsModalOpen(true)}>
                <Mountain className="h-4 w-4 mb-1" /> Stores
              </Button>
-             <a href="https://github.com/uminionunion/UminionsWebsite/discussions/13" target="_blank" rel="noopener noreferrer" className="w-full h-full">
-               <Button variant="outline" className="w-full h-full flex flex-col items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent', opacity: 1 }} title="Code" disabled={!user}><Code className="h-4 w-4 mb-1" /> Code</Button>
-             </a>
+             <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} onClick={handleMicrophoneButtonClick} title="Microphone" aria-label="Microphone">
+               <span className="text-2xl leading-none">{areFeatureIconsActive.microphone ? '✌︎' : '🎙'}</span>
+               <span className="text-xs leading-none">UnionRadio</span>
+             </Button>
              <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Home" onClick={() => {
                if (!user) {
                  alert("You must be logged in to use this feature.");
@@ -4115,18 +4101,18 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       <Users className="h-5 w-5" />
       <span>Friends</span>
     </Button>
-    <Button
-      variant="outline"
-      size="sm"
-      className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
-      style={{ color: '#ffffff', backgroundColor: 'transparent' }}
-      onClick={() => handleTopLeftButtonClick('settings')}
-      title="Settings"
-      disabled={!user}
-    >
-      <Settings className="h-5 w-5" />
-      <span>Settings</span>
-    </Button>
+    <a href="https://github.com/uminionunion/UminionsWebsite/discussions/13" target="_blank" rel="noopener noreferrer" className="w-12 h-8">
+      <Button
+        variant="outline"
+        size="sm"
+        className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
+        style={{ color: '#ffffff', backgroundColor: 'transparent' }}
+        title="Code"
+      >
+        <Code className="h-5 w-5" />
+        <span>Code</span>
+      </Button>
+    </a>
     </>}
     {(customizableButtonPage === 1
       ? [9, 10, 3, 4, 11, 12, 5, 6, 13, 14, 7, 8, 15, CustomButtonsPage001sNextPageButton]
@@ -4146,12 +4132,26 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     ).map((buttonNumber) => (
       buttonNumber === null ? (
         <span key={`empty-custom-button-${customizableButtonPage}`} className="h-8 w-12" />
+      ) : customizableButtonPage === 1 && buttonNumber === 7 ? (
+      <Button
+        key="settings"
+        variant="outline"
+        size="sm"
+        className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
+        style={{ color: '#ffffff', backgroundColor: 'transparent' }}
+        onClick={() => handleTopLeftButtonClick('settings')}
+        title="Settings"
+        aria-label="Settings"
+        disabled={!user}
+      >
+        <Settings className="h-5 w-5" />
+      </Button>
       ) : (
       <Button
         key={buttonNumber}
         variant="outline"
         size="sm"
-        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [7, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''} ${customizableButtonPage === 1 && buttonNumber === 4 && user?.id !== 1 ? 'opacity-50 cursor-not-allowed' : ''} ${typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 ? 'text-[0.65rem] text-gray-500 opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
+        className={`flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white border-gray-700 hover:bg-gray-700 hover:text-white ${customizableButtonPage === 1 && [6, 15].includes(buttonNumber) ? 'opacity-50 cursor-not-allowed' : ''} ${customizableButtonPage === 1 && buttonNumber === 4 && user?.id !== 1 ? 'opacity-50 cursor-not-allowed' : ''} ${typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 ? 'text-[0.65rem] text-gray-500 opacity-50 cursor-not-allowed hover:bg-transparent' : ''}`}
         style={{
           color: '#ffffff',
           backgroundColor: buttonNumber === 18 && isButton18Active
@@ -4294,14 +4294,6 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
           }
 
           // Microphone toggle: 1st click opens Broadcasts-UnionRadio#15, 2nd click opens MyBroadcasts.
-          if (customizableButtonPage === 1 && buttonNumber === 6) {
-            const nextMicrophoneState = !areFeatureIconsActive.microphone;
-            setAreFeatureIconsActive(prev => ({ ...prev, heart: false, lion: false, microphone: nextMicrophoneState }));
-            setCenterView('broadcasts');
-            setBroadcastView(nextMicrophoneState ? 'UnionRadio#15' : 'MyBroadcasts');
-            return;
-          }
-
           if (customizableButtonPage === 1 && buttonNumber === 3) {
             const nextHeartState = !areFeatureIconsActive.heart;
             setAreFeatureIconsActive(prev => ({ ...prev, heart: nextHeartState, palm: false, lion: false, microphone: false }));
@@ -4347,7 +4339,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             setIsQuadrantsModalOpen(true);
           }
         }}
-        disabled={(typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 && !(customizableButtonPage === 715 && buttonNumber === 10011 && (user?.id === 1 || user?.id === 2))) || (customizableButtonPage === 1 && buttonNumber === 4 && user?.id !== 1)}
+        disabled={(typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 && !(customizableButtonPage === 715 && buttonNumber === 10011 && (user?.id === 1 || user?.id === 2))) || (customizableButtonPage === 1 && (buttonNumber === 4 && user?.id !== 1 || buttonNumber === 6))}
         title={typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')
           ? 'Previous button page'
           : typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')
@@ -4387,7 +4379,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             customizableButtonPage === 1 && buttonNumber === 3 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
             customizableButtonPage === 1 && buttonNumber === 4 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
             customizableButtonPage === 1 && buttonNumber === 5 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
-            customizableButtonPage === 1 && buttonNumber === 6 ? (areFeatureIconsActive.microphone ? '✌︎' : '🎙') :
+            customizableButtonPage === 1 && buttonNumber === 6 ? '☸' :
             customizableButtonPage === 1 && buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
             customizableButtonPage === 1 && buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') :
             customizableButtonPage === 1 && buttonNumber === 9 ? '🕮' :

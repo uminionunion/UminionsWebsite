@@ -13,15 +13,20 @@ const FeedEntryCard: React.FC<FeedEntryCardProps> = ({ entry, onChanged }) => {
   const [isCommentBoxOpen, setIsCommentBoxOpen] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [interactionError, setInteractionError] = useState('');
 
   const basePath = entry.type === 'meme' ? `/api/memes/posts/${entry.id}` : entry.type === 'social' ? `/api/social-posts/${entry.id}` : `/api/episodes/${entry.id}`;
 
   const vote = async (direction: 'upvote' | 'downvote') => {
     try {
-      await fetch(`${basePath}/${direction}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' } });
+      setInteractionError('');
+      const response = await fetch(`${basePath}/${direction}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' } });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not update your vote.');
       onChanged();
     } catch (error) {
       console.error('[FEED] Error voting:', error);
+      setInteractionError(error instanceof Error ? error.message : 'Could not update your vote.');
     }
   };
 
@@ -37,18 +42,22 @@ const FeedEntryCard: React.FC<FeedEntryCardProps> = ({ entry, onChanged }) => {
   const submitComment = async () => {
     if (!commentText.trim()) return;
     setIsSubmittingComment(true);
+    setInteractionError('');
     try {
-      await fetch(`${basePath}/comments`, {
+      const response = await fetch(`${basePath}/comments`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: commentText.trim() }),
       });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Could not post your comment.');
       setCommentText('');
       setIsCommentBoxOpen(false);
       onChanged();
     } catch (error) {
       console.error('[FEED] Error commenting:', error);
+      setInteractionError(error instanceof Error ? error.message : 'Could not post your comment.');
     } finally {
       setIsSubmittingComment(false);
     }
@@ -60,6 +69,8 @@ const FeedEntryCard: React.FC<FeedEntryCardProps> = ({ entry, onChanged }) => {
         <span className="text-xs font-semibold text-cyan-400">{entry.username}</span>
         <span className="text-[10px] text-gray-500 uppercase">{entry.type === 'meme' ? 'MemeBox' : entry.type === 'social' ? 'Social' : 'Episode'}</span>
       </div>
+
+      {interactionError && <p role="alert" className="mt-2 text-xs text-red-400">{interactionError}</p>}
 
       {entry.type === 'meme' ? (
         <div className="flex items-center gap-2 mb-2">

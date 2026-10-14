@@ -18,7 +18,7 @@ declare global {
 }
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies.token;
+  const token = req.cookies?.token;
 
   if (!token) {
     return res.status(401).json({ message: 'Authentication required. No token provided.' });
@@ -31,6 +31,18 @@ export const authenticate = (req: Request, res: Response, next: NextFunction) =>
   } catch (error) {
     return res.status(401).json({ message: 'Invalid or expired token.' });
   }
+};
+
+export const authenticateOptional = (req: Request, _res: Response, next: NextFunction) => {
+  const token = req.cookies?.token;
+  if (token) {
+    try {
+      req.user = jwt.verify(token, JWT_SECRET) as UserPayload;
+    } catch {
+      req.user = undefined;
+    }
+  }
+  next();
 };
 
 // Alias for compatibility with memes.ts

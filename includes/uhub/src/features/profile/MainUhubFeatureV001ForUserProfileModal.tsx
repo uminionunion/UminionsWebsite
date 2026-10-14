@@ -39,8 +39,32 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
   const [editingEntry, setEditingEntry] = useState<{ type: 'meme' | 'social' | 'episode'; id: number; title: string; description: string } | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [hostedBroadcasts, setHostedBroadcasts] = useState<any[]>([]);
+  const [isFriendsListOpen, setIsFriendsListOpen] = useState(false);
+  const [friendsList, setFriendsList] = useState<any[]>([]);
+  const [friendsListError, setFriendsListError] = useState('');
+  const [isLoadingFriendsList, setIsLoadingFriendsList] = useState(false);
 
   const isOwnProfile = currentUser && user.id === currentUser.id;
+
+  const toggleFriendsList = async () => {
+    if (isFriendsListOpen) {
+      setIsFriendsListOpen(false);
+      return;
+    }
+    setIsFriendsListOpen(true);
+    setIsLoadingFriendsList(true);
+    setFriendsListError('');
+    try {
+      const response = await fetch(`/api/friends/user/${user.id}`, { credentials: 'include' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Could not load this friends list.');
+      setFriendsList(Array.isArray(data) ? data : []);
+    } catch (error) {
+      setFriendsListError(error instanceof Error ? error.message : 'Could not load this friends list.');
+    } finally {
+      setIsLoadingFriendsList(false);
+    }
+  };
 
   const fetchMemePostsPage = useCallback(async (offset: number, limit: number) => {
     const res = await fetch(`/api/memes/posts/by-user/${user.id}?offset=${offset}&limit=${limit}`);
@@ -212,7 +236,30 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
           <div className="flex p-4 border-b">
             {/* AFTER - Add Edit button only for own profile */}
 <div className="w-1/5 pr-4 space-y-2">
-              <Button variant="outline" className="w-full justify-start">List of Friends</Button>
+              <Button variant="outline" className="w-full justify-start" onClick={toggleFriendsList} aria-expanded={isFriendsListOpen}>
+                {isFriendsListOpen ? 'Hide Friends' : 'List of Friends'}
+              </Button>
+              {isFriendsListOpen && (
+                <div className="max-h-48 space-y-2 overflow-y-auto rounded border border-gray-700 p-2">
+                  {isLoadingFriendsList ? (
+                    <p className="text-sm text-muted-foreground">Loading friends...</p>
+                  ) : friendsListError ? (
+                    <p role="alert" className="text-sm text-red-400">{friendsListError}</p>
+                  ) : friendsList.length ? (
+                    friendsList.map((friend) => (
+                      <div key={friend.id} className="flex items-center gap-2 text-sm">
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={friend.profile_image_url || undefined} alt={friend.username} />
+                          <AvatarFallback>{friend.username?.charAt(0)?.toUpperCase() || '?'}</AvatarFallback>
+                        </Avatar>
+                        <span>{friend.username}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No friends to show.</p>
+                  )}
+                </div>
+              )}
               <Button variant="outline" className="w-full justify-start">Favorited Broadcasts</Button>
               <Button variant="outline" className="w-full justify-start">Created Chatrooms</Button>
               <Button variant="secondary" className="w-full justify-start"><MessageSquare className="mr-2 h-4 w-4"/>Direct Message</Button>

@@ -261,6 +261,21 @@ export interface SocialMediaPostComments {
   created_at: Generated<string | null>;
 }
 
+export interface UserPrivacySettings {
+  user_id: number;
+  allow_logged_in_friends_list: Generated<Boolean>;
+  allow_anonymous_posts: Generated<Boolean>;
+  allow_anonymous_interactions: Generated<Boolean>;
+}
+
+export interface SocialMediaPostAnonymousVotes {
+  id: Generated<number>;
+  post_id: number;
+  visitor_id: string;
+  vote_type: -1 | 1;
+  created_at: Generated<string | null>;
+}
+
 export interface UserBroadcasts {
   id: Generated<number>;
   user_id: number;
@@ -502,6 +517,8 @@ export interface DB {
   SocialMediaPostVotes: SocialMediaPostVotes;
   SocialMediaPostFavorites: SocialMediaPostFavorites;
   SocialMediaPostComments: SocialMediaPostComments;
+  UserPrivacySettings: UserPrivacySettings;
+  SocialMediaPostAnonymousVotes: SocialMediaPostAnonymousVotes;
   UserBroadcasts: UserBroadcasts;
   UserBroadcastEpisodes: UserBroadcastEpisodes;
     UserBroadcastEpisodePlays: UserBroadcastEpisodePlays;

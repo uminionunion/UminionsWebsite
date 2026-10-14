@@ -48,6 +48,42 @@ router.get('/', authenticate, async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 });
+router.get('/user/:userId', authenticate, async (req, res) => {
+    const viewerId = req.user.userId;
+    const rawTargetId = req.params.userId;
+    const targetId = typeof rawTargetId === 'string' ? Number.parseInt(rawTargetId, 10) : Number.NaN;
+    if (!Number.isInteger(targetId) || targetId < 1) {
+        return res.status(400).json({ message: 'Invalid user ID.' });
+    }
+    try {
+        if (viewerId !== targetId) {
+            const privacy = await db.selectFrom('UserPrivacySettings')
+                .select('allow_logged_in_friends_list')
+                .where('user_id', '=', targetId)
+                .executeTakeFirst();
+            if (privacy?.allow_logged_in_friends_list === 0) {
+                return res.status(403).json({ message: 'This user has chosen to keep their friends list private.' });
+            }
+        }
+        const friendships = await db.selectFrom('friends')
+            .select(['user_id1', 'user_id2'])
+            .where('status', '=', 'accepted')
+            .where((eb) => eb.or([eb('user_id1', '=', targetId), eb('user_id2', '=', targetId)]))
+            .execute();
+        const friendIds = friendships.map((friendship) => (friendship.user_id1 === targetId ? friendship.user_id2 : friendship.user_id1));
+        if (friendIds.length === 0)
+            return res.json([]);
+        const friendUsers = await db.selectFrom('users')
+            .select(['id', 'username', 'profile_image_url'])
+            .where('id', 'in', friendIds)
+            .execute();
+        return res.json(friendUsers);
+    }
+    catch (error) {
+        console.error('[FRIENDS] Failed to fetch user friends list:', error);
+        return res.status(500).json({ message: 'Failed to fetch friends list.' });
+    }
+});
 // Send a friend request
 router.post('/request', authenticate, async (req, res) => {
     const { userId: userToRequestId } = req.body;
