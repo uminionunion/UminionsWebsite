@@ -2317,9 +2317,10 @@ const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen
           <div className="border rounded-lg p-4 overflow-auto flex flex-col">
             <button
               onClick={() => setMyAccountExpanded(!myAccountExpanded)}
-              className="flex items-center justify-between font-bold mb-4 hover:text-orange-400 transition"
+              className="flex items-center justify-between rounded bg-gray-700 px-2 py-1 font-bold mb-4 hover:text-orange-400 transition"
+              aria-expanded={myAccountExpanded}
             >
-              My Account{myAccountExpanded ? '-' : '+'}
+              <span>My Account {myAccountExpanded ? '-' : '+'}</span>
               {myAccountExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
             
