@@ -149,7 +149,7 @@ useEffect(() => {
     <img
       src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"}
       alt=""
-      className="uhub-body-avatar-image"
+      className="uhub-body-avatar-image exclude-zoom"
     />
   );
 

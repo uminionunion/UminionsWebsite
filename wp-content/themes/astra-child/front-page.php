@@ -250,6 +250,28 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
                 overflow-y: hidden;
             }
 
+            @media (max-width: 767px) {
+                html,
+                body {
+                    overflow-x: hidden;
+                }
+
+                body {
+                    box-sizing: border-box;
+                    width: 100%;
+                    min-width: 0;
+                    min-height: 100vh;
+                    margin: 0;
+                }
+
+                .header-container {
+                    box-sizing: border-box;
+                    width: 100%;
+                    min-width: 0;
+                    overflow-x: hidden;
+                }
+            }
+
             .header-container .header-left-container {
                 top: 0 !important;
             }
@@ -4916,27 +4938,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ********DOM001**************Part 1 (Checked: "Was, in, working audio")
 
-    // Initialize media stream
-    navigator.mediaDevices
-        .getUserMedia({ audio: true }) // Request access to the user's microphone
-        .then((stream) => {
-            mediaStream = stream; // Store the media stream
-        })
-        .catch((error) => {
-            console.error("Error accessing microphone:", error); // Handle errors accessing the microphone
-        });
-
-
-
-
-
-
-
-
-
-
-
-
 // ********DOM001**************Part 2 (Checked: "Was, in, working audio")
 
 
@@ -6446,25 +6447,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-    
-// ********Triggered AFTER DOM Loaded************** Part 1 (Checked: "Was, in, working audio")
-
-
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        // Request access to the user's microphone and store the stream
-        mediaStream = stream;
-    }).catch((error) => {
-        console.error("Error accessing microphone:", error); // Log an error message if there's an error accessing the microphone
-    });
-
-
-
-
-
-
-
-
-    
 // ********Triggered AFTER DOM Loaded************** Part 2 (Checked: "Was, in, working audio")
 
     // Handle recording with image

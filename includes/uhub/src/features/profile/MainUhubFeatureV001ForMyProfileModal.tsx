@@ -2634,7 +2634,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
       'Million-Pixel#23': { title: 'Million-Pixel#23', creator: 'Uminion Union', subtitle: 'One million pixels, powered by PixelTickets.', logo: '', extraImages: [], description: 'Million-Pixel', website: 'https://uminion.com' },
       'Beta-Button-10,011': { title: 'Beta-Button-10,011', creator: 'Uminion Union', subtitle: 'Features in Development', logo: '', extraImages: [], description: 'Beta Pages', website: 'https://uminion.com' },
   };
-  const broadcastKeys = ['MyBroadcasts', ...Object.keys(broadcasts)];
+  const broadcastKeys = ['UnionNews#14', 'UnionRadio#15', 'MyBroadcasts'];
   const [selectedFriendForModal, setSelectedFriendForModal] = useState<any>(null);
   const [isFriendProfileModalOpen, setIsFriendProfileModalOpen] = useState(false);
   const [isEditingProfileImage, setIsEditingProfileImage] = useState(false);
