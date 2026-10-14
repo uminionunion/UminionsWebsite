@@ -3013,16 +3013,17 @@ useEffect(() => {
 
   
 
-// When you want to render UnionNews#14:
 useEffect(() => {
-  if (isOpen && broadcasts['UnionNews#14']) {
+  if (isOpen && centerView === 'broadcasts' && broadcastView === 'UnionNews#14' && broadcasts['UnionNews#14']) {
     renderTheMemeBox(broadcasts['UnionNews#14']);
+  } else {
+    unmountTheMemeBox();
   }
-  
+
   return () => {
     unmountTheMemeBox();
   };
-}, [isOpen]);
+}, [isOpen, centerView, broadcastView]);
 
 
 
@@ -4060,15 +4061,20 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
          {/* Top Section */}
          <div className="md:flex md:flex-row hidden md:p-4 md:border-b md:gap-2" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopLeftSection" className="md:w-1/5 grid grid-cols-4 md:grid-cols-2 grid-rows-1 md:grid-rows-2 gap-2 md:pr-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
-             <Button variant="outline" className="flex flex-col h-full items-center justify-center relative text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Friends" onClick={() => handleTopLeftButtonClick('friends')} disabled={!user}>
-               {pendingFriendRequests.length > 0 && <div className="absolute top-1 right-1 w-3 h-3 bg-orange-500 rounded-full"></div>}
-               <Users className="h-4 w-4 mb-1" /> Friends
-             </Button>
              <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Broadcast" onClick={() => setCenterView('broadcasts')}><Megaphone className="h-4 w-4 mb-1" /> Broadcast</Button>
+             <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="HikingToAllStores" onClick={() => setIsQuadrantsModalOpen(true)}>
+               <Mountain className="h-4 w-4 mb-1" /> Stores
+             </Button>
              <a href="https://github.com/uminionunion/UminionsWebsite/discussions/13" target="_blank" rel="noopener noreferrer" className="w-full h-full">
                <Button variant="outline" className="w-full h-full flex flex-col items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent', opacity: 1 }} title="Code" disabled={!user}><Code className="h-4 w-4 mb-1" /> Code</Button>
              </a>
-             <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Settings" onClick={() => handleTopLeftButtonClick('settings')} disabled={!user}><Settings className="h-4 w-4 mb-1" /> Settings</Button>
+             <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Home" onClick={() => {
+               if (!user) {
+                 alert("You must be logged in to use this feature.");
+                 return;
+               }
+               setIsHomeModalOpen(true);
+             }} disabled={!user}><Home className="h-4 w-4 mb-1" /> Home</Button>
            </div>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative overflow-hidden" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: 'none' }}>
              <img src="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg" alt="uHub cover" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: areProfileSurfacesOpaque ? 1 : 0.5 }} />
@@ -4100,29 +4106,25 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       size="sm"
       className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
       style={{ color: '#ffffff', backgroundColor: 'transparent' }}
-      onClick={() => setIsQuadrantsModalOpen(true)}
-      title="HikingToAllStores"
+      onClick={() => handleTopLeftButtonClick('friends')}
+      title="Friends"
+      disabled={!user}
     >
-      <Mountain className="h-5 w-5" />
-      <span>Stores</span>
+      {pendingFriendRequests.length > 0 && <div className="absolute top-0 right-0 w-2 h-2 bg-orange-500 rounded-full" />}
+      <Users className="h-5 w-5" />
+      <span>Friends</span>
     </Button>
     <Button
       variant="outline"
       size="sm"
       className="flex flex-col items-center justify-center h-8 w-12 gap-0 text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white"
       style={{ color: '#ffffff', backgroundColor: 'transparent' }}
-      onClick={() => {
-        if (!user) {
-          alert("You must be logged in to use this feature.");
-          return;
-        }
-        setIsHomeModalOpen(true);
-      }}
-      title="Home"
+      onClick={() => handleTopLeftButtonClick('settings')}
+      title="Settings"
       disabled={!user}
     >
-      <Home className="h-5 w-5" />
-      <span>Home</span>
+      <Settings className="h-5 w-5" />
+      <span>Settings</span>
     </Button>
     </>}
     {(customizableButtonPage === 1

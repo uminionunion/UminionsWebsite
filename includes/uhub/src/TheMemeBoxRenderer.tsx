@@ -3,12 +3,20 @@ import ReactDOM from 'react-dom/client';
 import TheMemeBoxImplementation001 from './features/profile/TheMemeBoxImplementation001';
 
 let memeBoxRoot: ReactDOM.Root | null = null;
+let memeBoxContainer: HTMLElement | null = null;
 
 export function renderTheMemeBox(data: any) {
   const container = document.getElementById('TheReactMemeImplementationConnection001');
-  if (!container) return;
+  if (!container) {
+    unmountTheMemeBox();
+    return;
+  }
 
-  memeBoxRoot ||= ReactDOM.createRoot(container);
+  if (memeBoxContainer !== container) {
+    unmountTheMemeBox();
+    memeBoxContainer = container;
+    memeBoxRoot = ReactDOM.createRoot(container);
+  }
   memeBoxRoot.render(
     <React.StrictMode>
       <div className="uhub-meme-box-stack">
@@ -27,4 +35,5 @@ export function renderTheMemeBox(data: any) {
 export function unmountTheMemeBox() {
   memeBoxRoot?.unmount();
   memeBoxRoot = null;
+  memeBoxContainer = null;
 }
