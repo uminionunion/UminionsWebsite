@@ -100,21 +100,19 @@ const FeedEntryCard: React.FC<FeedEntryCardProps> = ({ entry, onChanged }) => {
 
       {/* Same grayish-black background (#222222) and green emoji icons the MemeBox voteSection uses. */}
       <div className="flex items-center justify-around gap-2 p-2 rounded" style={{ backgroundColor: '#222222' }}>
-        <button type="button" className="flex flex-col items-center gap-1" onClick={() => vote('upvote')}>
+        <button type="button" aria-label="Upvote" className="flex flex-col items-center gap-1 border-0 bg-transparent p-1 text-white" onClick={() => vote('upvote')}>
           <img src="/EmojisForUminionWebsite/GreenEmoji002ThumbsUp.png" width="20" alt="Upvote" />
           <span className="text-xs font-bold" style={{ color: '#00ff00' }}>{entry.upvotes}</span>
         </button>
-        <button type="button" className="flex flex-col items-center gap-1" onClick={() => vote('downvote')}>
+        <button type="button" aria-label="Downvote" className="flex flex-col items-center gap-1 border-0 bg-transparent p-1 text-white" onClick={() => vote('downvote')}>
           <img src="/EmojisForUminionWebsite/GreenEmoji003ThumbsDown.png" width="20" alt="Downvote" />
           <span className="text-xs font-bold" style={{ color: '#00ff00' }}>{entry.downvotes}</span>
         </button>
-        <button type="button" className="flex flex-col items-center gap-1" onClick={() => setIsCommentBoxOpen((prev) => !prev)}>
+        <button type="button" aria-label="Comment" className="flex flex-col items-center gap-1 border-0 bg-transparent p-1 text-white" onClick={() => setIsCommentBoxOpen((prev) => !prev)}>
           <img src="/EmojisForUminionWebsite/GreenEmoji004CommentOrChat.png" width="20" alt="Comment" />
-          <span className="text-xs" style={{ color: '#999999' }}>Comment</span>
         </button>
-        <button type="button" className="flex flex-col items-center gap-1" onClick={toggleFavorite}>
+        <button type="button" aria-label="Favorite" className="flex flex-col items-center gap-1 border-0 bg-transparent p-1 text-white" onClick={toggleFavorite}>
           <img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" width="20" alt="Favorite" />
-          <span className="text-xs" style={{ color: entry.isFavorited ? '#00ff00' : '#999999' }}>Favorite</span>
         </button>
       </div>
 

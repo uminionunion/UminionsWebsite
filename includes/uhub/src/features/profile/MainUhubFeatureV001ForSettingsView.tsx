@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Facebook, Youtube, Twitch, Instagram, Github, MessageSquare } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const socialLinks = [
   { id: 'facebook', icon: <Facebook />, defaultLink: 'https://www.facebook.com/groups/1615679026489537' },
@@ -27,6 +28,7 @@ const MainUhubFeatureV001ForSettingsView = () => {
   const { user, logout } = useAuth();
   const [autoLaunch, setAutoLaunch] = useState(true);
   const [isUmiMatchEnrolled, setIsUmiMatchEnrolled] = useState(false);
+  const [isSocialLinksExpanded, setIsSocialLinksExpanded] = useState(false);
 
   useEffect(() => {
     const savedAutoLaunch = localStorage.getItem('uHubAutoLaunch');
@@ -74,17 +76,34 @@ const MainUhubFeatureV001ForSettingsView = () => {
       </div>
 
       <div>
-        <h4 className="font-bold text-lg mb-4">Social Media Links</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {socialLinks.map(link => (
-            <div key={link.id} className="flex items-center gap-2">
-              <div className="p-2 border rounded-md">{link.icon}</div>
-              <Input defaultValue={link.defaultLink} />
-              <Button variant="outline" size="sm">Change Icon</Button>
-            </div>
-          ))}
+        <div className="mb-4 flex items-center justify-between">
+          <h4 className="font-bold text-lg">Social Media Links</h4>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={isSocialLinksExpanded ? 'Collapse Social Media Links' : 'Expand Social Media Links'}
+            aria-expanded={isSocialLinksExpanded}
+            aria-controls="social-media-links-menu"
+            onClick={() => setIsSocialLinksExpanded(expanded => !expanded)}
+          >
+            {isSocialLinksExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
         </div>
-        <Button variant="destructive" className="mt-4">Reset All Links</Button>
+        {isSocialLinksExpanded && (
+          <div id="social-media-links-menu">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {socialLinks.map(link => (
+                <div key={link.id} className="flex items-center gap-2">
+                  <div className="p-2 border rounded-md">{link.icon}</div>
+                  <Input defaultValue={link.defaultLink} />
+                  <Button variant="outline" size="sm">Change Icon</Button>
+                </div>
+              ))}
+            </div>
+            <Button variant="destructive" className="mt-4">Reset All Links</Button>
+          </div>
+        )}
       </div>
 
       <div>
