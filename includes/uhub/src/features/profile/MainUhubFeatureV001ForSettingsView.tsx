@@ -29,6 +29,15 @@ const MainUhubFeatureV001ForSettingsView = () => {
   const [autoLaunch, setAutoLaunch] = useState(true);
   const [isUmiMatchEnrolled, setIsUmiMatchEnrolled] = useState(false);
   const [isSocialLinksExpanded, setIsSocialLinksExpanded] = useState(false);
+  const [isProfileCustomizationExpanded, setIsProfileCustomizationExpanded] = useState(false);
+  const [isMyAccountExpanded, setIsMyAccountExpanded] = useState(false);
+  const [privacySettings, setPrivacySettings] = useState({
+    allow_logged_in_friends_list: true,
+    allow_anonymous_posts: true,
+    allow_anonymous_interactions: false,
+  });
+  const [privacyError, setPrivacyError] = useState('');
+  const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
 
   useEffect(() => {
     const savedAutoLaunch = localStorage.getItem('uHubAutoLaunch');
@@ -44,6 +53,55 @@ const MainUhubFeatureV001ForSettingsView = () => {
       .then(data => setIsUmiMatchEnrolled(data.profile?.is_enrolled === 1))
       .catch(() => setIsUmiMatchEnrolled(false));
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    fetch('/api/account/privacy', { credentials: 'include' })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Could not load privacy settings.');
+        if (!cancelled) {
+          setPrivacySettings({
+            allow_logged_in_friends_list: data.allow_logged_in_friends_list === 1,
+            allow_anonymous_posts: data.allow_anonymous_posts === 1,
+            allow_anonymous_interactions: data.allow_anonymous_interactions === 1,
+          });
+          setPrivacyError('');
+        }
+      })
+      .catch(error => {
+        if (!cancelled) setPrivacyError(error instanceof Error ? error.message : 'Could not load privacy settings.');
+      });
+    return () => { cancelled = true; };
+  }, [user]);
+
+  const handlePrivacyChange = async (field: keyof typeof privacySettings, checked: boolean) => {
+    const previousValue = privacySettings[field];
+    setPrivacySettings(current => ({ ...current, [field]: checked }));
+    setIsSavingPrivacy(true);
+    setPrivacyError('');
+    try {
+      const response = await fetch('/api/account/privacy', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [field]: checked }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Could not save privacy settings.');
+      setPrivacySettings({
+        allow_logged_in_friends_list: data.allow_logged_in_friends_list === 1,
+        allow_anonymous_posts: data.allow_anonymous_posts === 1,
+        allow_anonymous_interactions: data.allow_anonymous_interactions === 1,
+      });
+    } catch (error) {
+      setPrivacySettings(current => ({ ...current, [field]: previousValue }));
+      setPrivacyError(error instanceof Error ? error.message : 'Could not save privacy settings.');
+    } finally {
+      setIsSavingPrivacy(false);
+    }
+  };
 
   const removeUmiMatchAccount = async () => {
     if (!window.confirm('Remove your UmiMatch account, matches, and UmiMatch chats?')) return;
@@ -69,9 +127,12 @@ const MainUhubFeatureV001ForSettingsView = () => {
     <div className="space-y-8">
       <div>
         <h4 className="font-bold text-lg mb-4">General Settings</h4>
-        <div className="flex items-center space-x-2">
-          <Switch id="auto-launch-toggle" checked={autoLaunch} onCheckedChange={handleAutoLaunchChange} />
-          <Label htmlFor="auto-launch-toggle">Should the uHub auto-launch when website launches/refreshes?</Label>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center space-x-2">
+            <Switch id="auto-launch-toggle" checked={autoLaunch} onCheckedChange={handleAutoLaunchChange} />
+            <Label htmlFor="auto-launch-toggle">Should the uHub auto-launch when website launches/refreshes?</Label>
+          </div>
+          <Button type="button" className="bg-red-600 text-white hover:bg-red-700" onClick={logout}>Log Out</Button>
         </div>
       </div>
 
@@ -82,6 +143,7 @@ const MainUhubFeatureV001ForSettingsView = () => {
             type="button"
             variant="ghost"
             size="icon"
+            className="border border-gray-600 bg-black text-white hover:bg-black hover:text-white"
             aria-label={isSocialLinksExpanded ? 'Collapse Social Media Links' : 'Expand Social Media Links'}
             aria-expanded={isSocialLinksExpanded}
             aria-controls="social-media-links-menu"
@@ -102,6 +164,55 @@ const MainUhubFeatureV001ForSettingsView = () => {
               ))}
             </div>
             <Button variant="destructive" className="mt-4">Reset All Links</Button>
+          </div>
+        )}
+      </div>
+
+      <div>
+        <div className="mb-4 flex items-center justify-between">
+          <h4 className="font-bold text-lg text-white">Profile-Customization</h4>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="border border-gray-600 bg-black text-white hover:bg-black hover:text-white"
+            aria-label={isProfileCustomizationExpanded ? 'Collapse Profile-Customization' : 'Expand Profile-Customization'}
+            aria-expanded={isProfileCustomizationExpanded}
+            aria-controls="profile-customization-menu"
+            onClick={() => setIsProfileCustomizationExpanded(expanded => !expanded)}
+          >
+            {isProfileCustomizationExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
+        {isProfileCustomizationExpanded && (
+          <div id="profile-customization-menu">
+            <button
+              type="button"
+              onClick={() => setIsMyAccountExpanded(expanded => !expanded)}
+              className="mb-4 flex w-full items-center justify-between rounded bg-gray-700 px-2 py-1 text-left font-bold text-white transition hover:text-orange-400"
+              aria-expanded={isMyAccountExpanded}
+              aria-controls="my-account-options"
+            >
+              <span>My Account {isMyAccountExpanded ? '-' : '+'}</span>
+              {isMyAccountExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
+            {isMyAccountExpanded && (
+              <div id="my-account-options" className="space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={privacySettings.allow_logged_in_friends_list} disabled={isSavingPrivacy} onChange={event => handlePrivacyChange('allow_logged_in_friends_list', event.target.checked)} className="w-4 h-4 rounded bg-gray-700 border border-gray-600 cursor-pointer" />
+                  <span className="text-sm">Allow others (who are logged in) to see my friends list</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={privacySettings.allow_anonymous_posts} disabled={isSavingPrivacy} onChange={event => handlePrivacyChange('allow_anonymous_posts', event.target.checked)} className="w-4 h-4 rounded bg-gray-700 border border-gray-600 cursor-pointer" />
+                  <span className="text-sm">Allow non-logged in users to see posts</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={privacySettings.allow_anonymous_interactions} disabled={isSavingPrivacy} onChange={event => handlePrivacyChange('allow_anonymous_interactions', event.target.checked)} className="w-4 h-4 rounded bg-gray-700 border border-gray-600 cursor-pointer" />
+                  <span className="text-sm">Allow non-logged in users to like and comment on posts</span>
+                </label>
+                {privacyError && <p role="alert" className="text-sm text-red-400">{privacyError}</p>}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -154,6 +154,20 @@ db.exec(`
     content TEXT NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
+  CREATE TABLE IF NOT EXISTS UserPrivacySettings (
+    user_id INTEGER PRIMARY KEY,
+    allow_logged_in_friends_list INTEGER NOT NULL DEFAULT 1,
+    allow_anonymous_posts INTEGER NOT NULL DEFAULT 1,
+    allow_anonymous_interactions INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS SocialMediaPostAnonymousVotes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL,
+    visitor_id TEXT NOT NULL,
+    vote_type INTEGER NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(post_id, visitor_id)
+  );
 `);
 console.log('[init-data] SocialMediaPosts tables verified.');
 
