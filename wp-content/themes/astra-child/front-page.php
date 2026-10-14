@@ -244,7 +244,8 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
                 position: relative;
                 padding: 10px;
                 background-color: #333333; /* Darker background for header */
-                border-bottom: 2px solid #ccc;
+                border-bottom: 2px solid transparent;
+                border-image: linear-gradient(90deg, #b8f1ff 0%, #1683ff 100%) 1;
 				min-width: 1275px;
 				overflow-x: auto;
                 overflow-y: hidden;
@@ -418,7 +419,8 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
                 
                 padding-top: 0;
                 background-color: #333333; /* Darker background for footer */
-                border-top: 2px solid #ccc;
+                border-top: 2px solid transparent;
+                border-image: linear-gradient(90deg, #1683ff 0%, #b8f1ff 100%) 1;
             }
 
             #uhub-footer-launcher {

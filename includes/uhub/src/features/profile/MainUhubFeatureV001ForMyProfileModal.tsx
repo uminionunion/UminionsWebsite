@@ -101,7 +101,7 @@ const socialLinksRight = [
 ];
 
 const MainUhubFeatureV001ForSocialIcon = ({ href, children }: { href: string, children: React.ReactNode }) => (
-  <a href={href} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+  <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex h-6 w-6 items-center justify-center text-muted-foreground hover:text-foreground">
     {children}
   </a>
 );
@@ -2575,6 +2575,10 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [pendingFriendRequests, setPendingFriendRequests] = useState([]);
   const [socialPageLeft, setSocialPageLeft] = useState(0);
   const [socialPageRight, setSocialPageRight] = useState(0);
+  const [isPromoHovered, setIsPromoHovered] = useState(false);
+  const [isPromoAutoplayPaused, setIsPromoAutoplayPaused] = useState(false);
+  const [promoIndex, setPromoIndex] = useState(0);
+  const promoPauseTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const [leftWidthMobile, setLeftWidthMobile] = useState(25);
   const [centerWidthMobile, setCenterWidthMobile] = useState(50);
   const [rightWidthMobile, setRightWidthMobile] = useState(25);
@@ -4010,6 +4014,30 @@ const handleEditProfileImageClick = (e: React.MouseEvent) => {
     });
   };
 
+  useEffect(() => {
+    if (!isOpen || isPromoHovered || isPromoAutoplayPaused) return;
+    const timer = window.setInterval(() => setPromoIndex(index => (index + 1) % 2), 7000);
+    return () => window.clearInterval(timer);
+  }, [isOpen, isPromoHovered, isPromoAutoplayPaused]);
+
+  useEffect(() => () => {
+    if (promoPauseTimeoutRef.current !== null) {
+      window.clearTimeout(promoPauseTimeoutRef.current);
+    }
+  }, []);
+
+  const navigatePromo = (direction: 'left' | 'right') => {
+    setPromoIndex(index => (index + (direction === 'right' ? 1 : -1) + 2) % 2);
+    setIsPromoAutoplayPaused(true);
+    if (promoPauseTimeoutRef.current !== null) {
+      window.clearTimeout(promoPauseTimeoutRef.current);
+    }
+    promoPauseTimeoutRef.current = window.setTimeout(() => {
+      promoPauseTimeoutRef.current = null;
+      setIsPromoAutoplayPaused(false);
+    }, 60_000);
+  };
+
   // Helper function to shuffle array (randomize products)
 const getRandomizedProducts = (products: Product[]): Product[] => {
   const shuffled = [...products];
@@ -4590,7 +4618,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => handleSocialNavLeft('left')}><ChevronLeft className="h-4 w-4" /></Button>
               <div className="flex-grow hidden md:grid grid-cols-3 gap-0.5 md:gap-2 place-items-center">
                 {socialLinkPagesLeft[socialPageLeft].map(link => (
-                  <div key={link.id} className="text-xs md:text-xs">
+                  <div key={link.id} className={typeof link.icon === 'string' ? 'text-base font-semibold leading-none' : 'text-xs md:text-xs'}>
                     <MainUhubFeatureV001ForSocialIcon href={link.href}>{link.icon}</MainUhubFeatureV001ForSocialIcon>
                   </div>
                 ))}
@@ -4604,16 +4632,49 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               </div>
               <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => handleSocialNavLeft('right')}><ChevronRight className="h-4 w-4" /></Button>
             </div>
-            <div id="MainUhubFeatureV001ForMyProfileSettingsBottomCenterSection" className="w-[60%] p-1 md:p-2 flex items-center justify-center">
-              <a href="https://page001.uminion.com/product/official-uminion-union-card/" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-xs md:text-sm">
-                Become an Official Member of the Union via getting your Union Card Today!
-              </a>
+            <div
+              id="MainUhubFeatureV001ForMyProfileSettingsBottomCenterSection"
+              className="relative w-[60%] p-1 md:p-2 flex items-center justify-center overflow-hidden"
+              onMouseEnter={() => setIsPromoHovered(true)}
+              onMouseLeave={() => setIsPromoHovered(false)}
+            >
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Previous promotion"
+                className="absolute left-1 z-10 h-7 w-7 border-gray-700 bg-black text-white hover:bg-gray-700 hover:text-white"
+                onClick={() => navigatePromo('left')}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              {promoIndex === 0 ? (
+                <a href="https://page001.uminion.com/product/official-uminion-union-card/" target="_blank" rel="noopener noreferrer" className="px-9 text-center text-orange-400 hover:underline text-xs md:text-sm">
+                  Become an Official Member of the Union via getting your Union Card Today!
+                </a>
+              ) : (
+                <img
+                  src="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"
+                  alt="uHub cover"
+                  className="h-10 w-full max-w-none rounded object-cover"
+                />
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Next promotion"
+                className="absolute right-1 z-10 h-7 w-7 border-gray-700 bg-black text-white hover:bg-gray-700 hover:text-white"
+                onClick={() => navigatePromo('right')}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
             <div id="MainUhubFeatureV001ForMyProfileSettingsBottomRightSection" className="w-[20%] p-1 md:p-2 border-l flex items-center">
                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => handleSocialNavRight('left')}><ChevronLeft className="h-4 w-4" /></Button>
               <div className="flex-grow hidden md:grid grid-cols-3 gap-0.5 md:gap-2 place-items-center">
                 {socialLinkPagesRight[socialPageRight].map(link => (
-                  <div key={link.id} className="text-xs md:text-xs">
+                  <div key={link.id} className={typeof link.icon === 'string' ? 'text-base font-semibold leading-none' : 'text-xs md:text-xs'}>
                     <MainUhubFeatureV001ForSocialIcon href={link.href}>{link.icon}</MainUhubFeatureV001ForSocialIcon>
                   </div>
                 ))}
