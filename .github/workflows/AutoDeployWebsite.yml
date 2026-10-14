@@ -63,6 +63,14 @@ jobs:
           cp includes/VoteUp.php includes-bundle/
           echo "Bundle contents:" && ls -la includes-bundle
 
+      - name: Prepare uHub frontend bundle
+        run: |
+          set -e
+          mkdir -p uhub-dist-bundle
+          cp includes/uhub/dist/uhub.js uhub-dist-bundle/
+          cp includes/uhub/dist/uhub.css uhub-dist-bundle/
+          echo "uHub bundle contents:" && ls -la uhub-dist-bundle
+
       # (***Folder 2, what gets sent over with Folder 2 the 'main code folder' (read it and figure out/learn how to copy/recreate your own when you want to send just 'one folder' to a location (like on a hostinger FTP system. ask ai to help create a 'github action .yml file that can sync with hostinger's FTP system to autodeploy our code and make em live' or something like that and you should be fine) please dont mess this part up/no need to modify it/just read and learn please- thank you -Salem)) 
       # Deploy the astra-child theme folder into wp-content/themes
       - name: Upload astra-child theme
@@ -81,6 +89,20 @@ jobs:
             **/node_modules/**
           include: |
             astra-child/**
+
+      - name: Upload uHub frontend bundle
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: ${{ secrets.FTP_PORT }}
+          local-dir: ./uhub-dist-bundle/
+          server-dir: uhub/dist/
+          exclude: |
+            **/.git*
+            **/.DS_Store
 
       # Deploy only the selected PHP files to includes
       - name: Upload selected PHP files to includes
