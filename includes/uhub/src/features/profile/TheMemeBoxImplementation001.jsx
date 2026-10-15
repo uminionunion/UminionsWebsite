@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import MainUhubFeatureV001ForUserProfileModal from "./MainUhubFeatureV001ForUserProfileModal";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, showExternalUploadButton = false, hideFooter = false }) {
+  const { user: sharedUser } = useAuth();
   // =====================================================
   // STATE VARIABLES
   // =====================================================
@@ -84,28 +86,13 @@ const EMOJIS = {
   // =====================================================
 
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        const res = await fetch("/api/auth/me", {
-          credentials: "include",
-        });
-        if (res.ok) {
-          const user = await res.json();
-          setCurrentUsername(user.username);
-          setCurrentUser(user);
-          console.log("[MEMEBOX] ✅ Logged in as:", user.username);
-        } else if (res.status === 401) {
-          setCurrentUsername("DemoUser");
-          setCurrentUser(null);
-        }
-      } catch (error) {
-        setCurrentUsername("DemoUser");
-        setCurrentUser(null);
-      }
-    };
-
-    checkAuthStatus();
-  }, []);
+    setCurrentUsername(sharedUser?.username || "DemoUser");
+    setCurrentUser(sharedUser);
+    if (sharedUser) {
+      // TURN ON WHEN YOU NEED TO DEBUG: identify the authenticated user inside each MemeBox instance.
+      // console.log("[MEMEBOX] ✅ Logged in as:", sharedUser.username);
+    }
+  }, [sharedUser]);
 
   useEffect(() => {
     if (!showExternalUploadButton) return;
@@ -242,7 +229,8 @@ const EMOJIS = {
   useEffect(() => {
    const fetchPostsFromDatabase = async () => {
      try {
-       console.log("[MEMEBOX] Fetching posts from database...");
+       // TURN ON WHEN YOU NEED TO DEBUG: each mounted MemeBox fetches these post feeds.
+       // console.log("[MEMEBOX] Fetching posts from database...");
 
        const [viralRes, userSubmittedRes] = await Promise.all([
          fetch("/api/memes/posts/viral", { credentials: "include" }),  // ✅ ADD credentials
@@ -254,8 +242,9 @@ const EMOJIS = {
          ? await userSubmittedRes.json()
          : [];
 
-       console.log("[MEMEBOX] ✅ Fetched", viralPosts.length, "viral posts");
-       console.log("[MEMEBOX] ✅ Fetched", userSubmittedPosts.length, "user posts");
+       // TURN ON WHEN YOU NEED TO DEBUG: report how many posts each MemeBox fetch receives.
+       // console.log("[MEMEBOX] ✅ Fetched", viralPosts.length, "viral posts");
+       // console.log("[MEMEBOX] ✅ Fetched", userSubmittedPosts.length, "user posts");
 
        const allDbPosts = postSource === "user-submitted"
          ? userSubmittedPosts
@@ -287,7 +276,8 @@ const EMOJIS = {
 }));
                }
              } catch (err) {
-               console.log("[MEMEBOX] Error fetching comments for post", post.id);
+               // TURN ON WHEN YOU NEED TO DEBUG: identify post comment requests that fail.
+               // console.log("[MEMEBOX] Error fetching comments for post", post.id);
              }
 
              return {
@@ -307,14 +297,17 @@ const EMOJIS = {
 
          setAllPosts(formattedPosts);
        } else if (postSource === "all") {
-         console.log("[MEMEBOX] No posts in database, using sample posts");
+         // TURN ON WHEN YOU NEED TO DEBUG: identify when sample posts replace an empty feed.
+         // console.log("[MEMEBOX] No posts in database, using sample posts");
          setAllPosts(samplePosts);
        } else {
-         console.log("[MEMEBOX] No user-submitted posts available");
+         // TURN ON WHEN YOU NEED TO DEBUG: identify an empty user-submitted feed.
+         // console.log("[MEMEBOX] No user-submitted posts available");
          setAllPosts(userSubmittedSamplePosts);
        }
      } catch (error) {
-       console.error("[MEMEBOX] Error fetching posts:", error);
+       // TURN ON WHEN YOU NEED TO DEBUG: report failed MemeBox feed requests.
+       // console.error("[MEMEBOX] Error fetching posts:", error);
       setAllPosts(postSource === "all" ? samplePosts : userSubmittedSamplePosts);
      }
    };

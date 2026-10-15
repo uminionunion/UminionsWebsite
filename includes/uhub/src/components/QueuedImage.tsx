@@ -6,6 +6,8 @@ type QueuedImageProps = Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src'> &
   queueExempt?: boolean;
   queuePriority?: number;
   fallbackSrc?: string;
+  retainInCache?: boolean;
+  keepPreviousWhileLoading?: boolean;
   onQueueError?: (error: Error) => void;
 };
 
@@ -14,6 +16,8 @@ const QueuedImage: React.FC<QueuedImageProps> = ({
   queueExempt = false,
   queuePriority = IMAGE_LOAD_PRIORITY.normal,
   fallbackSrc,
+  retainInCache = false,
+  keepPreviousWhileLoading = false,
   onQueueError,
   className,
   ...imageProps
@@ -27,7 +31,7 @@ const QueuedImage: React.FC<QueuedImageProps> = ({
 
   useEffect(() => {
     const currentVersion = ++requestVersion.current;
-    setReadySrc(null);
+    if (!keepPreviousWhileLoading) setReadySrc(null);
     setHasLoadError(false);
 
     if (isExempt) {
@@ -35,7 +39,7 @@ const QueuedImage: React.FC<QueuedImageProps> = ({
       return;
     }
 
-    preloadQueuedImage(src, queuePriority)
+    preloadQueuedImage(src, queuePriority, retainInCache)
       .then(() => {
         if (requestVersion.current === currentVersion) setReadySrc(src);
       })
@@ -53,7 +57,7 @@ const QueuedImage: React.FC<QueuedImageProps> = ({
         setHasLoadError(true);
         onQueueErrorRef.current?.(error);
       });
-  }, [fallbackSrc, isExempt, queuePriority, src]);
+  }, [fallbackSrc, isExempt, keepPreviousWhileLoading, queuePriority, retainInCache, src]);
 
   if (readySrc) return <img {...imageProps} className={className} src={readySrc} />;
   if (hasLoadError) {

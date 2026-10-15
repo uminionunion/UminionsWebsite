@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
 import QueuedImage from '../../components/QueuedImage';
-import { IMAGE_LOAD_PRIORITY } from '../../lib/image-load-queue';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface BroadcastItem {
@@ -32,7 +31,7 @@ export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   const [isReordering, setIsReordering] = useState(false);
   const itemsPerPage = visibleItemCount;
-  const gridColumns = visibleItemCount === 9 ? 3 : visibleItemCount === 8 ? 2 : 1;
+  const gridColumns = 2;
   const totalPages = Math.ceil(items.length / itemsPerPage);
 
   React.useEffect(() => {
@@ -161,16 +160,15 @@ export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({
             title={item.title}
           >
             {/* NEW: Wrapper div instead of <a> tag for better control */}
-            <div className="h-32 w-32 rounded-md overflow-hidden bg-background border relative">
+            <div className="aspect-square w-full rounded-md overflow-hidden bg-background border relative">
               <QueuedImage
                 src={item.imageUrl}
                 alt={item.title}
                 className="h-full w-full object-cover cursor-pointer"
                 fallbackSrc="https://via.placeholder.com/128?text=Image"
-                queuePriority={IMAGE_LOAD_PRIORITY.carousel}
                 onClick={(e) => handleImageClick(e, item)}
                 onQueueError={() => {
-                  // TURN ON WHEN YOU NEED TO DEBUG: report carousel image and fallback failures.
+                  // TURN ON WHEN YOU NEED TO DEBUG: report carousel images that fail along with their fallback.
                   // console.error('[CAROUSEL] Image and fallback failed:', item.imageUrl);
                 }}
               />

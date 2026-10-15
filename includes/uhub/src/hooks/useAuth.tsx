@@ -44,7 +44,8 @@ function ensureMeFetched() {
     .then((response) => (response.ok ? response.json() : null))
     .then((userData) => setState({ user: userData, isLoading: false }))
     .catch((error) => {
-      console.error('Failed to fetch user', error);
+      // TURN ON WHEN YOU NEED TO DEBUG: report network failures from the shared auth check.
+      // console.error('Failed to fetch user', error);
       setState({ isLoading: false });
     });
 }

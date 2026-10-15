@@ -16,10 +16,18 @@ const getString = (val: any): string => {
   return String(val || '');
 };
 
-const normalizeSlot = (slot: any): 'left' | 'right' | null => {
+type CarouselSlot = 'left' | 'left-top' | 'right' | 'cover' | 'bottom';
+
+const normalizeSlot = (slot: any): CarouselSlot | null => {
   const value = getString(slot);
-  return value === 'left' || value === 'right' ? value : null;
+  return value === 'left' || value === 'left-top' || value === 'right' || value === 'cover' || value === 'bottom' ? value : null;
 };
+
+// The default cover image and the default bottom image/caption occupy the remaining slots of 10.
+const getCarouselLimit = (slot: CarouselSlot) => slot === 'cover' ? 9 : slot === 'bottom' ? 8 : 10;
+
+const isSafeWebsite = (value: string) => !value || /^(https?:\/\/|www\.)/i.test(value);
+const normalizeWebsite = (value: string) => /^www\./i.test(value) ? `https://${value}` : value;
 
 const getIndexedBodyValue = (body: any, name: string, index: number) => {
   const direct = body?.[`${name}_${index}`];
@@ -68,37 +76,167 @@ router.get('/api/carousels/:slot/items', async (req: Request, res: Response) => 
 
 router.post('/api/carousels/:slot/items/replace', requireAuth, async (req: Request, res: Response) => {
   try {
-    if ((req as any).user?.userId !== 1) return res.status(403).json({ error: 'Admin only' });
+    const user = await db
+      .selectFrom('users')
+      .select('is_high_high_high_admin')
+      .where('id', '=', req.user!.userId)
+      .executeTakeFirst();
+    if (user?.is_high_high_high_admin !== 1) return res.status(403).json({ error: 'High-high-high admin only' });
     const slot = normalizeSlot(req.params.slot);
     if (!slot) return res.status(400).json({ error: 'Invalid carousel slot' });
-    const files = getUploadedFiles(req).slice(0, 100);
-    if (!files.length) return res.status(400).json({ error: 'Add at least one image' });
+    const files = getUploadedFiles(req);
+    let requestedItems: any[] | null = null;
+    if (req.body?.items !== undefined) {
+      try {
+        const parsedItems: unknown = JSON.parse(getString(req.body.items));
+        if (!Array.isArray(parsedItems)) return res.status(400).json({ error: 'Carousel items must be a list' });
+        requestedItems = parsedItems;
+      } catch {
+        return res.status(400).json({ error: 'Carousel items are invalid' });
+      }
+    }
+    const limit = getCarouselLimit(slot);
+    if (requestedItems !== null && (!Array.isArray(requestedItems) || requestedItems.length > limit)) {
+      return res.status(400).json({ error: `This carousel can contain up to ${limit} added items` });
+    }
+    if (files.length > limit) return res.status(400).json({ error: `This carousel can contain up to ${limit} added items` });
+    if (!requestedItems && (!files.length || files.length > limit)) {
+      return res.status(400).json({ error: `Add between 1 and ${limit} images` });
+    }
 
     const carouselDirectory = path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'uploads', 'managed-carousels', slot);
     fs.mkdirSync(carouselDirectory, { recursive: true });
     const allowedExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
-    const values = [];
-    for (let index = 0; index < files.length; index += 1) {
-      const file = files[index];
-      const extension = path.extname(file.name).toLowerCase();
-      if (!allowedExtensions.has(extension)) return res.status(400).json({ error: 'Only image uploads are allowed' });
-      const fileName = `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 10)}${extension}`;
-      await file.mv(path.join(carouselDirectory, fileName));
-      values.push({
-        slot,
-        image_url: `/api/uploads/managed-carousels/${slot}/${fileName}`,
-        title: getIndexedBodyValue(req.body, 'title', index) || null,
-        description: getIndexedBodyValue(req.body, 'description', index) || null,
-        price: getIndexedBodyValue(req.body, 'price', index) || null,
-        website: getIndexedBodyValue(req.body, 'website', index) || null,
-        display_order: index,
-      });
+    const existingItems = await db
+      .selectFrom('UhubManagedCarouselItems')
+      .selectAll()
+      .where('slot', '=', slot)
+      .execute();
+    if (requestedItems?.some(item => !item || typeof item !== 'object')) {
+      return res.status(400).json({ error: 'Carousel items are invalid' });
+    }
+    if (requestedItems) {
+      for (const item of requestedItems) {
+        if (item.uploadIndex !== null && item.uploadIndex !== undefined) {
+          const uploadIndex = Number(item.uploadIndex);
+          if (!Number.isInteger(uploadIndex) || uploadIndex < 0 || uploadIndex >= files.length) {
+            return res.status(400).json({ error: 'Carousel image upload is missing' });
+          }
+          if (!allowedExtensions.has(path.extname(files[uploadIndex].name).toLowerCase())) {
+            return res.status(400).json({ error: 'Only image uploads are allowed' });
+          }
+        }
+      }
+    } else if (files.some(file => !allowedExtensions.has(path.extname(file.name).toLowerCase()))) {
+      return res.status(400).json({ error: 'Only image uploads are allowed' });
+    }
+    const values: Array<{
+      id?: number;
+      slot: CarouselSlot;
+      image_url: string;
+      title: string | null;
+      description: string | null;
+      price: string | null;
+      website: string | null;
+      display_order: number;
+    }> = [];
+    const writtenFiles: string[] = [];
+
+    if (requestedItems) {
+      const existingById = new Map(existingItems.map(item => [item.id, item]));
+      for (let index = 0; index < requestedItems.length; index += 1) {
+        const item = requestedItems[index];
+        const existing = item.id === null || item.id === undefined ? undefined : existingById.get(Number(item.id));
+        if (item.id !== null && item.id !== undefined && !existing) {
+          return res.status(400).json({ error: 'Carousel item does not belong to this carousel' });
+        }
+        let imageUrl = existing?.image_url;
+        if (item.uploadIndex !== null && item.uploadIndex !== undefined) {
+          const uploadIndex = Number(item.uploadIndex);
+          const file = files[uploadIndex];
+          if (!Number.isInteger(uploadIndex) || !file) {
+            return res.status(400).json({ error: 'Carousel image upload is missing' });
+          }
+          const extension = path.extname(file.name).toLowerCase();
+          const fileName = `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 10)}${extension}`;
+          const filePath = path.join(carouselDirectory, fileName);
+          await file.mv(filePath);
+          writtenFiles.push(filePath);
+          imageUrl = `/api/uploads/managed-carousels/${slot}/${fileName}`;
+        }
+        const title = getString(item.title).trim();
+        const website = getString(item.website).trim();
+        if (!isSafeWebsite(website)) return res.status(400).json({ error: 'Links must start with http://, https:// or www.' });
+        // Bottom carousel entries may be caption-only; the image column stores an empty string for them.
+        if (!imageUrl && !(slot === 'bottom' && title)) {
+          return res.status(400).json({ error: slot === 'bottom' ? 'Each entry needs an image or a caption' : 'Each carousel item must have an image' });
+        }
+        values.push({
+          ...(existing ? { id: existing.id } : {}),
+          slot,
+          image_url: imageUrl || '',
+          title: title || null,
+          description: getString(item.description).trim() || null,
+          price: getString(item.price).trim() || null,
+          website: normalizeWebsite(website) || null,
+          display_order: index,
+        });
+      }
+    } else {
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        const extension = path.extname(file.name).toLowerCase();
+        const fileName = `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 10)}${extension}`;
+        const filePath = path.join(carouselDirectory, fileName);
+        await file.mv(filePath);
+        writtenFiles.push(filePath);
+        values.push({
+          slot,
+          image_url: `/api/uploads/managed-carousels/${slot}/${fileName}`,
+          title: getIndexedBodyValue(req.body, 'title', index) || null,
+          description: getIndexedBodyValue(req.body, 'description', index) || null,
+          price: getIndexedBodyValue(req.body, 'price', index) || null,
+          website: getIndexedBodyValue(req.body, 'website', index) || null,
+          display_order: index,
+        });
+      }
     }
 
-    await db.transaction().execute(async (trx) => {
-      await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).execute();
-      await trx.insertInto('UhubManagedCarouselItems').values(values).execute();
-    });
+    try {
+      await db.transaction().execute(async (trx) => {
+        for (const value of values) {
+          if (value.id !== undefined) {
+            const { id, ...update } = value;
+            await trx.updateTable('UhubManagedCarouselItems').set(update).where('id', '=', id).where('slot', '=', slot).execute();
+          } else {
+            const { id: _unusedId, ...insert } = value;
+            await trx.insertInto('UhubManagedCarouselItems').values(insert).execute();
+          }
+        }
+        const retainedIds = values.flatMap(value => value.id === undefined ? [] : [value.id]);
+        if (retainedIds.length) {
+          await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).where('id', 'not in', retainedIds).execute();
+        } else {
+          await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).execute();
+        }
+      });
+    } catch (error) {
+      for (const filePath of writtenFiles) {
+        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      }
+      throw error;
+    }
+
+    const oldImageUrls = existingItems
+      .filter(item => !values.some(value => value.id === item.id && value.image_url === item.image_url))
+      .map(item => item.image_url);
+    for (const imageUrl of oldImageUrls) {
+      const managedPrefix = `/api/uploads/managed-carousels/${slot}/`;
+      const fileName = path.basename(imageUrl);
+      if (!imageUrl.startsWith(managedPrefix) || imageUrl !== `${managedPrefix}${fileName}`) continue;
+      const filePath = path.join(carouselDirectory, fileName);
+      if (path.dirname(filePath) === carouselDirectory && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
     res.status(201).json({ items: values });
   } catch (error) {
     console.error('[CAROUSELS] Error replacing carousel items:', error);

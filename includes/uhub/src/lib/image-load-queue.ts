@@ -20,14 +20,29 @@ const queue: QueuedImageRequest[] = [];
 const queuedRequests = new Map<string, QueuedImageRequest>();
 const imagePromises = new Map<string, Promise<HTMLImageElement>>();
 const decodedImageCache = new Map<string, { image: HTMLImageElement; bytes: number }>();
+const retainedImages = new Map<string, number>();
 let activeLoads = 0;
 let decodedCacheBytes = 0;
 let nextRequestSequence = 0;
 let queueScheduled = false;
 
+export function retainQueuedImages(sources: string[]): () => void {
+  const uniqueSources = [...new Set(sources.filter(Boolean))];
+  uniqueSources.forEach(src => retainedImages.set(src, (retainedImages.get(src) || 0) + 1));
+  void Promise.allSettled(uniqueSources.map(src => preloadQueuedImage(src, IMAGE_LOAD_PRIORITY.carousel)));
+  return () => {
+    uniqueSources.forEach(src => {
+      const count = retainedImages.get(src) || 0;
+      if (count <= 1) retainedImages.delete(src);
+      else retainedImages.set(src, count - 1);
+    });
+    trimDecodedCache();
+  };
+}
+
 function trimDecodedCache() {
   while (decodedImageCache.size > MAX_CACHED_IMAGES || decodedCacheBytes > MAX_CACHED_IMAGE_BYTES) {
-    const oldestSrc = decodedImageCache.keys().next().value;
+    const oldestSrc = [...decodedImageCache.keys()].find(src => !retainedImages.has(src));
     if (!oldestSrc) return;
     const cachedImage = decodedImageCache.get(oldestSrc);
     if (cachedImage) decodedCacheBytes -= cachedImage.bytes;
@@ -86,8 +101,10 @@ function scheduleQueueProcessing() {
 export function preloadQueuedImage(
   src: string,
   priority: number = IMAGE_LOAD_PRIORITY.normal,
+  retain = false,
 ): Promise<HTMLImageElement> {
   if (!src) return Promise.reject(new Error('An image URL is required.'));
+  if (retain) retainedImages.set(src, Math.max(1, retainedImages.get(src) || 0));
 
   const cachedImage = decodedImageCache.get(src);
   if (cachedImage) {
