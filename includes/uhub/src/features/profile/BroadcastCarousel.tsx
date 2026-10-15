@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
+import QueuedImage from '../../components/QueuedImage';
+import { IMAGE_LOAD_PRIORITY } from '../../lib/image-load-queue';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface BroadcastItem {
@@ -160,13 +162,16 @@ export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({
           >
             {/* NEW: Wrapper div instead of <a> tag for better control */}
             <div className="h-32 w-32 rounded-md overflow-hidden bg-background border relative">
-              <img
+              <QueuedImage
                 src={item.imageUrl}
                 alt={item.title}
                 className="h-full w-full object-cover cursor-pointer"
+                fallbackSrc="https://via.placeholder.com/128?text=Image"
+                queuePriority={IMAGE_LOAD_PRIORITY.carousel}
                 onClick={(e) => handleImageClick(e, item)}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/128?text=Image';
+                onQueueError={() => {
+                  // TURN ON WHEN YOU NEED TO DEBUG: report carousel image and fallback failures.
+                  // console.error('[CAROUSEL] Image and fallback failed:', item.imageUrl);
                 }}
               />
               

@@ -258,8 +258,8 @@ export function setupChat(io) {
                         .selectFrom('messages')
                         .leftJoin('users', 'users.id', 'messages.user_id')
                         .where('room', '=', room)
-                        .orderBy('id', 'desc')
-                        .limit(50)
+                        .orderBy('messages.id', 'desc')
+                        .limit(4)
                         .select([
                         'messages.id',
                         'messages.content',
@@ -270,7 +270,7 @@ export function setupChat(io) {
                     ])
                         .execute(),
                 ]);
-                const messages = messagesDesc.reverse();
+                const messages = messagesDesc.slice(0, 3).reverse();
                 const formattedMessages = messages.map(msg => {
                     let displayUsername;
                     if (msg.is_anonymous || !msg.username) {
@@ -287,7 +287,7 @@ export function setupChat(io) {
                         timestamp: msg.timestamp,
                     };
                 });
-                socket.emit('loadMessages', { messages: formattedMessages, hasMore: Number(count) > formattedMessages.length });
+                socket.emit('loadMessages', { messages: formattedMessages, hasMore: Number(count) > 3 });
             }
             catch (error) {
                 console.error(`Error loading messages for room ${room}:`, error);

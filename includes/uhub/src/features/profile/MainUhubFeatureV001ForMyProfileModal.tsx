@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button } from '../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Users, Megaphone, Code, Settings, Facebook, Youtube, Twitch, Instagram, Github, MessageSquare, ShoppingCart, Eye, ChevronLeft, ChevronRight, Plus, Minus, Search, Play, X, Mountain, Home, ChevronDown, ChevronUp, Trash2, Anvil, Pencil } from 'lucide-react';
@@ -28,6 +28,8 @@ import { renderTheMemeBox, unmountTheMemeBox } from '@/TheMemeBoxRenderer';
 import { additionalHardCodedCustomButtonPages } from './additional-hard-coded-custom-button-pages';
 import { TheFoodPantryFeature } from '../../../../pantry-finder/src/pages/pantry-feature/the-food-pantry-feature';
 import { pantryApiUrl } from '@/lib/api';
+import QueuedImage from '../../components/QueuedImage';
+import { IMAGE_LOAD_PRIORITY } from '../../lib/image-load-queue';
 
 
 
@@ -182,7 +184,7 @@ const UnionPoliticCandidates = ({ filtersOpen }: { filtersOpen: boolean }) => {
     </div>}
     <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto">
       {visibleCandidates.map(candidate => <article key={candidate.id} className="border rounded-md p-2 relative min-h-24">
-        <div className="flex gap-2"><div className="h-16 w-16 shrink-0 bg-gray-800">{candidate.image_url && <img src={candidate.image_url} alt={candidate.name} className="h-full w-full object-cover" />}</div><div className="min-w-0"><h4 className="font-semibold truncate">{candidate.name}</h4><p className="text-xs text-muted-foreground">{[candidate.country, candidate.state, candidate.office].filter(Boolean).join(' | ')}</p>{candidate.website && <a href={candidate.website} target="_blank" rel="noreferrer" className="text-xs text-orange-400 hover:underline break-all">Website</a>}</div></div>
+        <div className="flex gap-2"><div className="h-16 w-16 shrink-0 bg-gray-800">{candidate.image_url && <QueuedImage src={candidate.image_url} alt={candidate.name} className="h-full w-full object-cover" />}</div><div className="min-w-0"><h4 className="font-semibold truncate">{candidate.name}</h4><p className="text-xs text-muted-foreground">{[candidate.country, candidate.state, candidate.office].filter(Boolean).join(' | ')}</p>{candidate.website && <a href={candidate.website} target="_blank" rel="noreferrer" className="text-xs text-orange-400 hover:underline break-all">Website</a>}</div></div>
         {user?.id === candidate.user_id && <div className="absolute right-1 bottom-1 flex gap-1"><Button size="icon" variant="ghost" className="h-6 w-6" title="Edit candidate" onClick={() => setEditing(candidate)}><Pencil className="h-3 w-3" /></Button><Button size="icon" variant="ghost" className="h-6 w-6 text-red-400" title="Delete candidate" onClick={() => removeCandidate(candidate.id)}><Trash2 className="h-3 w-3" /></Button></div>}
         <span className="absolute bottom-1 right-1 text-xs text-muted-foreground pr-1">{candidate.username || 'Community'}</span>
       </article>)}
@@ -700,7 +702,11 @@ const RotatingUnionEventCard = () => {
   const activeFace = faces[index];
   return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeFace.url && window.open(activeFace.url, '_blank')}>
     <button type="button" className="uhub-event-arrow left" onClick={(event) => { event.stopPropagation(); setIndex(value => (value - 1 + faces.length) % faces.length); }}>‹</button>
-    <img src={activeFace.image} alt="Next Union Event" />
+    <QueuedImage
+      src={activeFace.image}
+      alt="Next Union Event"
+      queuePriority={IMAGE_LOAD_PRIORITY.carousel}
+    />
     <p>{activeFace.text}</p>
     <button type="button" className="uhub-event-arrow right" onClick={(event) => { event.stopPropagation(); setIndex(value => (value + 1) % faces.length); }}>›</button>
   </div>;
@@ -745,7 +751,11 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: 'left' | 'right
   const item = items[index] || fallbackItems[0];
   return <div className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
     <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + items.length) % items.length)}>‹</button>
-    <img src={item.image_url} alt={item.title || 'Carousel image'} />
+    <QueuedImage
+      src={item.image_url}
+      alt={item.title || 'Carousel image'}
+      queuePriority={IMAGE_LOAD_PRIORITY.carousel}
+    />
     <div className="uhub-header-product-overlay">
       {item.title && <span>{item.title}</span>}
       {item.description && <small>{item.description}</small>}
@@ -829,11 +839,6 @@ const BroadcastView = ({
   setIsBroadcastLeftCollapsed,
   isBroadcastCarouselCollapsed,
   setIsBroadcastCarouselCollapsed,
-  // NEW PROPS FOR MOBILE CHAT
-  activeChatModal,
-  onCloseChatModal,
-  MainUhubFeatureV001ForSisterUnionPages,
-  MainUhubFeatureV001ForModalColors,
 }) => {
   if (broadcastView === 'UnionRadio#15') return <UnionRadioPlayer />;
   if (broadcastView === 'Find-a-Pantry#13') return <PantryFinderBroadcastView />;
@@ -1136,19 +1141,6 @@ if (isMobile) {
         </button>
       )}
 
-      {/* BOTTOM: uHome-Hub Chat Modal (MOBILE ONLY) - NOW INTEGRATED INSIDE */}
-      {activeChatModal !== null && (
-        <div className="flex-shrink-0 flex flex-col w-full border-t border-gray-700 mt-4">
-          <MainUhubFeatureV001ForChatModal
-            isOpen={activeChatModal !== null}
-            onClose={onCloseChatModal}
-            pageName={MainUhubFeatureV001ForSisterUnionPages[activeChatModal - 1]}
-            backgroundColor={MainUhubFeatureV001ForModalColors[activeChatModal - 1]}
-            modalNumber={activeChatModal}
-          />
-        </div>
-      )}
-
       {/* SPACER for bottom padding */}
       <div className="h-8 flex-shrink-0" />
     </div>
@@ -1307,6 +1299,12 @@ interface QuadrantsModalProps {
   setAddProductModalOpen?: (open: boolean) => void;
   allProductsForAdmin?: Product[];
   everythingProducts?: Product[];
+  loadStoreProducts: (storeId: number) => void;
+  loadingStoreIds: Set<number>;
+  storeProductErrors: Record<number, string>;
+  loadEverythingProducts: () => void;
+  isLoadingEverythingProducts: boolean;
+  everythingProductsError: string;
   setEditingProduct: (product: any) => void;
   setEditProductModalOpen: (open: boolean) => void;
   setSelectedFriendForModal?: (friend: any) => void;
@@ -1338,6 +1336,12 @@ const QuadrantsModal: React.FC<QuadrantsModalProps> = ({
   setSelectedProduct,
   setAddProductModalOpen,
   everythingProducts = [],
+  loadStoreProducts,
+  loadingStoreIds,
+  storeProductErrors,
+  loadEverythingProducts,
+  isLoadingEverythingProducts,
+  everythingProductsError,
   setEditingProduct,
   setEditProductModalOpen,
   setSelectedFriendForModal,
@@ -1346,6 +1350,7 @@ const QuadrantsModal: React.FC<QuadrantsModalProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [myStoreView, setMyStoreView] = useState<'list' | 'add'>('list');
+
   
   // Calculate total pages needed
 const userStoresCount = userStoresData.length;
@@ -1380,7 +1385,21 @@ const buildStorePages = () => {
   return pages;
 };
 
-const storePages = buildStorePages();
+const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, userStoresCount, userStorePages]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (currentPage === 1) {
+      loadStoreProducts(0);
+      loadEverythingProducts();
+      return;
+    }
+    if (currentPage >= 2 && currentPage <= 9) {
+      storePages[currentPage - 1].forEach(store => {
+        if (store) loadStoreProducts(store.id);
+      });
+    }
+  }, [currentPage, isOpen, loadStoreProducts, loadEverythingProducts, storePages]);
 
   // Check if user is logged in (to be able see the 'add product' button; yes?' -12:18am on 2/3/26
   const canAddProducts = !!user;
@@ -1442,8 +1461,13 @@ const storePages = buildStorePages();
     <h3 className="font-bold">Union Store</h3>
   </div>
   <div className="union-store-scrollable" style={{ maxHeight: '380px', overflow: 'hidden', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-    {isLoadingProducts ? (
+    {loadingStoreIds.has(0) ? (
       <div className="text-center text-muted-foreground py-4">Loading products...</div>
+    ) : storeProductErrors[0] ? (
+      <div className="text-center text-red-400 py-4">
+        <p>Products could not be loaded.</p>
+        <Button size="sm" variant="outline" onClick={() => loadStoreProducts(0)}>Retry</Button>
+      </div>
     ) : mainStoreProducts.length > 0 ? (
       mainStoreProducts.map((p) => (
         <div 
@@ -1914,8 +1938,10 @@ const storePages = buildStorePages();
   <div className="flex-1 overflow-hidden">
     <EverythingProductsList
       products={allProducts}
-      isLoading={isLoadingProducts}
-      onProductView={onProductView}
+  isLoading={isLoadingEverythingProducts}
+  error={everythingProductsError}
+  onRetry={loadEverythingProducts}
+  onProductView={onProductView}
       onAddToCart={(product) => {
         // Handle add to cart for everything products
         console.log('Added to cart:', product);
@@ -2006,7 +2032,14 @@ const storePages = buildStorePages();
         {/* Store Products Grid */}
         <div className="store-products-scrollable flex-1 overflow-y-auto mb-3" style={{ maxHeight: '380px' }}>
           <div className="grid grid-cols-2 gap-2">
-            {storeProducts[store.number] && storeProducts[store.number].length > 0 ? (
+            {loadingStoreIds.has(store.number) ? (
+              <div className="col-span-2 text-center text-muted-foreground py-4 text-sm">Loading products...</div>
+            ) : storeProductErrors[store.number] ? (
+              <div className="col-span-2 text-center text-red-400 py-4 text-sm">
+                <p>Products could not be loaded.</p>
+                <Button size="sm" variant="outline" onClick={() => loadStoreProducts(store.number)}>Retry</Button>
+              </div>
+            ) : storeProducts[store.number] && storeProducts[store.number].length > 0 ? (
               storeProducts[store.number].map((product) => (
                 <div
                   key={product.id}
@@ -2543,6 +2576,10 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   }, [customizableButtonPage]);
   const [activeChatModal, setActiveChatModal] = useState<number | null>(null);
   const [storeProducts, setStoreProducts] = useState<{ [key: number]: Product[] }>({});
+  const [loadingStoreIds, setLoadingStoreIds] = useState<Set<number>>(new Set());
+  const [storeProductErrors, setStoreProductErrors] = useState<{ [key: number]: string }>({});
+  const inFlightStoreLoads = useRef(new Set<number>());
+  const loadedStoreIds = useRef(new Set<number>());
   const [mainStoreProducts, setMainStoreProducts] = useState<Product[]>([]);
   const [userStoreProducts, setUserStoreProducts] = useState<Product[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
@@ -2589,6 +2626,10 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   // const [everythingProducts, setEverythingProducts] = useState<Product[]>([]);
   const [allProductsForAdmin, setAllProductsForAdmin] = useState<Product[]>([]);
   const [everythingProducts, setEverythingProducts] = useState<Product[]>([]);
+  const [isLoadingEverythingProducts, setIsLoadingEverythingProducts] = useState(false);
+  const [everythingProductsError, setEverythingProductsError] = useState('');
+  const inFlightEverythingLoad = useRef(false);
+  const hasLoadedEverything = useRef(false);
   const [userStoresData, setUserStoresData] = useState<any[]>([]); 
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [isEditProductModalOpen, setEditProductModalOpen] = useState(false);
@@ -2609,6 +2650,60 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [isRightSectionCollapsed, setIsRightSectionCollapsed] = useState(window.innerWidth < 768);
   const [leftDividerDragging, setLeftDividerDragging] = useState(false);
   const [rightDividerDragging, setRightDividerDragging] = useState(false);
+  const loadStoreProducts = useCallback(async (storeId: number) => {
+    if (loadedStoreIds.current.has(storeId) || inFlightStoreLoads.current.has(storeId)) return;
+
+    inFlightStoreLoads.current.add(storeId);
+    setLoadingStoreIds(previous => new Set(previous).add(storeId));
+    setStoreProductErrors(previous => {
+      const next = { ...previous };
+      delete next[storeId];
+      return next;
+    });
+    try {
+      const response = await fetch(`/api/products/store/${storeId}`);
+      if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+      const data: unknown = await response.json();
+      if (!Array.isArray(data)) throw new Error('The server returned an invalid product list.');
+      setStoreProducts(previous => ({ ...previous, [storeId]: data as Product[] }));
+      if (storeId === 0) setMainStoreProducts(data as Product[]);
+      loadedStoreIds.current.add(storeId);
+    } catch (error) {
+      setStoreProductErrors(previous => ({
+        ...previous,
+        [storeId]: error instanceof Error ? error.message : 'Unknown error',
+      }));
+    } finally {
+      inFlightStoreLoads.current.delete(storeId);
+      setLoadingStoreIds(previous => {
+        const next = new Set(previous);
+        next.delete(storeId);
+        return next;
+      });
+    }
+  }, []);
+
+  const loadEverythingProducts = useCallback(async () => {
+    if (hasLoadedEverything.current || inFlightEverythingLoad.current) return;
+
+    inFlightEverythingLoad.current = true;
+    setIsLoadingEverythingProducts(true);
+    setEverythingProductsError('');
+    try {
+      const response = await fetch('/api/products/everything/all');
+      if (!response.ok) throw new Error(`Request failed with status ${response.status}`);
+      const data: unknown = await response.json();
+      if (!Array.isArray(data)) throw new Error('The server returned an invalid product list.');
+      setEverythingProducts(data as Product[]);
+      hasLoadedEverything.current = true;
+    } catch (error) {
+      setEverythingProductsError(error instanceof Error ? error.message : 'Unknown error');
+    } finally {
+      inFlightEverythingLoad.current = false;
+      setIsLoadingEverythingProducts(false);
+    }
+  }, []);
+
   const broadcasts = {
       'UnionNews#14': { memeBoxId: 'TheReactMemeImplementationConnection001', title: 'UnionNews#14 & GEMMMS#25', creator: 'GEMMMS#25', subtitle: 'Got Memes? Share Memes:', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.15-Made-on-NC-JPEG.png', extraImages: ['https://page001.uminion.com/StoreProductsAndImagery/TapestryVersion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/Tshirtbatchversion001.png', 'https://page001.uminion.com/StoreProductsAndImagery/UkraineLogo001.png'], description: 'Welcome to the Uminion Union! We have Rallies every 24th of the month, stores built by unionFolk, chats, news, voting, teaching ppl how to code (for free) & we even offer an ad-free- meme section below!', website: 'https://github.com/uminionunion/UminionsWebsite/discussions/13' },
       'UnionRadio#15': { title: 'Broadcasts- UnionRadio#15', creator: 'StorytellingSalem', subtitle: 'Under Construction- Union Radio #15.', logo: 'https://page001.uminion.com/wp-content/uploads/2025/12/iArt06505.16-Made-on-NC-JPEG.png', extraImages: [], description: 'Union Radio #15 is presently underConstruction; & is expected to be live again, along with when we launch v3!', website: 'https://uminion.com' },
@@ -2886,17 +2981,11 @@ useEffect(() => {
     }
   }, [user, isOpen]);
 
- // Fetch database products for all stores
+ // Load fixed product lists only when the store quadrants are opened.
 useEffect(() => {
-  const fetchAllProducts = async () => {
+  const fetchVisibleProductLists = async () => {
     setIsLoadingProducts(true);
     try {
-      // Fetch main store products (store #0)
-      const mainRes = await fetch('/api/products/store/0');
-      const mainData = await mainRes.json();
-      setMainStoreProducts(Array.isArray(mainData) ? mainData : []);
-
-      // Fetch current user's products if logged in
       if (user && user.id) {
         try {
           const userRes = await fetch(`/api/products/user/${user.id}`);
@@ -2925,46 +3014,42 @@ useEffect(() => {
           }
         }
       }
-
-      // Fetch products for each store #01-#30
-      const storeProductsMap: { [key: number]: Product[] } = {};
-      for (let storeNum = 1; storeNum <= 30; storeNum++) {
-        try {
-          const storeRes = await fetch(`/api/products/store/${storeNum}`);
-          const storeData = await storeRes.json();
-          storeProductsMap[storeNum] = Array.isArray(storeData) ? storeData : [];
-          console.log(`[PRODUCTS] Store ${storeNum} has ${storeProductsMap[storeNum].length} products`);
-        } catch (error) {
-          console.error(`Error fetching products for store ${storeNum}:`, error);
-          storeProductsMap[storeNum] = [];
-        }
-      }
-      setStoreProducts(storeProductsMap);
-
-      // FETCH EVERYTHING PRODUCTS - ALL USERS, ALL STORES
-      try {
-        const everythingRes = await fetch('/api/products/everything/all');
-        const everythingData = await everythingRes.json();
-        setEverythingProducts(Array.isArray(everythingData) ? everythingData : []);
-        console.log(`[PRODUCTS] Fetched ${everythingData.length} products for Everything store`);
-      } catch (error) {
-        console.error('Error fetching everything products:', error);
-        setEverythingProducts([]);
-      }
-
     } catch (error) {
-      console.error('Error fetching products:', error);
-      setMainStoreProducts([]);
-      setUserStoreProducts([]);
+      // TURN ON WHEN YOU NEED TO DEBUG: inspect initial Union Store product-list failures.
+      // console.error('[PRODUCTS] Failed to load initial Union Store products:', error);
     } finally {
       setIsLoadingProducts(false);
     }
   };
 
-  if (isOpen) {
-    fetchAllProducts();
+  if (isOpen && isQuadrantsModalOpen) {
+    void fetchVisibleProductLists();
   }
-}, [user, isOpen]);
+}, [user, isOpen, isQuadrantsModalOpen]);
+
+// Stores #01-#30 are requested only when selected; this is the former startup fan-out for diagnostics.
+// TURN ON WHEN YOU NEED TO DEBUG: temporarily run this loop to inspect the old startup requests,
+// then remove it again so opening the profile does not issue 30 additional product requests.
+// for (let storeNum = 1; storeNum <= 30; storeNum += 1) {
+//   fetch(`/api/products/store/${storeNum}`)
+//     .then(response => response.json())
+//     .then(data => console.log(`[PRODUCTS] Store ${storeNum} returned ${Array.isArray(data) ? data.length : 'invalid'} products`))
+//     .catch(error => console.error(`[PRODUCTS] Debug request failed for store ${storeNum}:`, error));
+// }
+// fetch('/api/products/everything/all')
+//   .then(response => response.json())
+//   .then(data => console.log(`[PRODUCTS] Everything returned ${Array.isArray(data) ? data.length : 'invalid'} products`))
+//   .catch(error => console.error('[PRODUCTS] Debug request failed for Everything:', error));
+useEffect(() => {
+  if (isOpen && centerRightView.number === 20) {
+    void loadStoreProducts(0);
+  } else if (isOpen && centerRightView.number !== 19) {
+    void loadStoreProducts(centerRightView.id);
+  }
+}, [centerRightView, isOpen, loadStoreProducts]);
+
+// TURN ON WHEN YOU NEED TO DEBUG: the former startup fan-out fetched each store #01-#30 and Everything.
+// Re-enable explicit requests inside the store-selection and Everything-view handlers only to inspect those lists.
 
   
 
@@ -3062,10 +3147,10 @@ useEffect(() => {
       }
     };
 
-    if (isOpen) {
+    if (isOpen && isQuadrantsModalOpen) {
       fetchUserStoresData();
     }
-  }, [isOpen]);
+  }, [isOpen, isQuadrantsModalOpen]);
 
 
 // Initialize Socket.IO to listen for unread notifications globally
@@ -3392,8 +3477,13 @@ const resetRightSection = () => {
         </a>
       </div>
       <div className="space-y-2">
-        {isLoadingProducts ? (
+        {loadingStoreIds.has(0) ? (
           <div className="text-center text-muted-foreground py-4">Loading products...</div>
+        ) : storeProductErrors[0] ? (
+          <div className="text-center text-red-400 py-4">
+            <p>Products could not be loaded.</p>
+            <Button size="sm" variant="outline" onClick={() => loadStoreProducts(0)}>Retry</Button>
+          </div>
         ) : mainStoreProducts.length > 0 ? (
           mainStoreProducts.map((p, i) => (
             <div 
@@ -3479,7 +3569,14 @@ const resetRightSection = () => {
         background: #ea580c;
       }
     `}</style>
-    {everythingProducts.length > 0 ? (
+    {isLoadingEverythingProducts ? (
+      <div className="text-center text-muted-foreground py-8">Loading products...</div>
+    ) : everythingProductsError ? (
+      <div className="text-center text-red-400 py-8">
+        <p>Products could not be loaded.</p>
+        <Button size="sm" variant="outline" onClick={() => void loadEverythingProducts()}>Retry</Button>
+      </div>
+    ) : everythingProducts.length > 0 ? (
       <div className="grid grid-cols-2 gap-2">
         {getRandomizedProducts(everythingProducts).map((product) => (
           <div
@@ -3529,7 +3626,9 @@ const resetRightSection = () => {
       </div>
     ) : (
       <div className="text-center text-muted-foreground text-sm py-8">
-        No products yet
+        {!hasLoadedEverything.current ? (
+          <Button size="sm" variant="outline" onClick={() => void loadEverythingProducts()}>Load Everything products</Button>
+        ) : 'No products yet'}
       </div>
     )}
   </div>
@@ -3552,8 +3651,13 @@ const resetRightSection = () => {
       </a>
     </div>
     <div className="flex-1 overflow-y-auto space-y-2 mb-4">
-      {isLoadingProducts ? (
+      {loadingStoreIds.has(centerRightView.number) ? (
         <div className="text-center text-muted-foreground py-4">Loading products...</div>
+      ) : storeProductErrors[centerRightView.number] ? (
+        <div className="text-center text-red-400 py-4">
+          <p>Products could not be loaded.</p>
+          <Button size="sm" variant="outline" onClick={() => loadStoreProducts(centerRightView.id)}>Retry</Button>
+        </div>
       ) : (storeProducts[centerRightView.number] && storeProducts[centerRightView.number].length > 0) ? (
         storeProducts[centerRightView.number].map((p, i) => (
           <div 
@@ -3777,10 +3881,6 @@ return (
   setIsBroadcastLeftCollapsed={setIsBroadcastLeftCollapsed}
   isBroadcastCarouselCollapsed={isBroadcastCarouselCollapsed}
   setIsBroadcastCarouselCollapsed={setIsBroadcastCarouselCollapsed}
-  activeChatModal={activeChatModal}
-  onCloseChatModal={handleCloseChatModal}
-  MainUhubFeatureV001ForSisterUnionPages={MainUhubFeatureV001ForSisterUnionPages}
-  MainUhubFeatureV001ForModalColors={MainUhubFeatureV001ForModalColors}
 /> : <p>Broadcast not found.</p>)
     }
   </>
@@ -4064,7 +4164,13 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
              }} disabled={!user}><Home className="h-4 w-4 mb-1" /> Home</Button>
            </div>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative overflow-hidden" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: 'none' }}>
-             <img src="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg" alt="uHub cover" className="absolute inset-0 h-full w-full object-cover" style={{ opacity: areProfileSurfacesOpaque ? 1 : 0.5 }} />
+             <QueuedImage
+               src="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"
+               alt="uHub cover"
+               className="absolute inset-0 h-full w-full object-cover"
+               style={{ opacity: areProfileSurfacesOpaque ? 1 : 0.5 }}
+               queuePriority={IMAGE_LOAD_PRIORITY.critical}
+             />
              {user && <Button className="absolute bottom-2 right-2" size="sm">Change Cover</Button>}
            </div>
 
@@ -4419,7 +4525,12 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 <div id="MainUhubFeatureV001ForMyProfileSettingsTopRightSection" className="md:w-1/5 flex justify-center md:justify-end items-start md:pl-4 relative" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div onClick={handleProfileImageClick} className="cursor-pointer relative group">
     <Avatar className="h-24 w-24 md:h-32 md:w-32 border-2 border-orange-400 group-hover:border-orange-600 transition">
-      <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="Profile" style={{ opacity: areProfileSurfacesOpaque ? 1 : 0.5 }} />
+      <AvatarImage
+        src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"}
+        alt="Profile"
+        style={{ opacity: areProfileSurfacesOpaque ? 1 : 0.5 }}
+        queuePriority={IMAGE_LOAD_PRIORITY.critical}
+      />
       <AvatarFallback>U</AvatarFallback>
     </Avatar>
     {user && (
@@ -4648,10 +4759,11 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                   Become an Official Member of the Union via getting your Union Card Today!
                 </a>
               ) : (
-                <img
+                <QueuedImage
                   src="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"
                   alt="uHub cover"
                   className="h-10 w-full max-w-none rounded object-cover"
+                  queuePriority={IMAGE_LOAD_PRIORITY.critical}
                 />
               )}
               <Button
@@ -4905,6 +5017,12 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
   setAddProductModalOpen={setAddProductModalOpen}
   allProductsForAdmin={allProductsForAdmin}
   everythingProducts={everythingProducts}
+  loadStoreProducts={loadStoreProducts}
+  loadingStoreIds={loadingStoreIds}
+  storeProductErrors={storeProductErrors}
+  loadEverythingProducts={loadEverythingProducts}
+  isLoadingEverythingProducts={isLoadingEverythingProducts}
+  everythingProductsError={everythingProductsError}
   setEditingProduct={setEditingProduct}
   setEditProductModalOpen={setEditProductModalOpen}
   onProductView={(product) => {
@@ -5076,6 +5194,16 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
   />
 )}
 
+
+      {activeChatModal !== null && (
+        <MainUhubFeatureV001ForChatModal
+          isOpen
+          onClose={handleCloseChatModal}
+          pageName={MainUhubFeatureV001ForSisterUnionPages[activeChatModal - 1]}
+          backgroundColor={MainUhubFeatureV001ForModalColors[activeChatModal - 1]}
+          modalNumber={activeChatModal}
+        />
+      )}
 
  {/* Broadcast Carousel Zoom Modal - ONLY for carousel images */}
       {broadcastZoomState.isOpen && (

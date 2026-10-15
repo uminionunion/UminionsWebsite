@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
+import QueuedImage from '../../components/QueuedImage';
 
 // Renders a single entry (MemeBox post or Social Media post) inside "My Feed" / "Union Announcements",
 // with vote/favorite/comment controls per C.2. Both post types share the same vote/favorite/comment
@@ -92,7 +93,7 @@ const FeedEntryCard: React.FC<FeedEntryCardProps> = ({ entry, onChanged }) => {
       ) : (
         <div className="flex items-center gap-2 mb-2">
           {entry.cover_image_url && (
-            <img src={entry.cover_image_url} alt={entry.name} className="w-10 h-10 rounded object-cover flex-shrink-0" />
+            <QueuedImage src={entry.cover_image_url} alt={entry.name} className="w-10 h-10 rounded object-cover flex-shrink-0" />
           )}
           <div className="min-w-0">
             <p className="font-semibold truncate text-xs">{entry.name}</p>
