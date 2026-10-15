@@ -16,6 +16,8 @@ interface Product {
 interface EverythingProductsListProps {
   products: Product[];
   isLoading: boolean;
+  error?: string;
+  onRetry?: () => void;
   onProductView: (product: Product) => void;
   onAddToCart?: (product: Product) => void;
 }
@@ -23,6 +25,8 @@ interface EverythingProductsListProps {
 const EverythingProductsList: React.FC<EverythingProductsListProps> = ({ 
   products = [], 
   isLoading,
+  error,
+  onRetry,
   onProductView,
   onAddToCart
 }) => {
@@ -38,6 +42,15 @@ const EverythingProductsList: React.FC<EverythingProductsListProps> = ({
 
   if (isLoading) {
     return <div className="text-center text-muted-foreground py-4">Loading products...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-400 py-4">
+        <p>Products could not be loaded.</p>
+        {onRetry && <Button variant="outline" size="sm" onClick={onRetry}>Retry</Button>}
+      </div>
+    );
   }
 
   if (!products || products.length === 0) {

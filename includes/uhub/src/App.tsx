@@ -9,6 +9,8 @@ import MainUhubFeatureV001ForMyProfileModal from '@/features/profile/MainUhubFea
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import MainUhubFeatureV001ForUserProfileModal from './features/profile/MainUhubFeatureV001ForUserProfileModal';
 import BadgeZoomToast from './features/profile/BadgeZoomToast';
+import QueuedImage from '@/components/QueuedImage';
+import { IMAGE_LOAD_PRIORITY } from '@/lib/image-load-queue';
 import { Pencil } from 'lucide-react';
 
 const MainUhubFeatureV001Layout = () => {
@@ -146,10 +148,11 @@ useEffect(() => {
   );
 
   const bodyAvatarImage = (
-    <img
+    <QueuedImage
       src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"}
       alt=""
       className="uhub-body-avatar-image exclude-zoom"
+      queuePriority={IMAGE_LOAD_PRIORITY.critical}
     />
   );
 
@@ -167,7 +170,11 @@ useEffect(() => {
 
       <div onClick={handleProfileImageClick} className="relative cursor-pointer group uhub-launcher-avatar">
         <Avatar className="h-[60px] w-[60px] border-2 border-orange-400 group-hover:border-orange-600 transition">
-          <AvatarImage src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"} alt="Profile" />
+          <AvatarImage
+            src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"}
+            alt="Profile"
+            queuePriority={IMAGE_LOAD_PRIORITY.critical}
+          />
           <AvatarFallback>U</AvatarFallback>
         </Avatar>
         {user && (

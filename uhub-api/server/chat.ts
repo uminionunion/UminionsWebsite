@@ -304,8 +304,8 @@ export function setupChat(io: SocketIOServer) {
           .selectFrom('messages')
           .leftJoin('users', 'users.id', 'messages.user_id')
           .where('room', '=', room)
-          .orderBy('id', 'desc')
-          .limit(50)
+          .orderBy('messages.id', 'desc')
+          .limit(3)
           .select([
             'messages.id',
             'messages.content',
@@ -336,7 +336,7 @@ export function setupChat(io: SocketIOServer) {
           };
         });
 
-        socket.emit('loadMessages', { messages: formattedMessages, hasMore: Number(count) > formattedMessages.length });
+        socket.emit('loadMessages', { messages: formattedMessages, hasMore: Number(count) > 3 });
       } catch (error) {
         console.error(`Error loading messages for room ${room}:`, error);
       }
