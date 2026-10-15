@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
-import { Search, Plus, Minus } from 'lucide-react';
+import { Search, Plus, Minus, Loader2 } from 'lucide-react';
+import ProductQueuedImage from '../../components/ProductQueuedImage';
 
 interface Product {
   id: number;
@@ -16,8 +17,6 @@ interface Product {
 interface EverythingProductsListProps {
   products: Product[];
   isLoading: boolean;
-  error?: string;
-  onRetry?: () => void;
   onProductView: (product: Product) => void;
   onAddToCart?: (product: Product) => void;
 }
@@ -25,8 +24,6 @@ interface EverythingProductsListProps {
 const EverythingProductsList: React.FC<EverythingProductsListProps> = ({ 
   products = [], 
   isLoading,
-  error,
-  onRetry,
   onProductView,
   onAddToCart
 }) => {
@@ -41,16 +38,7 @@ const EverythingProductsList: React.FC<EverythingProductsListProps> = ({
   };
 
   if (isLoading) {
-    return <div className="text-center text-muted-foreground py-4">Loading products...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="text-center text-red-400 py-4">
-        <p>Products could not be loaded.</p>
-        {onRetry && <Button variant="outline" size="sm" onClick={onRetry}>Retry</Button>}
-      </div>
-    );
+    return <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground" role="status" aria-label="Loading products"><Loader2 className="h-4 w-4 animate-spin" />Loading products...</div>;
   }
 
   if (!products || products.length === 0) {
@@ -68,13 +56,12 @@ const EverythingProductsList: React.FC<EverythingProductsListProps> = ({
              key={product.id}
              className="border rounded-md p-2 cursor-pointer hover:border-orange-400 transition flex flex-col h-32 relative overflow-hidden"
              style={{ 
-               backgroundImage: product.image_url ? `url('${product.image_url}')` : 'linear-gradient(to bottom, #2a2a2a, #1a1a1a)',
-               backgroundSize: 'cover',
-               backgroundPosition: 'center'
+               background: 'linear-gradient(to bottom, #2a2a2a, #1a1a1a)',
              }}
              onClick={() => onProductView(product)}
              title="Click to view product details"
            >
+            {product.image_url && <ProductQueuedImage src={product.image_url} queue="users" alt="" className="absolute inset-0 h-full w-full object-cover" />}
             {/* Overlay for better text visibility */}
             <div className="absolute inset-0 bg-black bg-opacity-40"></div>
 

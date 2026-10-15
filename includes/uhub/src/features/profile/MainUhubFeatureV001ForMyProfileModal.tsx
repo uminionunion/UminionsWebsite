@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button } from '../../components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import { Users, Megaphone, Code, Settings, Facebook, Youtube, Twitch, Instagram, Github, MessageSquare, ShoppingCart, Eye, ChevronLeft, ChevronRight, Plus, Minus, Search, Play, X, Mountain, Home, ChevronDown, ChevronUp, Trash2, Anvil, Pencil } from 'lucide-react';
+import { Users, Megaphone, Code, Settings, Facebook, Youtube, Twitch, Instagram, Github, MessageSquare, ShoppingCart, Eye, ChevronLeft, ChevronRight, Plus, Minus, Search, Play, X, Mountain, Home, ChevronDown, ChevronUp, Trash2, Anvil, Pencil, Loader2 } from 'lucide-react';
 import MainUhubFeatureV001ForChatModal from '../uminion/MainUhubFeatureV001ForChatModal';
 import { useAuth } from '../../hooks/useAuth';
 import { usePaginatedFeed } from '../../hooks/usePaginatedFeed';
@@ -11,11 +11,14 @@ import MainUhubFeatureV001ForAddProductModal from './MainUhubFeatureV001ForAddPr
 import MainUhubFeatureV001ForProductDetailModal from './MainUhubFeatureV001ForProductDetailModal';
 import MainUhubFeatureV001ForFriendsView from './MainUhubFeatureV001ForFriendsView';
 import MainUhubFeatureV001ForSettingsView from './MainUhubFeatureV001ForSettingsView';
-import WorldFeed from './WorldFeed';
 import { CreateBroadcastView } from './CreateBroadcastView';
 import BroadcastCarousel from './BroadcastCarousel';
 import AdminProductsList from './AdminProductsList';
 import EverythingProductsList from './EverythingProductsList';
+import QueuedImage from '../../components/QueuedImage';
+import ProductQueuedImage from '../../components/ProductQueuedImage';
+import { IMAGE_LOAD_PRIORITY, retainQueuedImages } from '../../lib/image-load-queue';
+import { enqueueProductImageBatch, setProductImageQueueActive } from '../../lib/product-image-cache';
 import ProductSearchDropdown from './ProductSearchDropdown';
 import MainUhubFeatureV001ForEditProductModal from './MainUhubFeatureV001ForEditProductModal';
 import MainUhubFeatureV001ForUserProfileModal from './MainUhubFeatureV001ForUserProfileModal';
@@ -28,8 +31,6 @@ import { renderTheMemeBox, unmountTheMemeBox } from '@/TheMemeBoxRenderer';
 import { additionalHardCodedCustomButtonPages } from './additional-hard-coded-custom-button-pages';
 import { TheFoodPantryFeature } from '../../../../pantry-finder/src/pages/pantry-feature/the-food-pantry-feature';
 import { pantryApiUrl } from '@/lib/api';
-import QueuedImage from '../../components/QueuedImage';
-import { IMAGE_LOAD_PRIORITY } from '../../lib/image-load-queue';
 
 
 
@@ -141,6 +142,13 @@ interface PoliticalCandidate {
   show_on_map?: number;
 }
 
+interface CaptionStyle {
+  color?: string;
+  bold?: boolean;
+  italic?: boolean;
+  size?: number;
+}
+
 interface ManagedCarouselItem {
   id?: number;
   image_url: string;
@@ -148,7 +156,33 @@ interface ManagedCarouselItem {
   description?: string | null;
   price?: string | null;
   website?: string | null;
+  isUrl?: boolean;
+  style?: CaptionStyle;
 }
+
+type ManagedCarouselSlot = 'left-top' | 'left' | 'right' | 'cover' | 'bottom';
+type ManagedCarouselAdminTarget = 'left' | 'right' | 'cover' | 'bottom';
+
+const parseCaptionStyle = (description?: string | null): CaptionStyle => {
+  try {
+    const parsed = JSON.parse(description || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const captionStyleToCss = (style: CaptionStyle): React.CSSProperties => ({
+  color: style.color || undefined,
+  fontWeight: style.bold ? 700 : undefined,
+  fontStyle: style.italic ? 'italic' : undefined,
+  fontSize: style.size ? ('' + style.size + 'px') : undefined,
+});
+
+const isAcceptedCaptionUrl = (value: string) => /^(https?:\/\/|www\.)/i.test(value.trim());
+const normalizeCaptionUrl = (value: string) => /^www\./i.test(value.trim()) ? ('https://' + value.trim()) : value.trim();
+
+const getManagedCarouselLimit = (slot: ManagedCarouselSlot) => slot === 'cover' ? 9 : slot === 'bottom' ? 8 : 10;
 
 const UnionPoliticCandidates = ({ filtersOpen }: { filtersOpen: boolean }) => {
   const { user } = useAuth();
@@ -164,6 +198,7 @@ const UnionPoliticCandidates = ({ filtersOpen }: { filtersOpen: boolean }) => {
     if (!response.ok) return alert((await response.json()).message || 'Unable to delete candidate.');
     loadCandidates();
   };
+
   const saveCandidate = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editing) return;
@@ -368,7 +403,7 @@ const UnionRadioPlayer = () => {
       <button type="button" className={compact ? 'text-[10px] text-green-400' : 'text-xs text-green-400'} onClick={() => vote(episode.id, 'upvote')}>+{episode.upvotes || 0}</button>
       <button type="button" className={compact ? 'text-[10px] text-red-400' : 'text-xs text-red-400'} onClick={() => vote(episode.id, 'downvote')}>-{episode.downvotes || 0}</button>
       <Button variant="ghost" size="icon" className={compact ? 'h-5 w-5' : 'h-7 w-7'} onClick={() => openComments(episode)} title={`View comments for ${episode.name}`}>
-        <img src="/EmojisForUminionWebsite/GreenEmoji004CommentOrChat.png" alt="Comments" className="h-4 w-4" />
+        <QueuedImage src="/EmojisForUminionWebsite/GreenEmoji004CommentOrChat.png" alt="Comments" className="h-4 w-4" />
       </Button>
     </div>
   );
@@ -434,7 +469,7 @@ const UnionRadioPlayer = () => {
               <span className="min-w-0 flex-1 truncate">{episode.name}</span>
               <button type="button" className="text-green-400" onClick={() => vote(episode.id, 'upvote')}>+{episode.upvotes || 0}</button>
               <button type="button" className="text-red-400" onClick={() => vote(episode.id, 'downvote')}>-{episode.downvotes || 0}</button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openComments(episode)} title={`View comments for ${episode.name}`}><img src="/EmojisForUminionWebsite/GreenEmoji004CommentOrChat.png" alt="Comments" className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openComments(episode)} title={`View comments for ${episode.name}`}><QueuedImage src="/EmojisForUminionWebsite/GreenEmoji004CommentOrChat.png" alt="Comments" className="h-4 w-4" /></Button>
             </div>
           )) : <p className="text-xs text-muted-foreground">Nothing has finished playing yet.</p>}
         </div>
@@ -455,7 +490,7 @@ const UnionRadioPlayer = () => {
                   return (
                     <div key={episode.id} className="mb-1 border-l-2 border-orange-400 bg-gray-900 p-1">
                       <div className="flex items-center gap-1">
-                        {episode.cover_image_url && <img src={episode.cover_image_url} alt="" className="h-5 w-5 object-cover" />}
+                        {episode.cover_image_url && <QueuedImage src={episode.cover_image_url} alt="" className="h-5 w-5 object-cover" />}
                         <span className="min-w-0 flex-1 truncate">{episode.name}</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground">{new Date(episode.scheduled_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
@@ -606,9 +641,9 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
   return <div className="h-full overflow-y-auto rounded-md border bg-black p-4 text-white">
     <div className="mb-4 flex gap-2"><Button size="sm" onClick={() => setScreen('discover')}>Discover</Button><Button size="sm" variant="outline" onClick={() => { setScreen('matches'); loadMatches(); }}>Matches</Button><Button size="sm" variant="outline" onClick={() => { setScreen('settings'); loadProfile(); }}>Settings</Button></div>
     {screen === 'discover' && <div className="mx-auto max-w-md text-center">
-      {currentCard ? <><div className="overflow-hidden rounded-md border bg-gray-900"><img src={currentCard.profile?.image1 || currentCard.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt={currentCard.username} className="h-72 w-full object-cover" /><div className="p-3"><h3 className="text-xl font-bold">{currentCard.username}{currentCard.profile?.gender ? `, ${currentCard.profile.gender}` : ''}</h3><p className="text-sm text-muted-foreground">{currentCard.profile?.city || 'Location unknown'}</p><p className="mt-2 text-sm">{currentCard.profile?.bio || 'No bio yet.'}</p></div></div><div className="mt-3 flex justify-center gap-4"><Button variant="outline" onClick={() => swipe(currentCard.id, 'skip')}>Skip</Button><Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => swipe(currentCard.id, 'like')}>Like</Button></div></> : <p className="text-muted-foreground">That's enough people in your area for now.</p>}
+      {currentCard ? <><div className="overflow-hidden rounded-md border bg-gray-900"><QueuedImage src={currentCard.profile?.image1 || currentCard.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt={currentCard.username} className="h-72 w-full object-cover" /><div className="p-3"><h3 className="text-xl font-bold">{currentCard.username}{currentCard.profile?.gender ? `, ${currentCard.profile.gender}` : ''}</h3><p className="text-sm text-muted-foreground">{currentCard.profile?.city || 'Location unknown'}</p><p className="mt-2 text-sm">{currentCard.profile?.bio || 'No bio yet.'}</p></div></div><div className="mt-3 flex justify-center gap-4"><Button variant="outline" onClick={() => swipe(currentCard.id, 'skip')}>Skip</Button><Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => swipe(currentCard.id, 'like')}>Like</Button></div></> : <p className="text-muted-foreground">That's enough people in your area for now.</p>}
     </div>}
-    {screen === 'matches' && <div className="space-y-2">{matches.length ? matches.map(match => <button key={match.id} className="flex w-full items-center gap-3 rounded border p-2 text-left hover:bg-gray-900" onClick={() => openMessages(match)}><img src={match.profile?.image1 || match.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt="" className="h-12 w-12 rounded object-cover" /><span>{match.username}</span></button>) : <p className="text-muted-foreground">No matches yet.</p>}</div>}
+    {screen === 'matches' && <div className="space-y-2">{matches.length ? matches.map(match => <button key={match.id} className="flex w-full items-center gap-3 rounded border p-2 text-left hover:bg-gray-900" onClick={() => openMessages(match)}><QueuedImage src={match.profile?.image1 || match.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt="" className="h-12 w-12 rounded object-cover" /><span>{match.username}</span></button>) : <p className="text-muted-foreground">No matches yet.</p>}</div>}
     {screen === 'messages' && <div className="space-y-3"><Button size="sm" variant="outline" onClick={() => setScreen('matches')}>Back</Button><h3 className="font-bold">{messageUser?.username}</h3><div className="h-64 overflow-y-auto rounded border p-2">{messages.map(message => <div key={message.id} className={`mb-2 ${message.sender_id === user.id ? 'text-right' : 'text-left'}`}><span className="inline-block rounded bg-gray-800 px-2 py-1 text-sm">{message.content}</span></div>)}</div><div className="flex gap-2"><input value={messageText} onChange={event => setMessageText(event.target.value)} onKeyDown={event => event.key === 'Enter' && sendMessage()} className="flex-1 rounded border bg-gray-900 p-2" placeholder="Type a message..." /><Button onClick={sendMessage}>Send</Button></div></div>}
     {screen === 'settings' && <form onSubmit={saveProfile} className="grid gap-3"><textarea name="bio" defaultValue={profile.bio || ''} maxLength={1000} className="min-h-24 rounded border bg-gray-900 p-2" placeholder="Bio" /><input name="city" defaultValue={profile.city || ''} className="rounded border bg-gray-900 p-2" placeholder="City" /><div className="grid grid-cols-2 gap-2"><select name="gender" defaultValue={profile.gender || ''} className="rounded border bg-gray-900 p-2"><option value="">Gender</option><option>Male</option><option>Female</option><option>EveryoneElse</option></select><select name="interested_in" defaultValue={profile.interested_in || ''} className="rounded border bg-gray-900 p-2"><option value="">Interested in</option><option>Male</option><option>Female</option><option>EveryoneElse</option><option>Everyone</option></select></div><input name="max_distance" type="number" min="1" max="100" defaultValue={profile.max_distance || 100} className="rounded border bg-gray-900 p-2" placeholder="Max distance" /><label className="flex gap-2 text-sm"><input name="allow_anyone" type="checkbox" defaultChecked={profile.allow_anyone === 1} /> Allow me to match with everyone</label>{[1, 2, 3, 4, 5].map(num => <input key={num} name={`image${num}`} defaultValue={profile[`image${num}`] || ''} className="rounded border bg-gray-900 p-2" placeholder={`Image ${num} URL`} />)}<Button type="submit">Save Settings</Button></form>}
   </div>;
@@ -685,30 +720,35 @@ const getNextUnionEventDateLabel = (short = false) => {
   return eventDate.toLocaleDateString('en-US', { month: short ? 'short' : 'long', day: 'numeric', year: 'numeric' });
 };
 
+const upperEventFallbackItems: ManagedCarouselItem[] = [
+  { image_url: '/includes/Uminionad001.png', title: `Next Union Event: ${getNextUnionEventDateLabel()} 9am to 9pm` },
+  { image_url: '/includes/WYSad001.png', title: 'AD - Sponsored By: WhatsYorStory.com', website: 'https://WhatsYorStory.com' },
+  { image_url: '/includes/Uminionad001.png', title: `Next Union Event: ${getNextUnionEventDateLabel(true)} (9am to 9pm)` },
+  { image_url: '/includes/WYSad001.png', title: 'AD - Sponsored By: WhatsYorStory.com', website: 'https://WhatsYorStory.com' },
+];
+
 const RotatingUnionEventCard = () => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const faces = [
-    { image: '/includes/Uminionad001.png', text: `Next Union Event: ${getNextUnionEventDateLabel()} 9am to 9pm` },
-    { image: '/includes/WYSad001.png', text: 'AD - Sponsored By: WhatsYorStory.com', url: 'https://WhatsYorStory.com' },
-    { image: '/includes/Uminionad001.png', text: `Next Union Event: ${getNextUnionEventDateLabel(true)} (9am to 9pm)` },
-    { image: '/includes/WYSad001.png', text: 'AD - Sponsored By: WhatsYorStory.com', url: 'https://WhatsYorStory.com' },
-  ];
+  const { items } = useManagedCarouselItems('left-top', upperEventFallbackItems);
+  useEffect(() => retainQueuedImages(items.map(item => item.image_url)), [items]);
   useEffect(() => {
     if (paused) return;
-    const timer = window.setInterval(() => setIndex(value => (value + 1) % faces.length), 4500);
+    const timer = window.setInterval(() => setIndex(value => (value + 1) % items.length), 4500);
     return () => window.clearInterval(timer);
-  }, [paused, faces.length]);
-  const activeFace = faces[index];
-  return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeFace.url && window.open(activeFace.url, '_blank')}>
-    <button type="button" className="uhub-event-arrow left" onClick={(event) => { event.stopPropagation(); setIndex(value => (value - 1 + faces.length) % faces.length); }}>‹</button>
+  }, [items.length, paused]);
+  useEffect(() => setIndex(0), [items]);
+  const activeItem = items[index] || upperEventFallbackItems[0];
+  return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeItem.website && window.open(activeItem.website, '_blank')}>
+    <button type="button" className="uhub-event-arrow left" onClick={(event) => { event.stopPropagation(); setIndex(value => (value - 1 + items.length) % items.length); }}>‹</button>
     <QueuedImage
-      src={activeFace.image}
-      alt="Next Union Event"
+      src={activeItem.image_url}
+      alt={activeItem.title || 'uHome-Hub upper carousel image'}
       queuePriority={IMAGE_LOAD_PRIORITY.carousel}
+      keepPreviousWhileLoading
     />
-    <p>{activeFace.text}</p>
-    <button type="button" className="uhub-event-arrow right" onClick={(event) => { event.stopPropagation(); setIndex(value => (value + 1) % faces.length); }}>›</button>
+    <p>{activeItem.title || activeItem.description}{activeItem.price ? ` · ${activeItem.price}` : ''}</p>
+    <button type="button" className="uhub-event-arrow right" onClick={(event) => { event.stopPropagation(); setIndex(value => (value + 1) % items.length); }}>›</button>
   </div>;
 };
 
@@ -718,7 +758,7 @@ const headerStoreItems = [
   { image_url: '/StoreProductsAndImagery/Tshirtbatchversion001.png', title: 'Union Shirts', price: null, website: null },
 ];
 
-const useManagedCarouselItems = (slot: 'left' | 'right', fallbackItems: ManagedCarouselItem[]) => {
+const useManagedCarouselItems = (slot: ManagedCarouselSlot, fallbackItems: ManagedCarouselItem[]) => {
   const [items, setItems] = useState<ManagedCarouselItem[]>(fallbackItems);
   const loadItems = useCallback(() => {
     fetch(`/api/carousels/${slot}/items`, { credentials: 'include' })
@@ -729,7 +769,7 @@ const useManagedCarouselItems = (slot: 'left' | 'right', fallbackItems: ManagedC
   useEffect(() => loadItems(), [loadItems]);
   useEffect(() => {
     const handleUpdated = (event: Event) => {
-      const detail = (event as CustomEvent<{ slot: 'left' | 'right' }>).detail;
+      const detail = (event as CustomEvent<{ slot: ManagedCarouselSlot }>).detail;
       if (detail?.slot === slot) loadItems();
     };
     window.addEventListener('uhub-managed-carousel-updated', handleUpdated);
@@ -738,7 +778,7 @@ const useManagedCarouselItems = (slot: 'left' | 'right', fallbackItems: ManagedC
   return { items, refresh: loadItems };
 };
 
-const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: 'left' | 'right'; fallbackItems: ManagedCarouselItem[] }) => {
+const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: ManagedCarouselSlot; fallbackItems: ManagedCarouselItem[] }) => {
   const { items } = useManagedCarouselItems(slot, fallbackItems);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -748,6 +788,7 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: 'left' | 'right
     return () => window.clearInterval(timer);
   }, [paused, items.length]);
   useEffect(() => setIndex(0), [items]);
+  useEffect(() => retainQueuedImages(items.map(item => item.image_url)), [items]);
   const item = items[index] || fallbackItems[0];
   return <div className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
     <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + items.length) % items.length)}>‹</button>
@@ -755,6 +796,7 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: 'left' | 'right
       src={item.image_url}
       alt={item.title || 'Carousel image'}
       queuePriority={IMAGE_LOAD_PRIORITY.carousel}
+      keepPreviousWhileLoading
     />
     <div className="uhub-header-product-overlay">
       {item.title && <span>{item.title}</span>}
@@ -776,21 +818,101 @@ const footerPosterItems = [
 const HeaderProductCarousel = () => <ManagedProductCarousel slot="left" fallbackItems={headerStoreItems} />;
 const FooterPosterCarousel = () => <ManagedProductCarousel slot="right" fallbackItems={footerPosterItems} />;
 
-const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: 'left' | 'right' | null; onClose: () => void }) => {
-  const [files, setFiles] = useState<File[]>([]);
+const noManagedCarouselItems: ManagedCarouselItem[] = [];
+const defaultCoverImageUrl = '/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg';
+
+// Slot 1 is the user's own (or default) cover; admin-added covers rotate with it at random 3-5s intervals.
+const CoverImageRotator = ({ userCoverUrl, opacity }: { userCoverUrl: string | null; opacity: number }) => {
+  const { items } = useManagedCarouselItems('cover', noManagedCarouselItems);
+  const urls = useMemo(() => [userCoverUrl || defaultCoverImageUrl, ...items.map(item => item.image_url).filter(Boolean)], [userCoverUrl, items]);
+  const [index, setIndex] = useState(0);
+  useEffect(() => retainQueuedImages(urls), [urls]);
+  useEffect(() => {
+    setIndex(0);
+    if (urls.length < 2) return;
+    let timer: number;
+    const schedule = () => {
+      timer = window.setTimeout(() => {
+        setIndex(current => {
+          const choices = urls.map((_, position) => position).filter(position => position !== current);
+          return choices[Math.floor(Math.random() * choices.length)];
+        });
+        schedule();
+      }, 3000 + Math.random() * 2000);
+    };
+    schedule();
+    return () => window.clearTimeout(timer);
+  }, [urls]);
+  return <QueuedImage
+    src={urls[index] || defaultCoverImageUrl}
+    alt="uHub cover"
+    className="absolute inset-0 h-full w-full object-cover"
+    style={{ opacity }}
+    queuePriority={IMAGE_LOAD_PRIORITY.critical}
+    retainInCache
+    keepPreviousWhileLoading
+  />;
+};
+
+const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdminTarget | null; onClose: () => void }) => {
+  const [activeLeftSlot, setActiveLeftSlot] = useState<'left-top' | 'left'>('left');
+  const [items, setItems] = useState<Array<ManagedCarouselItem & { file?: File }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const activeSlot: ManagedCarouselSlot = slot === 'left' ? activeLeftSlot : slot === 'right' ? 'right' : slot === 'cover' ? 'cover' : 'bottom';
+  const maxItems = getManagedCarouselLimit(activeSlot);
+  const isBottom = activeSlot === 'bottom';
+  const slotLabel = slot === 'left' ? (activeSlot === 'left-top' ? 'upper left' : 'lower left') : slot === 'cover' ? 'cover image' : slot === 'bottom' ? 'bottom promo' : 'right';
+  useEffect(() => {
+    if (!slot) return;
+    let cancelled = false;
+    setItems([]);
+    setLoadError('');
+    setIsLoading(true);
+    fetch(`/api/carousels/${activeSlot}/items`, { credentials: 'include' })
+      .then(async response => {
+        if (!response.ok) throw new Error(`Unable to load carousel (${response.status}).`);
+        const data: { items?: ManagedCarouselItem[] } = await response.json();
+        if (!Array.isArray(data.items)) throw new Error('The carousel response was invalid.');
+        if (!cancelled) setItems(data.items.map(item => ({ ...item, isUrl: !!item.website, style: activeSlot === 'bottom' ? parseCaptionStyle(item.description) : undefined })));
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : 'Unable to load carousel.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeSlot, slot]);
   if (!slot) return null;
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!files.length) return alert('Add at least one image.');
+    if (items.length > maxItems) return alert(`This carousel can contain up to ${maxItems} added items.`);
+    if (isBottom) {
+      if (items.some(item => !item.image_url && !item.file && !(item.title || '').trim())) return alert('Each entry needs an image or a caption.');
+      if (items.some(item => item.isUrl && !isAcceptedCaptionUrl(item.website || ''))) return alert('Caption URLs must start with http://, https:// or www.');
+    } else if (items.some(item => !item.image_url && !item.file)) return alert('Each carousel item needs an image.');
     setIsSubmitting(true);
-    const formData = new FormData(event.currentTarget);
-    formData.delete('images');
-    files.slice(0, 100).forEach(file => formData.append('images', file));
+    const formData = new FormData();
+    const uploads: File[] = [];
+    const serializedItems = items.map(item => {
+      const uploadIndex = item.file ? uploads.push(item.file) - 1 : null;
+      return {
+        id: item.id ?? null,
+        uploadIndex,
+        title: item.title || '',
+        description: isBottom ? JSON.stringify(item.style || {}) : item.description || '',
+        price: item.price || '',
+        website: isBottom && !item.isUrl ? '' : isBottom ? normalizeCaptionUrl(item.website || '') : (item.website || '').trim(),
+      };
+    });
+    uploads.forEach(file => formData.append('images', file));
+    formData.append('items', JSON.stringify(serializedItems));
     try {
-      const response = await fetch(`/api/carousels/${slot}/items/replace`, { method: 'POST', credentials: 'include', body: formData });
+      const response = await fetch(`/api/carousels/${activeSlot}/items/replace`, { method: 'POST', credentials: 'include', body: formData });
       if (!response.ok) throw new Error((await response.json()).error || 'Upload failed');
-      window.dispatchEvent(new CustomEvent('uhub-managed-carousel-updated', { detail: { slot } }));
+      window.dispatchEvent(new CustomEvent('uhub-managed-carousel-updated', { detail: { slot: activeSlot } }));
       onClose();
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Upload failed');
@@ -800,19 +922,49 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: 'left' | 'right' |
   };
   return <div className="fixed inset-0 z-[100300] flex items-center justify-center bg-black/75 p-4">
     <form onSubmit={handleSubmit} className="max-h-[86vh] w-[92vw] max-w-3xl overflow-y-auto rounded-md border bg-black p-4 text-white">
-      <div className="mb-3 flex items-center justify-between"><h3 className="font-bold">Replace {slot === 'left' ? 'left header' : 'right footer'} carousel</h3><Button type="button" variant="outline" size="sm" onClick={onClose}>Close</Button></div>
-      <input name="images" type="file" accept="image/*" multiple onChange={(event) => setFiles(Array.from(event.target.files || []).slice(0, 100))} />
-      <p className="my-2 text-xs text-muted-foreground">Add up to 100 images. Metadata rows match the selected image order.</p>
-      <div className="space-y-2">
-        {files.map((file, index) => <div key={`${file.name}-${index}`} className="grid grid-cols-4 gap-2 rounded border p-2 text-xs">
-          <strong className="col-span-4 truncate">{index + 1}. {file.name}</strong>
-          <input name={`title_${index}`} placeholder="Optional title" className="bg-gray-900 border rounded p-1" />
-          <input name={`description_${index}`} placeholder="Optional description" className="bg-gray-900 border rounded p-1" />
-          <input name={`price_${index}`} placeholder="Optional price/button text" className="bg-gray-900 border rounded p-1" />
-          <input name={`website_${index}`} placeholder="Optional website" className="bg-gray-900 border rounded p-1" />
+      <div className="mb-3 flex items-center justify-between"><h3 className="font-bold">Edit {slotLabel} carousel ({items.length}/{maxItems})</h3><Button type="button" variant="outline" size="sm" onClick={onClose}>Close</Button></div>
+      {slot === 'left' && <div className="mb-3 flex gap-2">
+        <Button type="button" size="sm" variant={activeLeftSlot === 'left-top' ? 'default' : 'outline'} onClick={() => setActiveLeftSlot('left-top')}>Above uHome-Hub</Button>
+        <Button type="button" size="sm" variant={activeLeftSlot === 'left' ? 'default' : 'outline'} onClick={() => setActiveLeftSlot('left')}>Below uHome-Hub</Button>
+      </div>}
+      {slot === 'cover' && <p className="my-2 text-xs text-muted-foreground">The default cover image (which users can change for their own profile) is always the first image. Images added here rotate with it randomly every 3–5 seconds and can only be changed here.</p>}
+      {isBottom && <p className="my-2 text-xs text-muted-foreground">The existing bottom image is entry 9 and the “Become an Official Member…” caption is entry 10. Add up to 8 more entries (image and/or caption).</p>}
+      <p className="my-2 text-xs text-muted-foreground">Manage images, captions, prices, and order. Existing images stay in place unless replaced or removed.</p>
+      {isLoading ? <p className="py-5 text-center">Loading carousel…</p> : loadError ? <p className="py-5 text-center text-red-400">{loadError}</p> : <div className="space-y-2">
+        {items.map((item, index) => <div key={item.id ?? `new-${index}`} className="grid grid-cols-[72px_1fr] gap-2 rounded border p-2 text-xs">
+          <div className="space-y-1">
+            {item.file ? <span className="block h-16 w-16 overflow-hidden rounded break-all">{item.file.name}</span> : item.image_url ? <img src={item.image_url} alt="" className="h-16 w-16 rounded object-cover" /> : <span className="block h-16 w-16 rounded bg-gray-800" />}
+            <input type="file" accept="image/*" aria-label={`Replace image ${index + 1}`} onChange={event => {
+              const file = event.target.files?.[0];
+              if (file) setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, file } : entry));
+            }} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input value={item.title || ''} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, title: event.target.value } : entry))} placeholder="Caption/title" className="rounded border bg-gray-900 p-1" />
+            {isBottom ? <>
+              <label className="flex items-center gap-1"><input type="checkbox" checked={!!item.isUrl} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, isUrl: event.target.checked } : entry))} />Is this caption a URL?</label>
+              <div className="col-span-2 flex flex-wrap items-center gap-2">
+                <label className="flex items-center gap-1">Color<input type="color" value={item.style?.color || '#ffffff'} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, style: { ...entry.style, color: event.target.value } } : entry))} /></label>
+                <label className="flex items-center gap-1"><input type="checkbox" checked={!!item.style?.bold} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, style: { ...entry.style, bold: event.target.checked } } : entry))} /><b>Bold</b></label>
+                <label className="flex items-center gap-1"><input type="checkbox" checked={!!item.style?.italic} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, style: { ...entry.style, italic: event.target.checked } } : entry))} /><i>Italic</i></label>
+                <label className="flex items-center gap-1">Size<input type="number" min={8} max={32} value={item.style?.size || 14} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, style: { ...entry.style, size: Math.min(32, Math.max(8, Number(event.target.value) || 14)) } } : entry))} className="w-14 rounded border bg-gray-900 p-1" />px</label>
+              </div>              {item.isUrl ? <input value={item.website || ''} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, website: event.target.value } : entry))} placeholder="https://..." className="rounded border bg-gray-900 p-1" /> : <span />}
+            </> : <>
+              <input value={item.description || ''} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, description: event.target.value } : entry))} placeholder="Description" className="rounded border bg-gray-900 p-1" />
+              <input value={item.price || ''} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, price: event.target.value } : entry))} placeholder="Price/button text" className="rounded border bg-gray-900 p-1" />
+              <input value={item.website || ''} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, website: event.target.value } : entry))} placeholder="Website" className="rounded border bg-gray-900 p-1" />
+            </>}
+            <div className="col-span-2 flex justify-end gap-1">
+              <Button type="button" size="sm" variant="outline" disabled={index === 0} onClick={() => setItems(current => current.map((entry, itemIndex) => itemIndex === index - 1 ? current[index] : itemIndex === index ? current[index - 1] : entry))}>Move up</Button>
+              <Button type="button" size="sm" variant="outline" disabled={index === items.length - 1} onClick={() => setItems(current => current.map((entry, itemIndex) => itemIndex === index + 1 ? current[index] : itemIndex === index ? current[index + 1] : entry))}>Move down</Button>
+              <Button type="button" size="sm" variant="destructive" onClick={() => setItems(current => current.filter((_, itemIndex) => itemIndex !== index))}>Remove</Button>
+            </div>
+          </div>
         </div>)}
       </div>
-      <Button type="submit" className="mt-3" disabled={isSubmitting || !files.length}>{isSubmitting ? 'Saving...' : 'Submit carousel'}</Button>
+      }
+      <Button type="button" className="mt-3 mr-2" variant="outline" disabled={items.length >= maxItems || isLoading || !!loadError} onClick={() => setItems(current => [...current, { image_url: '', title: '', description: '', price: '', website: '' }])}>Add image</Button>
+      <Button type="submit" className="mt-3" disabled={isSubmitting || isLoading || !!loadError}>{isSubmitting ? 'Saving...' : 'Save carousel'}</Button>
     </form>
   </div>;
 };
@@ -1008,7 +1160,7 @@ const BroadcastView = ({
             </div>
             <div className="flex items-center gap-2 mb-4">
               <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-sm">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
-              {user?.id === 1 && (
+              {user?.is_high_high_high_admin === 1 && (
                 <>
                 <Button 
                   className="bg-green-700 hover:bg-green-800 text-white text-sm"
@@ -1018,16 +1170,25 @@ const BroadcastView = ({
                 </Button>
                 <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-sm" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
+                <Button className="bg-pink-500 hover:bg-pink-600 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
                 </>
               )}
             </div>
             <div className="flex-1 overflow-hidden">
-              <BroadcastCarousel 
-                items={broadcast.extraImages || []} 
-                visibleItemCount={broadcastCarouselImageCount}
-                isAdmin={user?.is_high_high_high_admin === 1}
-                onImageZoom={handleCarouselImageZoom}
-              />
+              <div className="flex h-full min-w-0 gap-2">
+                <div className="flex h-48 w-1/3 min-w-0 items-center justify-center overflow-hidden rounded-md bg-transparent p-2">
+                  <QueuedImage src="/uhub/dist/UminionAnchor.png" alt="Uminion anchor artwork" className="h-full w-full object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />
+                </div>
+                <div className="w-2/3 min-w-0">
+                  <BroadcastCarousel 
+                    items={broadcast.extraImages || []} 
+                    visibleItemCount={Math.min(broadcastCarouselImageCount, 6)}
+                    isAdmin={user?.is_high_high_high_admin === 1}
+                    onImageZoom={handleCarouselImageZoom}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1052,7 +1213,7 @@ if (isMobile) {
           </div>
           <div className="flex items-center gap-2 mb-2">
             <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-xs">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
-            {user?.id === 1 && (
+            {user?.is_high_high_high_admin === 1 && (
               <>
               <Button 
                 className="bg-green-700 hover:bg-green-800 text-white text-xs h-8"
@@ -1062,13 +1223,20 @@ if (isMobile) {
               </Button>
               <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
               <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
+              <Button className="bg-pink-500 hover:bg-pink-600 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
               </>
             )}
           </div>
 
           {/* CAROUSEL CONTENT - NO overflow-hidden */}
           <div className="flex-shrink-0">
-            <div
+            <div className="flex w-full gap-2">
+              <div className="flex h-48 w-1/3 min-w-0 items-center justify-center overflow-hidden rounded-md bg-transparent p-2">
+                <QueuedImage src="/uhub/dist/UminionAnchor.png" alt="Uminion anchor artwork" className="h-full w-full object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />
+              </div>
+              <div className="w-2/3 min-w-0">
+                <div
   className="flex w-full overflow-hidden"
   style={{
     position: "relative",
@@ -1081,13 +1249,15 @@ if (isMobile) {
 >
   <BroadcastCarousel 
     items={broadcastView === 'UnionNews#14' ? unionNews14Images : (broadcast.extraImages || [])}
-    visibleItemCount={broadcastCarouselImageCount}
+    visibleItemCount={Math.min(broadcastCarouselImageCount, 6)}
     isAdmin={broadcastView === 'UnionNews#14' && user?.is_high_high_high_admin === 1}
     onReorderLeft={broadcastView === 'UnionNews#14' ? handleReorderLeft : undefined}
     onReorderRight={broadcastView === 'UnionNews#14' ? handleReorderRight : undefined}
     onImageZoom={handleCarouselImageZoom}
   />
 </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1202,7 +1372,7 @@ if (isMobile) {
             </div>
             <div className="flex items-center gap-2 mb-2">
               <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-xs">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
-              {user?.id === 1 && (
+              {user?.is_high_high_high_admin === 1 && (
                 <>
                 <Button 
                   className="bg-green-700 hover:bg-green-800 text-white text-xs h-8"
@@ -1212,20 +1382,29 @@ if (isMobile) {
                 </Button>
                 <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
+                <Button className="bg-pink-500 hover:bg-pink-600 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
                 </>
               )}
             </div>
 
             {/* CAROUSEL - Shows limited images based on width */}
             <div className="flex-1 overflow-hidden">
-              <BroadcastCarousel 
-  items={broadcastView === 'UnionNews#14' ? unionNews14Images : (broadcast.extraImages || [])}
-  visibleItemCount={broadcastCarouselImageCount}
-  isAdmin={broadcastView === 'UnionNews#14' && user?.is_high_high_high_admin === 1}
-  onReorderLeft={broadcastView === 'UnionNews#14' ? handleReorderLeft : undefined}
-  onReorderRight={broadcastView === 'UnionNews#14' ? handleReorderRight : undefined}
-  onImageZoom={handleCarouselImageZoom}
-/>
+              <div className="flex h-full min-w-0 gap-2">
+                <div className="flex h-48 w-1/3 min-w-0 items-center justify-center overflow-hidden rounded-md bg-transparent p-2">
+                  <QueuedImage src="/uhub/dist/UminionAnchor.png" alt="Uminion anchor artwork" className="h-full w-full object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />
+                </div>
+                <div className="w-2/3 min-w-0">
+                  <BroadcastCarousel
+                    items={unionNews14Images}
+                    visibleItemCount={Math.min(broadcastCarouselImageCount, 6)}
+                    isAdmin={user?.is_high_high_high_admin === 1}
+                    onReorderLeft={handleReorderLeft}
+                    onReorderRight={handleReorderRight}
+                    onImageZoom={handleCarouselImageZoom}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -1461,14 +1640,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
     <h3 className="font-bold">Union Store</h3>
   </div>
   <div className="union-store-scrollable" style={{ maxHeight: '380px', overflow: 'hidden', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-    {loadingStoreIds.has(0) ? (
-      <div className="text-center text-muted-foreground py-4">Loading products...</div>
-    ) : storeProductErrors[0] ? (
-      <div className="text-center text-red-400 py-4">
-        <p>Products could not be loaded.</p>
-        <Button size="sm" variant="outline" onClick={() => loadStoreProducts(0)}>Retry</Button>
-      </div>
-    ) : mainStoreProducts.length > 0 ? (
+    {mainStoreProducts.length > 0 ? (
       mainStoreProducts.map((p) => (
         <div 
           key={p.id}
@@ -1478,8 +1650,9 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
           }}
         >
           {p.image_url && (
-            <img 
-              src={p.image_url} 
+            <ProductQueuedImage 
+              src={p.image_url}
+              queue="union"
               alt={p.name}
               className="w-8 h-8 rounded object-cover flex-shrink-0"
             />
@@ -1503,7 +1676,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
         </div>
       ))
     ) : (
-      <div className="text-center text-muted-foreground py-4">No products available</div>
+      <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground" role="status" aria-label="Loading Union Store"><Loader2 className="h-4 w-4 animate-spin" />Loading Union Store</div>
     )}
   </div>
 </div>
@@ -1594,7 +1767,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
   {/* uBadge (left) - Fixed size icon */}
   <div className="w-6 h-6 rounded flex-shrink-0 bg-gray-700 overflow-hidden flex items-center justify-center">
     {uStore.badge_url ? (
-      <img
+      <QueuedImage
         src={uStore.badge_url}
         alt={`${uStore.name} badge`}
         className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition"
@@ -1620,10 +1793,11 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
 
   {/* uBanner (right) - Takes remaining space */}
   <div className="h-6 rounded flex-grow ml-auto overflow-hidden flex items-center justify-center bg-gray-700" style={{ minWidth: '80px', maxWidth: '150px' }}>
-    <img
+    <QueuedImage
       src={uStore.banner_url || "/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"}
       alt={`${uStore.name} banner`}
       className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition"
+      fallbackSrc="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"
       onClick={(e) => {
         e.stopPropagation();
         onBadgeZoomOpen?.({ 
@@ -1939,8 +2113,6 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
     <EverythingProductsList
       products={allProducts}
   isLoading={isLoadingEverythingProducts}
-  error={everythingProductsError}
-  onRetry={loadEverythingProducts}
   onProductView={onProductView}
       onAddToCart={(product) => {
         // Handle add to cart for everything products
@@ -1983,7 +2155,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
           {/* uBadge (left) - Fixed size icon */}
           <div className="w-6 h-6 rounded flex-shrink-0 bg-gray-700 overflow-hidden flex items-center justify-center">
             {store.badge_url ? (
-              <img
+              <QueuedImage
                 src={store.badge_url}
                 alt={`${store.name} badge`}
                 className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition"
@@ -2009,10 +2181,11 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
 
           {/* uBanner (right) - Takes remaining space */}
           <div className="h-6 rounded flex-grow ml-auto overflow-hidden flex items-center justify-center bg-gray-700" style={{ minWidth: '80px', maxWidth: '150px' }}>
-            <img
+            <QueuedImage
               src={store.banner_url || "/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"}
               alt={`${store.name} banner`}
               className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition"
+              fallbackSrc="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"
               onClick={(e) => {
                 e.stopPropagation();
                 onBadgeZoomOpen?.({ 
@@ -2045,11 +2218,10 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
                   key={product.id}
                   className="border rounded-md p-2 relative h-24 group hover:border-orange-400 transition cursor-pointer"
                   style={{
-                    backgroundImage: product.image_url ? `url('${product.image_url}')` : 'linear-gradient(to bottom, #2a2a2a, #1a1a1a)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
+                    background: 'linear-gradient(to bottom, #2a2a2a, #1a1a1a)',
                   }}
                 >
+                  {product.image_url && <ProductQueuedImage src={product.image_url} queue="users" alt="" className="absolute inset-0 h-full w-full object-cover" />}
                   {/* Clickable Overlay - Catches All Clicks Except Eye Button */}
                   <div 
                     className="absolute inset-0 bg-black bg-opacity-40 rounded-md cursor-pointer"
@@ -2152,7 +2324,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
               {/* uBadge (left) - Fixed size icon */}
               <div className="w-6 h-6 rounded flex-shrink-0 bg-gray-700 overflow-hidden flex items-center justify-center">
                 {userStore.badge_url ? (
-                  <img
+                  <QueuedImage
                     src={userStore.badge_url}
                     alt={`${userStore.name} badge`}
                     className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition"
@@ -2178,10 +2350,11 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
 
               {/* uBanner (right) - Takes remaining space */}
               <div className="h-6 rounded flex-grow ml-auto overflow-hidden flex items-center justify-center bg-gray-700" style={{ minWidth: '80px', maxWidth: '150px' }}>
-                <img
+                <QueuedImage
                   src={userStore.banner_url || "/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"}
                   alt={`${userStore.name} banner`}
                   className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition"
+                  fallbackSrc="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"
                   onClick={(e) => {
                     e.stopPropagation();
                     onBadgeZoomOpen?.({ 
@@ -2481,7 +2654,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const { user, logout } = useAuth();
   const [isPoliticFilterOpen, setPoliticFilterOpen] = useState(false);
   const [isPoliticFilterPressed, setPoliticFilterPressed] = useState(false);
-  const [managedCarouselAdminSlot, setManagedCarouselAdminSlot] = useState<'left' | 'right' | null>(null);
+  const [managedCarouselAdminSlot, setManagedCarouselAdminSlot] = useState<ManagedCarouselAdminTarget | null>(null);
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
   const [customizableButtonPage, setCustomizableButtonPage] = useState(1);
   const CustomButtonsPage001sNextPageButton = 'CustomButtonsPage001sNextPageButton';
@@ -2594,6 +2767,10 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [isPromoHovered, setIsPromoHovered] = useState(false);
   const [isPromoAutoplayPaused, setIsPromoAutoplayPaused] = useState(false);
   const [promoIndex, setPromoIndex] = useState(0);
+  const { items: bottomPromoItems } = useManagedCarouselItems('bottom', noManagedCarouselItems);
+  const promoCount = 2 + bottomPromoItems.length;
+  const activeBottomPromo = promoIndex >= 2 ? bottomPromoItems[promoIndex - 2] : undefined;
+  const activeBottomPromoStyle = captionStyleToCss(parseCaptionStyle(activeBottomPromo?.description));
   const promoPauseTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const [leftWidthMobile, setLeftWidthMobile] = useState(25);
   const [centerWidthMobile, setCenterWidthMobile] = useState(50);
@@ -2667,6 +2844,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
       if (!Array.isArray(data)) throw new Error('The server returned an invalid product list.');
       setStoreProducts(previous => ({ ...previous, [storeId]: data as Product[] }));
       if (storeId === 0) setMainStoreProducts(data as Product[]);
+      if (storeId === 0) void enqueueProductImageBatch((data as Product[]).map(product => product.image_url || ''), 'union');
       loadedStoreIds.current.add(storeId);
     } catch (error) {
       setStoreProductErrors(previous => ({
@@ -2695,6 +2873,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
       const data: unknown = await response.json();
       if (!Array.isArray(data)) throw new Error('The server returned an invalid product list.');
       setEverythingProducts(data as Product[]);
+      void enqueueProductImageBatch((data as Product[]).map(product => product.image_url || ''), 'users');
       hasLoadedEverything.current = true;
     } catch (error) {
       setEverythingProductsError(error instanceof Error ? error.message : 'Unknown error');
@@ -3041,12 +3220,17 @@ useEffect(() => {
 //   .then(data => console.log(`[PRODUCTS] Everything returned ${Array.isArray(data) ? data.length : 'invalid'} products`))
 //   .catch(error => console.error('[PRODUCTS] Debug request failed for Everything:', error));
 useEffect(() => {
+  setProductImageQueueActive(isOpen && (centerRightView.number === 20 || isQuadrantsModalOpen));
+}, [centerRightView.number, isOpen, isQuadrantsModalOpen]);
+
+useEffect(() => {
   if (isOpen && centerRightView.number === 20) {
     void loadStoreProducts(0);
+    void loadEverythingProducts();
   } else if (isOpen && centerRightView.number !== 19) {
     void loadStoreProducts(centerRightView.id);
   }
-}, [centerRightView, isOpen, loadStoreProducts]);
+}, [centerRightView, isOpen, loadStoreProducts, loadEverythingProducts]);
 
 // TURN ON WHEN YOU NEED TO DEBUG: the former startup fan-out fetched each store #01-#30 and Everything.
 // Re-enable explicit requests inside the store-selection and Everything-view handlers only to inspect those lists.
@@ -3477,14 +3661,7 @@ const resetRightSection = () => {
         </a>
       </div>
       <div className="space-y-2">
-        {loadingStoreIds.has(0) ? (
-          <div className="text-center text-muted-foreground py-4">Loading products...</div>
-        ) : storeProductErrors[0] ? (
-          <div className="text-center text-red-400 py-4">
-            <p>Products could not be loaded.</p>
-            <Button size="sm" variant="outline" onClick={() => loadStoreProducts(0)}>Retry</Button>
-          </div>
-        ) : mainStoreProducts.length > 0 ? (
+        {mainStoreProducts.length > 0 ? (
           mainStoreProducts.map((p, i) => (
             <div 
               key={p.id || i}
@@ -3495,8 +3672,9 @@ const resetRightSection = () => {
               }}
             >
               {p.image_url && (
-                <img 
-                  src={p.image_url} 
+                <ProductQueuedImage 
+                  src={p.image_url}
+                  queue="union"
                   alt={p.name}
                   className="w-8 h-8 rounded object-cover flex-shrink-0"
                 />
@@ -3521,7 +3699,7 @@ const resetRightSection = () => {
             </div>
           ))
         ) : (
-          <div className="text-center text-muted-foreground py-4">No products available</div>
+          <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground" role="status" aria-label="Loading Union Store"><Loader2 className="h-4 w-4 animate-spin" />Loading Union Store</div>
         )}
       </div>
     </div>
@@ -3569,25 +3747,15 @@ const resetRightSection = () => {
         background: #ea580c;
       }
     `}</style>
-    {isLoadingEverythingProducts ? (
-      <div className="text-center text-muted-foreground py-8">Loading products...</div>
-    ) : everythingProductsError ? (
-      <div className="text-center text-red-400 py-8">
-        <p>Products could not be loaded.</p>
-        <Button size="sm" variant="outline" onClick={() => void loadEverythingProducts()}>Retry</Button>
-      </div>
-    ) : everythingProducts.length > 0 ? (
+    {everythingProducts.length > 0 ? (
       <div className="grid grid-cols-2 gap-2">
         {getRandomizedProducts(everythingProducts).map((product) => (
           <div
             key={product.id}
             className="border rounded-md p-2 relative h-24 group hover:border-orange-400 transition cursor-pointer"
-            style={{
-              backgroundImage: product.image_url ? `url('${product.image_url}')` : 'linear-gradient(to bottom, #2a2a2a, #1a1a1a)',
-              backgroundSize: 'cover',
-              backgroundPosition: 'center'
-            }}
+            style={{ background: 'linear-gradient(to bottom, #2a2a2a, #1a1a1a)' }}
           >
+            {product.image_url && <ProductQueuedImage src={product.image_url} queue="users" alt="" className="absolute inset-0 h-full w-full object-cover" />}
             {/* Clickable Overlay */}
             <div 
               className="absolute inset-0 bg-black bg-opacity-40 rounded-md cursor-pointer"
@@ -3625,10 +3793,9 @@ const resetRightSection = () => {
         ))}
       </div>
     ) : (
-      <div className="text-center text-muted-foreground text-sm py-8">
-        {!hasLoadedEverything.current ? (
-          <Button size="sm" variant="outline" onClick={() => void loadEverythingProducts()}>Load Everything products</Button>
-        ) : 'No products yet'}
+      <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground" role="status" aria-label="Loading Users' Stores">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Loading Users' Stores
       </div>
     )}
   </div>
@@ -4103,9 +4270,9 @@ const handleEditProfileImageClick = (e: React.MouseEvent) => {
 
   useEffect(() => {
     if (!isOpen || isPromoHovered || isPromoAutoplayPaused) return;
-    const timer = window.setInterval(() => setPromoIndex(index => (index + 1) % 2), 7000);
+    const timer = window.setInterval(() => setPromoIndex(index => (index + 1) % promoCount), 7000);
     return () => window.clearInterval(timer);
-  }, [isOpen, isPromoHovered, isPromoAutoplayPaused]);
+  }, [isOpen, isPromoHovered, isPromoAutoplayPaused, promoCount]);
 
   useEffect(() => () => {
     if (promoPauseTimeoutRef.current !== null) {
@@ -4114,7 +4281,7 @@ const handleEditProfileImageClick = (e: React.MouseEvent) => {
   }, []);
 
   const navigatePromo = (direction: 'left' | 'right') => {
-    setPromoIndex(index => (index + (direction === 'right' ? 1 : -1) + 2) % 2);
+    setPromoIndex(index => (index + (direction === 'right' ? 1 : -1) + promoCount) % promoCount);
     setIsPromoAutoplayPaused(true);
     if (promoPauseTimeoutRef.current !== null) {
       window.clearTimeout(promoPauseTimeoutRef.current);
@@ -4164,13 +4331,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
              }} disabled={!user}><Home className="h-4 w-4 mb-1" /> Home</Button>
            </div>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative overflow-hidden" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: 'none' }}>
-             <QueuedImage
-               src="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"
-               alt="uHub cover"
-               className="absolute inset-0 h-full w-full object-cover"
-               style={{ opacity: areProfileSurfacesOpaque ? 1 : 0.5 }}
-               queuePriority={IMAGE_LOAD_PRIORITY.critical}
-             />
+             <CoverImageRotator userCoverUrl={(user as { cover_photo_url?: string | null } | null)?.cover_photo_url || null} opacity={areProfileSurfacesOpaque ? 1 : 0.5} />
              {user && <Button className="absolute bottom-2 right-2" size="sm">Change Cover</Button>}
            </div>
 
@@ -4754,7 +4915,14 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              {promoIndex === 0 ? (
+              {activeBottomPromo ? (
+                <div className="flex h-10 w-full items-center justify-center gap-2 px-9">
+                  {activeBottomPromo.image_url && <QueuedImage src={activeBottomPromo.image_url} alt={activeBottomPromo.title || 'Promotion'} className="h-10 max-w-[50%] rounded object-cover" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />}
+                  {activeBottomPromo.title && (activeBottomPromo.website
+                    ? <a href={activeBottomPromo.website} target="_blank" rel="noopener noreferrer" className="text-center text-orange-400 hover:underline text-xs md:text-sm" style={activeBottomPromoStyle}>{activeBottomPromo.title}</a>
+                    : <span className="text-center text-white text-xs md:text-sm" style={activeBottomPromoStyle}>{activeBottomPromo.title}</span>)}
+                </div>
+              ) : promoIndex === 0 ? (
                 <a href="https://page001.uminion.com/product/official-uminion-union-card/" target="_blank" rel="noopener noreferrer" className="px-9 text-center text-orange-400 hover:underline text-xs md:text-sm">
                   Become an Official Member of the Union via getting your Union Card Today!
                 </a>

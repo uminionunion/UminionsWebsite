@@ -327,7 +327,7 @@ export interface UserBroadcastEpisodeVotes {
 
 export interface UhubManagedCarouselItems {
   id: Generated<number>;
-  slot: 'left' | 'right';
+  slot: 'left' | 'left-top' | 'right' | 'cover' | 'bottom';
   image_url: string;
   title: string | null;
   description: string | null;
