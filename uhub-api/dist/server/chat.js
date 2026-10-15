@@ -259,7 +259,7 @@ export function setupChat(io) {
                         .leftJoin('users', 'users.id', 'messages.user_id')
                         .where('room', '=', room)
                         .orderBy('messages.id', 'desc')
-                        .limit(4)
+                        .limit(3)
                         .select([
                         'messages.id',
                         'messages.content',
@@ -270,7 +270,7 @@ export function setupChat(io) {
                     ])
                         .execute(),
                 ]);
-                const messages = messagesDesc.slice(0, 3).reverse();
+                const messages = messagesDesc.reverse();
                 const formattedMessages = messages.map(msg => {
                     let displayUsername;
                     if (msg.is_anonymous || !msg.username) {
