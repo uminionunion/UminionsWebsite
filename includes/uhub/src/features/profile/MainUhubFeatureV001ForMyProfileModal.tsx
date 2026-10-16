@@ -4535,11 +4535,14 @@ const handleEditProfileImageClick = (e: React.MouseEvent) => {
     });
   };
 
-  useEffect(() => {
-    if (!isOpen || isPromoHovered || isPromoAutoplayPaused) return;
-    const timer = window.setInterval(() => setPromoIndex(index => (index + 1) % promoCount), 7000);
-    return () => window.clearInterval(timer);
-  }, [isOpen, isPromoHovered, isPromoAutoplayPaused, promoCount]);
+  // Retired 10/16/26: the 7000ms promo interval; the bottom promo now rotates through the carousel scheduler.
+  useQueuedCarouselRotation({
+    carouselId: 'bottom-promo',
+    urls: [...Array(2).fill(''), ...bottomPromoItems.map(item => item.image_url || '')],
+    index: promoIndex,
+    setIndex: setPromoIndex,
+    paused: !isOpen || isPromoHovered || isPromoAutoplayPaused,
+  });
 
   useEffect(() => () => {
     if (promoPauseTimeoutRef.current !== null) {
