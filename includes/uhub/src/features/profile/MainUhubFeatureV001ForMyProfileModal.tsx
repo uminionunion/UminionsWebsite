@@ -779,7 +779,7 @@ const RotatingUnionEventCard = () => {
     <QueuedImage
       src={activeItem.image_url}
       alt={activeItem.title || 'uHome-Hub upper carousel image'}
-      queuePriority={IMAGE_LOAD_PRIORITY.critical}
+      queuePriority={IMAGE_LOAD_PRIORITY.carousel}
       keepPreviousWhileLoading
     />
     <p>{activeItem.title || activeItem.description}{activeItem.price ? ` · ${activeItem.price}` : ''}</p>
@@ -830,7 +830,7 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: ManagedCarousel
     <QueuedImage
       src={item.image_url}
       alt={item.title || 'Carousel image'}
-      queuePriority={IMAGE_LOAD_PRIORITY.critical}
+      queuePriority={IMAGE_LOAD_PRIORITY.carousel}
       keepPreviousWhileLoading
     />
     <div className="uhub-header-product-overlay">
