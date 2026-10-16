@@ -280,7 +280,7 @@ export const CreateBroadcastView = () => {
                     <Label>Upload Media</Label>
                     <div className="flex gap-2">
                         <label className="flex-1">
-                            <Button variant="outline" className="w-full cursor-pointer" asChild>
+                            <Button variant="outline" className="w-full cursor-pointer text-white" asChild>
                                 <span>
                                     <Upload className="mr-2 h-4 w-4" /> 
                                     {mediaFile?.type.includes('audio') ? 'Change MP3' : 'MP3'}
@@ -294,7 +294,7 @@ export const CreateBroadcastView = () => {
                             />
                         </label>
                         <label className="flex-1">
-                            <Button variant="outline" className="w-full cursor-pointer" asChild>
+                            <Button variant="outline" className="w-full cursor-pointer text-white" asChild>
                                 <span><Upload className="mr-2 h-4 w-4" /> Video</span>
                             </Button>
                             <input
@@ -304,6 +304,8 @@ export const CreateBroadcastView = () => {
                                 onChange={(e) => setMediaFile(e.target.files?.[0] || null)}
                             />
                         </label>
+                    </div>
+                    <div className="mt-2 flex gap-2">
                                                 <Button
                                                     type="button"
                                                     variant="outline"

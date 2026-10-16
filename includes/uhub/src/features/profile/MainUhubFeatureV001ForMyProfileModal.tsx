@@ -762,11 +762,19 @@ const upperEventFallbackItems: ManagedCarouselItem[] = [
   { image_url: '/includes/WYSad001.png', title: 'AD - Sponsored By: WhatsYorStory.com', website: 'https://WhatsYorStory.com' },
 ];
 
+// The three side carousels (top-left, bottom-left, middle-right) skip the image queue and cache on purpose;
+// all slides are requested as soon as the list arrives so each one is ready when the carousel changes.
+const usePreloadSlides = (urls: Array<string | undefined | null>) => {
+  useEffect(() => {
+    urls.forEach(url => { if (url) { const image = new Image(); image.src = url; } });
+  }, [urls.join('|')]);
+};
+
 const RotatingUnionEventCard = () => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const { items } = useManagedCarouselItems('left-top', upperEventFallbackItems);
-  useEffect(() => retainQueuedImages(items.map(item => item.image_url)), [items]);
+  usePreloadSlides(items.map(item => item.image_url));
   useEffect(() => {
     if (paused) return;
     const timer = window.setInterval(() => setIndex(value => (value + 1) % items.length), 4500);
@@ -776,11 +784,9 @@ const RotatingUnionEventCard = () => {
   const activeItem = items[index] || upperEventFallbackItems[0];
   return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeItem.website && window.open(activeItem.website, '_blank')}>
     <button type="button" className="uhub-event-arrow left" onClick={(event) => { event.stopPropagation(); setIndex(value => (value - 1 + items.length) % items.length); }}>‹</button>
-    <QueuedImage
+    <img
       src={activeItem.image_url}
       alt={activeItem.title || 'uHome-Hub upper carousel image'}
-      queuePriority={IMAGE_LOAD_PRIORITY.carousel}
-      keepPreviousWhileLoading
     />
     <p>{activeItem.title || activeItem.description}{activeItem.price ? ` · ${activeItem.price}` : ''}</p>
     <button type="button" className="uhub-event-arrow right" onClick={(event) => { event.stopPropagation(); setIndex(value => (value + 1) % items.length); }}>›</button>
@@ -823,15 +829,13 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: ManagedCarousel
     return () => window.clearInterval(timer);
   }, [paused, items.length]);
   useEffect(() => setIndex(0), [items]);
-  useEffect(() => retainQueuedImages(items.map(item => item.image_url)), [items]);
+  usePreloadSlides(items.map(item => item.image_url));
   const item = items[index] || fallbackItems[0];
   return <div className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
     <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + items.length) % items.length)}>‹</button>
-    <QueuedImage
+    <img
       src={item.image_url}
       alt={item.title || 'Carousel image'}
-      queuePriority={IMAGE_LOAD_PRIORITY.carousel}
-      keepPreviousWhileLoading
     />
     <div className="uhub-header-product-overlay">
       {item.title && <span>{item.title}</span>}
@@ -909,7 +913,7 @@ const AnchorRotator = () => {
   </div>;
 };
 
-type SitePageKey = 'about' | 'terms';
+type SitePageKey = 'about' | 'terms' | 'welcome';
 interface SitePageData { content: string; enabled: boolean; lastUpdated: string }
 
 // To override the "Last Updated" date by hand, put text here (for example 'May 1, 2025'); empty means "use the date of the last save".
@@ -924,6 +928,7 @@ const sanitizeSitePageHtml = (html: string) => html
 const sitePageConfig: Record<SitePageKey, { button: string; title: string; line: (lastUpdated: string) => string }> = {
   about: { button: 'Button 9998', title: 'About Us', line: () => 'Welcome To The Uminion Union About Us Section:' },
   terms: { button: 'Button 9999', title: 'Terms of Use & Service', line: (lastUpdated) => `Last Updated ${TERMS_LAST_UPDATED_OVERRIDE || lastUpdated || '___'}` },
+  welcome: { button: 'Button T', title: 'Welcome Title', line: () => '' },
 };
 
 const useSitePage = (key: SitePageKey, enabled = true) => {
@@ -952,9 +957,12 @@ const GroupIcon = ({ withChat = false }: { withChat?: boolean }) => (
   </svg>
 );
 
-const SitePageModal = ({ pageKey, isAdmin, onClose, onChanged }: { pageKey: SitePageKey; isAdmin: boolean; onClose: () => void; onChanged: () => void }) => {
+const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+const SitePageModal = ({ pageKey, isAdmin, onClose, onChanged, defaultContent = '' }: { pageKey: SitePageKey; isAdmin: boolean; onClose: () => void; onChanged: () => void; defaultContent?: string }) => {
   const config = sitePageConfig[pageKey];
   const { page, setPage, loaded } = useSitePage(pageKey);
+  const shownContent = page.content || (defaultContent ? escapeHtml(defaultContent) : '');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -962,7 +970,7 @@ const SitePageModal = ({ pageKey, isAdmin, onClose, onChanged }: { pageKey: Site
   const [textColor, setTextColor] = useState('#ffffff');
 
   useEffect(() => {
-    if (isEditing && editorRef.current) editorRef.current.innerHTML = sanitizeSitePageHtml(page.content);
+    if (isEditing && editorRef.current) editorRef.current.innerHTML = sanitizeSitePageHtml(loaded ? shownContent : page.content);
     // Only seed the editor when edit mode starts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing]);
@@ -1026,13 +1034,13 @@ const SitePageModal = ({ pageKey, isAdmin, onClose, onChanged }: { pageKey: Site
         </div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-gray-300">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
+            {config.line(page.lastUpdated) && <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />}
             {config.line(page.lastUpdated)}
           </div>
           {isAdmin && (
             <div className="flex gap-2">
               <Button type="button" onClick={handleUpdateOrSave} disabled={isSaving} className="bg-orange-400 text-black hover:bg-orange-500">{isSaving ? 'Saving...' : isEditing ? 'Save?' : 'Update?'}</Button>
-              <Button type="button" onClick={toggleEnabled} disabled={isEditing} className={page.enabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-600 text-white hover:bg-gray-500'}>{page.enabled ? 'Enabled' : 'Disabled'}</Button>
+              {pageKey !== 'welcome' && <Button type="button" onClick={toggleEnabled} disabled={isEditing} className={page.enabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-600 text-white hover:bg-gray-500'}>{page.enabled ? 'Enabled' : 'Disabled'}</Button>}
             </div>
           )}
         </div>
@@ -1054,11 +1062,40 @@ const SitePageModal = ({ pageKey, isAdmin, onClose, onChanged }: { pageKey: Site
           <div ref={editorRef} contentEditable suppressContentEditableWarning className="min-h-[240px] flex-1 overflow-y-auto rounded-xl border border-orange-400/40 bg-[#111827] p-3 text-sm text-gray-100 outline-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-bold [&_img]:max-w-full" />
         ) : (
           <div className="min-h-[240px] flex-1 overflow-y-auto rounded-xl border border-white/10 bg-[#111827] p-3 text-sm text-gray-100 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-bold [&_img]:max-w-full [&_a]:text-orange-400 [&_a]:underline">
-            {!loaded ? <p className="text-gray-400">Loading...</p> : page.content ? <div dangerouslySetInnerHTML={{ __html: sanitizeSitePageHtml(page.content) }} /> : <p className="text-gray-400">Nothing has been written here yet.</p>}
+            {!loaded ? <p className="text-gray-400">Loading...</p> : shownContent ? <div dangerouslySetInnerHTML={{ __html: sanitizeSitePageHtml(shownContent) }} /> : <p className="text-gray-400">Nothing has been written here yet.</p>}
           </div>
         )}
       </div>
     </div>
+  );
+};
+
+const welcomeChangedEvent = 'uhub:welcome-changed';
+
+// The welcome sentence next to the play button. It shows the admin-saved rich text, or the built-in sentence until one is saved.
+const WelcomeDescription = ({ fallback, className }: { fallback: string; className: string }) => {
+  const { page, reload } = useSitePage('welcome');
+  useEffect(() => {
+    window.addEventListener(welcomeChangedEvent, reload);
+    return () => window.removeEventListener(welcomeChangedEvent, reload);
+  }, [reload]);
+  if (!page.content) return <p className={className}>{fallback}</p>;
+  return <div className={`${className} [&_h1]:text-lg [&_h1]:font-bold [&_h2]:text-base [&_h2]:font-bold [&_h3]:font-bold [&_img]:mx-auto [&_img]:max-w-full [&_a]:text-orange-400 [&_a]:underline`} dangerouslySetInnerHTML={{ __html: sanitizeSitePageHtml(page.content) }} />;
+};
+
+// "T" (Title) button: only a high-high-high admin sees it; it edits the welcome sentence.
+const WelcomeTitleButton = ({ fallback, small = false }: { fallback: string; small?: boolean }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button
+        className={`font-extrabold hover:opacity-90 ${small ? 'text-xs h-8' : 'text-sm'}`}
+        style={{ backgroundColor: '#800020', color: '#FFD700' }}
+        title="Title (welcome text)"
+        onClick={() => setOpen(true)}
+      >T</Button>
+      {open && <SitePageModal pageKey="welcome" isAdmin onClose={() => setOpen(false)} onChanged={() => window.dispatchEvent(new Event(welcomeChangedEvent))} defaultContent={fallback} />}
+    </>
   );
 };
 
@@ -1400,7 +1437,7 @@ const BroadcastView = ({
           <div className="w-2/3 flex flex-col">
             <div className="flex items-center gap-2 mb-2">
               <Button variant="outline" size="icon" className="uhub-play-button" style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }}><Play className="h-4 w-4" /></Button>
-              <p className="text-sm text-muted-foreground flex-grow text-center">{broadcast.description}</p>
+              <WelcomeDescription fallback={broadcast.description} className="text-sm text-muted-foreground flex-grow text-center" />
             </div>
             <div className="flex items-center gap-2 mb-4">
               <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-sm">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
@@ -1417,6 +1454,7 @@ const BroadcastView = ({
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
                 <Button className="bg-pink-500 hover:bg-pink-600 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
                 <Button className="bg-purple-600 hover:bg-purple-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
+                <WelcomeTitleButton fallback={broadcast.description} />
                 </>
               )}
             </div>
@@ -1454,7 +1492,7 @@ if (isMobile) {
         <div className="flex-shrink-0 flex flex-col w-[100%] mx-auto py-4">
           <div className="flex items-center gap-2 mb-2">
             <Button variant="outline" size="icon" className="h-8 w-8 uhub-play-button" style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }}><Play className="h-4 w-4" /></Button>
-            <p className="text-xs text-muted-foreground flex-grow text-center">{broadcast.description}</p>
+                    <WelcomeDescription fallback={broadcast.description} className="text-xs text-muted-foreground flex-grow text-center" />
           </div>
           <div className="flex items-center gap-2 mb-2">
             <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-xs">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
@@ -1471,11 +1509,12 @@ if (isMobile) {
               <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
               <Button className="bg-pink-500 hover:bg-pink-600 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
               <Button className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
-              </>
-            )}
-          </div>
+                            <WelcomeTitleButton fallback={broadcast.description} small />
+                            </>
+                          )}
+                        </div>
 
-          {/* CAROUSEL CONTENT - NO overflow-hidden */}
+                        {/* CAROUSEL CONTENT - NO overflow-hidden */}
           <div className="flex-shrink-0">
             <div className="flex w-full gap-2">
               <div className="flex h-48 w-1/3 min-w-0 items-center justify-center overflow-hidden rounded-md bg-transparent p-2">
@@ -1615,7 +1654,7 @@ if (isMobile) {
           <div style={{ width: `${broadcastRightWidth}%` }} className="flex flex-col overflow-y-auto overflow-x-hidden">
             <div className="flex items-center gap-2 mb-2">
               <Button variant="outline" size="icon" className="h-8 w-8 uhub-play-button" style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }}><Play className="h-4 w-4" /></Button>
-              <p className="text-xs text-muted-foreground flex-grow text-center">{broadcast.description}</p>
+                        <WelcomeDescription fallback={broadcast.description} className="text-xs text-muted-foreground flex-grow text-center" />
             </div>
             <div className="flex items-center gap-2 mb-2">
               <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-xs">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
@@ -1632,11 +1671,12 @@ if (isMobile) {
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
                 <Button className="bg-pink-500 hover:bg-pink-600 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
                 <Button className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
-                </>
-              )}
-            </div>
+                                <WelcomeTitleButton fallback={broadcast.description} small />
+                                </>
+                              )}
+                            </div>
 
-            {/* CAROUSEL - Shows limited images based on width */}
+                            {/* CAROUSEL - Shows limited images based on width */}
             <div className="shrink-0 overflow-hidden">
               <div className="flex h-full min-w-0 gap-2">
                 <div className="flex h-48 w-1/3 min-w-0 items-center justify-center overflow-hidden rounded-md bg-transparent p-2">
