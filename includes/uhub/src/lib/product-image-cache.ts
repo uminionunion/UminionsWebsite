@@ -7,6 +7,7 @@ interface ProductImageBatch {
   index: number;
   sequence: number;
   loadedAtSliceEnd?: number;
+  turnsUsed: number;
 }
 
 const loadedByQueue: Record<ProductImageQueue, number> = { union: 0, users: 0 };
@@ -15,7 +16,9 @@ const queueByUrl = new Map<string, ProductImageQueue>();
 const MAX_CONCURRENT_LOADS = 3;
 const MAX_CACHED_IMAGES = 48;
 const MAX_CACHED_BYTES = 48 * 1024 * 1024;
-const SLICE_DURATION_MS = 7000;
+// Changed 10/16/26 from 7000: each store now gets a 2 second turn, one store at a time.
+const SLICE_DURATION_MS = 2000;
+let lastServedQueue: ProductImageQueue = 'users';
 const batches: ProductImageBatch[] = [];
 const queuedUrls = new Set<string>();
 const pendingImages = new Map<string, Promise<HTMLImageElement>>();
@@ -87,7 +90,7 @@ function takeNextBatch(queue: ProductImageQueue) {
     const batch = batches.splice(position, 1)[0];
     // Returning batch: if nothing new arrived since its last slice, log it and stop retrying (spinner stays up).
     if (batch.loadedAtSliceEnd !== undefined && loadedByQueue[queue] === batch.loadedAtSliceEnd) {
-      console.warn(`[PRODUCT IMAGES] ${queue === 'union' ? 'Union Store' : "Users' Stores"}: no new images arrived since the last 7-second slice (${batch.urls.length - batch.index} still waiting). Not retrying in the background; the loading spinner stays on.`);
+      console.warn(`[PRODUCT IMAGES] ${queue === 'union' ? 'Union Store' : "Users' Stores"}: no new images arrived since the last 2-second turn (${batch.urls.length - batch.index} still waiting). Not retrying in the background; the loading spinner stays on.`);
       continue;
     }
     return batch;
@@ -96,6 +99,7 @@ function takeNextBatch(queue: ProductImageQueue) {
 
 function finishSlice() {
   currentBatches.forEach(batch => {
+    // Unfinished batches go to the back of the queue for another turn, however many turns that takes.
     if (batch.index < batch.urls.length) {
       batch.priority = queueOrder[batch.queue];
       batch.sequence = sequence++;
@@ -112,9 +116,15 @@ function processQueue() {
   if (!queueActive) return;
   if (!currentBatches.length) {
     batches.sort((a, b) => a.priority - b.priority || a.sequence - b.sequence);
-    currentBatches = (['union', 'users'] as ProductImageQueue[])
-      .map(takeNextBatch)
-      .filter((batch): batch is ProductImageBatch => batch !== null);
+    // One store per turn, not at the same time: Union Store first, then Users' Stores, alternating.
+    const order: ProductImageQueue[] = lastServedQueue === 'union' ? ['users', 'union'] : ['union', 'users'];
+    let nextBatch: ProductImageBatch | null = null;
+    for (const queue of order) {
+      nextBatch = takeNextBatch(queue);
+      if (nextBatch) { lastServedQueue = queue; break; }
+    }
+    if (nextBatch) nextBatch.turnsUsed += 1;
+    currentBatches = nextBatch ? [nextBatch] : [];
     currentSliceStartedAt = currentBatches.length ? Date.now() : 0;
   }
   if (!currentBatches.length) return;
@@ -155,12 +165,24 @@ export function setProductImageQueueActive(active: boolean) {
   }
 }
 
+const MAX_ENTRIES_PER_STORE = 2;
+// A store never has more than two entries in the queue at once; extra images join an entry it already has.
+function addToQueue(queue: ProductImageQueue, urls: string[]) {
+  const waiting = batches.filter(batch => batch.queue === queue);
+  const current = currentBatches.filter(batch => batch.queue === queue);
+  if (waiting.length + current.length >= MAX_ENTRIES_PER_STORE) {
+    const target = waiting[waiting.length - 1] || current[current.length - 1];
+    target.urls.push(...urls);
+    return;
+  }
+  batches.push({ queue, priority: queueOrder[queue], urls, index: 0, sequence: sequence++, turnsUsed: 0 });
+}
+
 export function enqueueProductImageBatch(urls: string[], queue: ProductImageQueue): Promise<void> {
   const uniqueUrls = [...new Set(urls.filter(Boolean))].filter(url => !imageCache.has(url) && !queuedUrls.has(url));
   if (!uniqueUrls.length) return Promise.resolve();
   uniqueUrls.forEach(url => { queuedUrls.add(url); queueByUrl.set(url, queue); });
-  const batch: ProductImageBatch = { queue, priority: queueOrder[queue], urls: uniqueUrls, index: 0, sequence: sequence++ };
-  batches.push(batch);
+  addToQueue(queue, uniqueUrls);
 
   const completion = Promise.all(uniqueUrls.map(url => preloadProductImage(url, queue))).then(() => undefined);
   completion.catch(() => undefined);
@@ -191,7 +213,7 @@ export function preloadProductImage(url: string, queue: ProductImageQueue): Prom
   if (!queuedUrls.has(url)) {
     queuedUrls.add(url);
     queueByUrl.set(url, queue);
-    batches.push({ queue, priority: queueOrder[queue], urls: [url], index: 0, sequence: sequence++ });
+    addToQueue(queue, [url]);
   }
   processQueue();
   return promise;
