@@ -1,39 +1,41 @@
-import { useEffect, useRef } from 'react';
-import { retainQueuedImages } from './image-load-queue';
+import { useEffect, useId, useRef } from 'react';
+import { IMAGE_LOAD_PRIORITY, preloadQueuedImage, retainQueuedImages } from './image-load-queue';
 
-// Added 10/16/26: carousels take turns. Only one rotates at a time, and the queue rests between turns.
-const REST_BETWEEN_ROTATIONS_MS = 2000;
-const MAX_QUEUED_PER_CAROUSEL = 2;
+// Rewritten 10/16/26: carousels no longer have their own timers. One scheduler visits them one at a time,
+// loads a random next image into the cache, rotates to it, waits 5 seconds, then moves to the next carousel.
+const STEP_MS = 5000;
+const LOAD_TIMEOUT_MS = 4000;
 
-interface RotationTurn {
-  carouselId: string;
-  run: () => Promise<void>;
+interface Registered {
+  urls: string[];
+  index: number;
+  setIndex: (index: number) => void;
+  paused: boolean;
 }
 
-const turns: RotationTurn[] = [];
-let working = false;
+const carousels = new Map<string, Registered>();
+let cursor = 0;
+let timer: number | undefined;
 
-async function work() {
-  if (working) return;
-  working = true;
-  while (turns.length > 0) {
-    const turn = turns.shift();
-    if (!turn) break;
-    try {
-      await turn.run();
-    } catch {
-      // A failed turn must not stop the queue.
+async function step() {
+  const ids = [...carousels.keys()];
+  if (ids.length) {
+    const id = ids[cursor++ % ids.length];
+    const entry = carousels.get(id);
+    if (entry && !entry.paused && entry.urls.length > 1) {
+      const choices = entry.urls.map((_, position) => position).filter(position => position !== entry.index);
+      const next = choices[Math.floor(Math.random() * choices.length)];
+      const src = entry.urls[next];
+      if (src) {
+        await Promise.race([
+          preloadQueuedImage(src, IMAGE_LOAD_PRIORITY.carousel).catch(() => undefined),
+          new Promise(resolve => window.setTimeout(resolve, LOAD_TIMEOUT_MS)),
+        ]);
+      }
+      if (carousels.get(id) === entry) entry.setIndex(next);
     }
-    await new Promise(resolve => window.setTimeout(resolve, REST_BETWEEN_ROTATIONS_MS));
   }
-  working = false;
-}
-
-function enqueueTurn(turn: RotationTurn) {
-  // A carousel already waiting twice is not counted again until one of its turns is used.
-  if (turns.filter(item => item.carouselId === turn.carouselId).length >= MAX_QUEUED_PER_CAROUSEL) return;
-  turns.push(turn);
-  void work();
+  timer = carousels.size ? window.setTimeout(step, STEP_MS) : undefined;
 }
 
 interface QueuedRotationOptions {
@@ -41,41 +43,30 @@ interface QueuedRotationOptions {
   urls: string[];
   index: number;
   setIndex: (index: number) => void;
-  intervalMs: number | (() => number);
+  intervalMs?: number | (() => number);
   paused?: boolean;
-  pickNext?: (current: number, count: number) => number;
+  pickNext?: unknown;
 }
 
-export function useQueuedCarouselRotation({ carouselId, urls, index, setIndex, intervalMs, paused = false, pickNext }: QueuedRotationOptions) {
-  const indexRef = useRef(index);
-  indexRef.current = index;
+export function useQueuedCarouselRotation({ carouselId: baseId, urls, index, setIndex, paused = false }: QueuedRotationOptions) {
+  // The top and bottom covers share a name, so each instance gets its own id.
+  const carouselId = `${baseId}-${useId()}`;
   const urlsKey = urls.join('|');
+  const entryRef = useRef<Registered>({ urls, index, setIndex, paused });
+  entryRef.current.urls = urls;
+  entryRef.current.index = index;
+  entryRef.current.setIndex = setIndex;
+  entryRef.current.paused = paused;
 
-  // Every carousel image goes into the cache up front so a turn only has to show it.
+  // Every carousel image goes into the cache up front.
   useEffect(() => retainQueuedImages(urls.filter(Boolean)), [urlsKey]);
 
   useEffect(() => {
-    if (paused || urls.length < 2) return;
-    let cancelled = false;
-    let timer: number;
-    const schedule = () => {
-      const delay = typeof intervalMs === 'function' ? intervalMs() : intervalMs;
-      timer = window.setTimeout(() => {
-        enqueueTurn({
-          carouselId,
-          run: async () => {
-            if (cancelled) return;
-            const current = indexRef.current;
-            setIndex(pickNext ? pickNext(current, urls.length) : (current + 1) % urls.length);
-          },
-        });
-        schedule();
-      }, delay);
-    };
-    schedule();
+    const entry = entryRef.current;
+    carousels.set(carouselId, entry);
+    if (timer === undefined) timer = window.setTimeout(step, STEP_MS);
     return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
+      if (carousels.get(carouselId) === entry) carousels.delete(carouselId);
     };
-  }, [carouselId, urlsKey, paused, intervalMs]);
+  }, [carouselId]);
 }
