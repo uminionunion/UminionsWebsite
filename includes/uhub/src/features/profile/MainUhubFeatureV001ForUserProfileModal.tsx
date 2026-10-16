@@ -161,6 +161,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
           body: JSON.stringify({ name: editingEntry.title, description: editingEntry.description }),
         });
         episodeFeed.reload();
+        window.dispatchEvent(new Event('uhub:episodes-changed'));
       }
       setEditingEntry(null);
     } catch (error) {
@@ -450,7 +451,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
                               <span className="min-w-0 flex-1 truncate">{episode.name}{episode.is_edited ? ' -edited' : ''}</span>
                               {isOwnProfile && <>
                                 <Button variant="ghost" size="icon" className="h-6 w-6 text-green-400 hover:text-green-300" title="Edit episode" onClick={() => setEditingEntry({ type: 'episode', id: episode.id, title: episode.name, description: episode.description || '' })}><Pencil className="h-3 w-3" /></Button>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:text-red-300" title="Delete episode" onClick={async () => { if (confirm('Delete this episode?')) { await fetch(`/api/episodes/${episode.id}`, { method: 'DELETE', credentials: 'include' }); episodeFeed.reload(); } }}><Trash2 className="h-3 w-3" /></Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:text-red-300" title="Delete episode" onClick={async () => { if (confirm('Delete this episode?')) { await fetch(`/api/episodes/${episode.id}`, { method: 'DELETE', credentials: 'include' }); window.dispatchEvent(new Event('uhub:episodes-changed')); episodeFeed.reload(); } }}><Trash2 className="h-3 w-3" /></Button>
                               </>}
                             </div>
                           )) : <p className="text-xs text-muted-foreground">No episodes yet.</p>}
@@ -595,6 +596,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
                               if (confirm('Delete this episode?')) {
                                 try {
                                   await fetch(`/api/episodes/${episode.id}`, { method: 'DELETE', credentials: 'include' });
+                                  window.dispatchEvent(new Event('uhub:episodes-changed'));
                                   episodeFeed.reload();
                                 } catch (error) {
                                   console.error('[EPISODES] Error deleting:', error);

@@ -16,15 +16,38 @@ const getString = (val: any): string => {
   return String(val || '');
 };
 
-type CarouselSlot = 'left' | 'left-top' | 'right' | 'cover' | 'bottom';
+type CarouselSlot = 'left' | 'left-top' | 'right' | 'cover' | 'bottom' | 'center';
 
 const normalizeSlot = (slot: any): CarouselSlot | null => {
   const value = getString(slot);
-  return value === 'left' || value === 'left-top' || value === 'right' || value === 'cover' || value === 'bottom' ? value : null;
+  return value === 'left' || value === 'left-top' || value === 'right' || value === 'cover' || value === 'bottom' || value === 'center' ? value : null;
 };
 
 // The default cover image and the default bottom image/caption occupy the remaining slots of 10.
-const getCarouselLimit = (slot: CarouselSlot) => slot === 'cover' ? 9 : slot === 'bottom' ? 8 : 10;
+// The center carousel allows 49 images in total; the default anchor image is image 1, leaving 48 admin images.
+const getCarouselLimit = (slot: CarouselSlot) => slot === 'cover' ? 9 : slot === 'bottom' ? 8 : slot === 'center' ? 48 : 10;
+
+// About Us (button 9998) and Terms of Use (button 9999) pages are stored in the existing carousel table under
+// private slots, so no migration is needed. title = '1'/'0' (enabled), description = HTML, price = last updated.
+type SitePageKey = 'about' | 'terms';
+const sitePageSlot = (key: SitePageKey) => `page-${key}` as const;
+const normalizePageKey = (value: any): SitePageKey | null => {
+  const key = getString(value);
+  return key === 'about' || key === 'terms' ? key : null;
+};
+const sanitizePageHtml = (html: string) => html
+  .replace(/<\s*(script|iframe|object|embed|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+  .replace(/<\s*(script|iframe|object|embed|style)[^>]*>/gi, '')
+  .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+  .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1=$2#$2');
+const isHighHighHighAdmin = async (userId: number) => {
+  const user = await db.selectFrom('users').select('is_high_high_high_admin').where('id', '=', userId).executeTakeFirst();
+  return user?.is_high_high_high_admin === 1;
+};
+const loadSitePage = async (key: SitePageKey) => {
+  const row = await db.selectFrom('UhubManagedCarouselItems').selectAll().where('slot', '=', sitePageSlot(key)).executeTakeFirst();
+  return { content: row?.description || '', enabled: row ? row.title !== '0' : false, lastUpdated: row?.price || '' };
+};
 
 const isSafeWebsite = (value: string) => !value || /^(https?:\/\/|www\.)/i.test(value);
 const normalizeWebsite = (value: string) => /^www\./i.test(value) ? `https://${value}` : value;
@@ -244,6 +267,58 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req: Reque
   }
 });
 
+router.get('/api/site-pages/:key', async (req: Request, res: Response) => {
+  try {
+    const key = normalizePageKey(req.params.key);
+    if (!key) return res.status(400).json({ error: 'Invalid page' });
+    res.json(await loadSitePage(key));
+  } catch (error) {
+    console.error('[SITE PAGES] Error loading page:', error);
+    res.status(500).json({ error: 'Failed to load page' });
+  }
+});
+
+router.put('/api/site-pages/:key', requireAuth, async (req: Request, res: Response) => {
+  try {
+    if (!(await isHighHighHighAdmin(req.user!.userId))) return res.status(403).json({ error: 'High-high-high admin only' });
+    const key = normalizePageKey(req.params.key);
+    if (!key) return res.status(400).json({ error: 'Invalid page' });
+    const current = await loadSitePage(key);
+    const content = typeof req.body?.content === 'string' ? sanitizePageHtml(req.body.content).slice(0, 200000) : current.content;
+    const enabled = typeof req.body?.enabled === 'boolean' ? req.body.enabled : current.enabled;
+    const lastUpdated = typeof req.body?.lastUpdated === 'string' ? req.body.lastUpdated.slice(0, 100) : current.lastUpdated;
+    const slot = sitePageSlot(key);
+    const existing = await db.selectFrom('UhubManagedCarouselItems').select('id').where('slot', '=', slot).executeTakeFirst();
+    const values = { image_url: '', title: enabled ? '1' : '0', description: content, price: lastUpdated || null };
+    if (existing) await db.updateTable('UhubManagedCarouselItems').set(values).where('id', '=', existing.id).execute();
+    else await db.insertInto('UhubManagedCarouselItems').values({ ...values, slot, display_order: 0, website: null }).execute();
+    res.json(await loadSitePage(key));
+  } catch (error) {
+    console.error('[SITE PAGES] Error saving page:', error);
+    res.status(500).json({ error: 'Failed to save page' });
+  }
+});
+
+router.post('/api/site-pages/:key/image', requireAuth, async (req: Request, res: Response) => {
+  try {
+    if (!(await isHighHighHighAdmin(req.user!.userId))) return res.status(403).json({ error: 'High-high-high admin only' });
+    const key = normalizePageKey(req.params.key);
+    if (!key) return res.status(400).json({ error: 'Invalid page' });
+    const file = getUploadedFiles(req)[0];
+    if (!file) return res.status(400).json({ error: 'Choose an image' });
+    const extension = path.extname(file.name).toLowerCase();
+    if (!new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']).has(extension)) return res.status(400).json({ error: 'Only image uploads are allowed' });
+    const directory = path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'uploads', 'managed-carousels', `page-${key}`);
+    fs.mkdirSync(directory, { recursive: true });
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${extension}`;
+    await file.mv(path.join(directory, fileName));
+    res.status(201).json({ url: `/api/uploads/managed-carousels/page-${key}/${fileName}` });
+  } catch (error) {
+    console.error('[SITE PAGES] Error uploading image:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
 // Create a new broadcast (the container; episodes go inside).
 router.post('/api/broadcasts', requireAuth, async (req: Request, res: Response) => {
   try {
@@ -433,7 +508,21 @@ router.get('/api/episodes/scheduled', async (_req: Request, res: Response) => {
       .where('media_url', 'is not', null)
       .orderBy('scheduled_at', 'asc')
       .executeTakeFirst();
-    res.json({ episode: episode ? (await attachEpisodeMedia([episode]))[0] : null });
+    // When nothing is due yet, tell the client when the next one is so it can set one timer instead of polling.
+    const upcoming = episode
+      ? null
+      : await db
+          .selectFrom('UserBroadcastEpisodes')
+          .select('scheduled_at')
+          .where('scheduled_at', '>', now)
+          .where('last_played_at', 'is', null)
+          .where('media_url', 'is not', null)
+          .orderBy('scheduled_at', 'asc')
+          .executeTakeFirst();
+    res.json({
+      episode: episode ? (await attachEpisodeMedia([episode]))[0] : null,
+      next_scheduled_at: upcoming?.scheduled_at ?? null,
+    });
   } catch (error) {
     console.error('[BROADCASTS] Error fetching scheduled episode:', error);
     res.status(500).json({ error: 'Failed to fetch scheduled episode' });

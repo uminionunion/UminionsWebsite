@@ -41,7 +41,10 @@ function ensureMeFetched() {
   if (hasFetchedMe) return;
   hasFetchedMe = true;
   fetch('/api/auth/me', { credentials: 'include' })
-    .then((response) => (response.ok ? response.json() : null))
+    .then((response) => {
+      if (response.status === 401) console.info('[AUTH] 401 from /api/auth/me - This Means No User is Logged In (normal for visitors).');
+      return response.ok ? response.json() : null;
+    })
     .then((userData) => setState({ user: userData, isLoading: false }))
     .catch((error) => {
       // TURN ON WHEN YOU NEED TO DEBUG: report network failures from the shared auth check.

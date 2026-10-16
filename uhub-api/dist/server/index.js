@@ -306,7 +306,7 @@ app.post('/api/broadcasts/union-news-14/images/:id/move-left', authMiddleware, a
             res.status(403).json({ error: 'Only high-high-high admins can reorder images' });
             return;
         }
-        const imageId = parseInt(req.params.id, 10);
+        const imageId = parseInt(String(req.params.id), 10);
         if (isNaN(imageId)) {
             res.status(400).json({ error: 'Invalid image ID' });
             return;
@@ -370,7 +370,7 @@ app.post('/api/broadcasts/union-news-14/images/:id/move-right', authMiddleware, 
             res.status(403).json({ error: 'Only high-high-high admins can reorder images' });
             return;
         }
-        const imageId = parseInt(req.params.id, 10);
+        const imageId = parseInt(String(req.params.id), 10);
         if (isNaN(imageId)) {
             res.status(400).json({ error: 'Invalid image ID' });
             return;

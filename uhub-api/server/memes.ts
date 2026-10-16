@@ -147,7 +147,7 @@ router.get('/api/memes/posts/user-submitted', async (req: Request, res: Response
 // Paginated list of a specific user's MemeBox posts, newest first (used by the profile modal's "Recent Posts & Episodes" section).
 router.get('/api/memes/posts/by-user/:userId', async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId, 10);
+    const userId = parseInt(String(req.params.userId), 10);
     const offset = parseInt((req.query.offset as string) || '0', 10);
     const limit = parseInt((req.query.limit as string) || '3', 10);
 
@@ -196,7 +196,7 @@ router.get('/api/memes/posts/by-user/:userId', async (req: Request, res: Respons
 // Get post with all images
 router.get('/api/memes/posts/:id', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     console.log('[MEME API] Fetching post', id);
     
     const post = await db
@@ -301,7 +301,7 @@ router.post('/api/memes/posts', requireAuth, async (req: Request, res: Response)
 // Delete post (auto-triggered when downvotes >= 10)
 router.delete('/api/memes/posts/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const userId = (req as any).user?.userId;
 
     console.log('[MEME API] Deleting post', id);
@@ -323,7 +323,7 @@ router.delete('/api/memes/posts/:id', requireAuth, async (req: Request, res: Res
 // Edit a post's title/description (owner only); marks the post as edited so the UI can show a "-edited" suffix.
 router.put('/api/memes/posts/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const userId = (req as any).user?.userId;
     const { title, description } = req.body;
 
@@ -352,7 +352,7 @@ router.put('/api/memes/posts/:id', requireAuth, async (req: Request, res: Respon
 // Upvote post
 router.post('/api/memes/posts/:id/upvote', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const userId = (req as any).user?.userId;
     const postId = parseInt(id);
 
@@ -423,7 +423,7 @@ router.post('/api/memes/posts/:id/upvote', requireAuth, async (req: Request, res
 // Downvote post (with auto-delete at 10 downvotes)
 router.post('/api/memes/posts/:id/downvote', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const userId = (req as any).user?.userId;
     const postId = parseInt(id);
 
@@ -512,7 +512,7 @@ router.post('/api/memes/posts/:id/downvote', requireAuth, async (req: Request, r
 // POST: Favorite/Unfavorite a post
 router.post('/api/memes/posts/:id/favorite', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const userId = (req as any).user?.userId;
     const postId = parseInt(id);
 
@@ -567,7 +567,7 @@ router.post('/api/memes/posts/:id/favorite', requireAuth, async (req: Request, r
 // Get all comments for a post
 router.get('/api/memes/posts/:id/comments', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     console.log('[MEME API] Fetching comments for post', id);
 
     // ✅ NEW: Extract userId from token if logged in
@@ -639,7 +639,7 @@ router.get('/api/memes/posts/:id/comments', async (req: Request, res: Response) 
 // Add comment to post
 router.post('/api/memes/posts/:id/comments', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { title, description, image } = req.body;
     const userId = (req as any).user?.userId;
 
@@ -682,7 +682,7 @@ res.status(201).json({
 // Delete comment
 router.delete('/api/memes/comments/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const userId = (req as any).user?.userId;
 
     console.log('[MEME API] Deleting comment', id);
@@ -703,7 +703,7 @@ router.delete('/api/memes/comments/:id', requireAuth, async (req: Request, res: 
 // Mark comment as deleted (soft delete - keeps data for admins)
 router.post('/api/memes/comments/:id/delete', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const userId = (req as any).user?.userId;
 
     console.log('[MEME API] Soft-deleting comment', id, 'by user', userId);
@@ -746,7 +746,7 @@ router.post('/api/memes/comments/:id/delete', requireAuth, async (req: Request, 
 // Upvote comment
 router.post('/api/memes/comments/:id/upvote', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const userId = (req as any).user?.userId;
     const commentId = parseInt(id);
 
@@ -813,7 +813,7 @@ router.post('/api/memes/comments/:id/upvote', requireAuth, async (req: Request, 
 // ✅ NEW: Downvote comment
 router.post('/api/memes/comments/:id/downvote', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const userId = (req as any).user?.userId;
     const commentId = parseInt(id);
 

@@ -186,7 +186,7 @@ app.use(millionPixelRouter);
 // NEW: User lookup route (accessible to all, no auth required)
 app.get('/api/users/by-username/:username', async (req: Request, res: Response) => {
   try {
-    const { username } = req.params;
+    const { username } = req.params as Record<string, string>;
 
     if (!username) {
       res.status(400).json({ error: 'Username required' });
@@ -368,7 +368,7 @@ app.post('/api/broadcasts/union-news-14/images/:id/move-left', authMiddleware, a
       return;
     }
 
-    const imageId = parseInt(req.params.id, 10);
+    const imageId = parseInt(String(req.params.id), 10);
     if (isNaN(imageId)) {
       res.status(400).json({ error: 'Invalid image ID' });
       return;
@@ -449,7 +449,7 @@ app.post('/api/broadcasts/union-news-14/images/:id/move-right', authMiddleware, 
       return;
     }
 
-    const imageId = parseInt(req.params.id, 10);
+    const imageId = parseInt(String(req.params.id), 10);
     if (isNaN(imageId)) {
       res.status(400).json({ error: 'Invalid image ID' });
       return;

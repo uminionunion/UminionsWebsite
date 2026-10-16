@@ -129,7 +129,7 @@ router.get('/api/memes/posts/user-submitted', async (req, res) => {
 // Paginated list of a specific user's MemeBox posts, newest first (used by the profile modal's "Recent Posts & Episodes" section).
 router.get('/api/memes/posts/by-user/:userId', async (req, res) => {
     try {
-        const userId = parseInt(req.params.userId, 10);
+        const userId = parseInt(String(req.params.userId), 10);
         const offset = parseInt(req.query.offset || '0', 10);
         const limit = parseInt(req.query.limit || '3', 10);
         if (!Number.isFinite(userId)) {

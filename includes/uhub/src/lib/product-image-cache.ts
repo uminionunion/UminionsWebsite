@@ -6,7 +6,11 @@ interface ProductImageBatch {
   urls: string[];
   index: number;
   sequence: number;
+  loadedAtSliceEnd?: number;
 }
+
+const loadedByQueue: Record<ProductImageQueue, number> = { union: 0, users: 0 };
+const queueByUrl = new Map<string, ProductImageQueue>();
 
 const MAX_CONCURRENT_LOADS = 3;
 const MAX_CACHED_IMAGES = 48;
@@ -57,6 +61,8 @@ function startImageLoad(url: string, resolve: (image: HTMLImageElement) => void,
       pendingImages.delete(url);
       queuedUrls.delete(url);
       imageResolvers.delete(url);
+      const loadedQueue = queueByUrl.get(url);
+      if (loadedQueue) loadedByQueue[loadedQueue] += 1;
       resolve(image);
     }).finally(() => {
       activeLoads -= 1;
@@ -75,8 +81,17 @@ function startImageLoad(url: string, resolve: (image: HTMLImageElement) => void,
 }
 
 function takeNextBatch(queue: ProductImageQueue) {
-  const position = batches.findIndex(batch => batch.queue === queue);
-  return position === -1 ? null : batches.splice(position, 1)[0];
+  while (true) {
+    const position = batches.findIndex(batch => batch.queue === queue);
+    if (position === -1) return null;
+    const batch = batches.splice(position, 1)[0];
+    // Returning batch: if nothing new arrived since its last slice, log it and stop retrying (spinner stays up).
+    if (batch.loadedAtSliceEnd !== undefined && loadedByQueue[queue] === batch.loadedAtSliceEnd) {
+      console.warn(`[PRODUCT IMAGES] ${queue === 'union' ? 'Union Store' : "Users' Stores"}: no new images arrived since the last 7-second slice (${batch.urls.length - batch.index} still waiting). Not retrying in the background; the loading spinner stays on.`);
+      continue;
+    }
+    return batch;
+  }
 }
 
 function finishSlice() {
@@ -84,6 +99,7 @@ function finishSlice() {
     if (batch.index < batch.urls.length) {
       batch.priority = queueOrder[batch.queue];
       batch.sequence = sequence++;
+      batch.loadedAtSliceEnd = loadedByQueue[batch.queue];
       batches.push(batch);
     }
   });
@@ -142,7 +158,7 @@ export function setProductImageQueueActive(active: boolean) {
 export function enqueueProductImageBatch(urls: string[], queue: ProductImageQueue): Promise<void> {
   const uniqueUrls = [...new Set(urls.filter(Boolean))].filter(url => !imageCache.has(url) && !queuedUrls.has(url));
   if (!uniqueUrls.length) return Promise.resolve();
-  uniqueUrls.forEach(url => queuedUrls.add(url));
+  uniqueUrls.forEach(url => { queuedUrls.add(url); queueByUrl.set(url, queue); });
   const batch: ProductImageBatch = { queue, priority: queueOrder[queue], urls: uniqueUrls, index: 0, sequence: sequence++ };
   batches.push(batch);
 
@@ -174,6 +190,7 @@ export function preloadProductImage(url: string, queue: ProductImageQueue): Prom
 
   if (!queuedUrls.has(url)) {
     queuedUrls.add(url);
+    queueByUrl.set(url, queue);
     batches.push({ queue, priority: queueOrder[queue], urls: [url], index: 0, sequence: sequence++ });
   }
   processQueue();

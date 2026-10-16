@@ -14,8 +14,9 @@ const categoryTypes: { id: Category; label: string, className?: string }[] = [
     { id: 'clothing', label: 'Clothing Pantry?' },
     { id: 'resource', label: 'Resource' },
     { id: 'library', label: 'Mini-Library/Billboard?' },
-    { id: 'candidates', label: 'Candidates Running for Office', className: 'text-yellow-400 font-bold' },
-    { id: 'politicians', label: 'Politicians who let the WH Fall still in office.' },
+    // Candidates and Politicians checkboxes disabled 10/15/26 by StorytellingSalem; un-comment to bring them back.
+    // { id: 'candidates', label: 'Candidates Running for Office', className: 'text-yellow-400 font-bold' },
+    // { id: 'politicians', label: 'Politicians who let the WH Fall still in office.' },
 ];
 
 const topCountries = ['Canada', 'Mexico', 'USA'];
