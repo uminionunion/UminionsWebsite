@@ -762,19 +762,11 @@ const upperEventFallbackItems: ManagedCarouselItem[] = [
   { image_url: '/includes/WYSad001.png', title: 'AD - Sponsored By: WhatsYorStory.com', website: 'https://WhatsYorStory.com' },
 ];
 
-// The three side carousels (top-left, bottom-left, middle-right) skip the image queue and cache on purpose;
-// all slides are requested as soon as the list arrives so each one is ready when the carousel changes.
-const usePreloadSlides = (urls: Array<string | undefined | null>) => {
-  useEffect(() => {
-    urls.forEach(url => { if (url) { const image = new Image(); image.src = url; } });
-  }, [urls.join('|')]);
-};
-
 const RotatingUnionEventCard = () => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const { items } = useManagedCarouselItems('left-top', upperEventFallbackItems);
-  usePreloadSlides(items.map(item => item.image_url));
+  useEffect(() => retainQueuedImages(items.map(item => item.image_url)), [items]);
   useEffect(() => {
     if (paused) return;
     const timer = window.setInterval(() => setIndex(value => (value + 1) % items.length), 4500);
@@ -784,9 +776,11 @@ const RotatingUnionEventCard = () => {
   const activeItem = items[index] || upperEventFallbackItems[0];
   return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeItem.website && window.open(activeItem.website, '_blank')}>
     <button type="button" className="uhub-event-arrow left" onClick={(event) => { event.stopPropagation(); setIndex(value => (value - 1 + items.length) % items.length); }}>‹</button>
-    <img
+    <QueuedImage
       src={activeItem.image_url}
       alt={activeItem.title || 'uHome-Hub upper carousel image'}
+      queuePriority={IMAGE_LOAD_PRIORITY.critical}
+      keepPreviousWhileLoading
     />
     <p>{activeItem.title || activeItem.description}{activeItem.price ? ` · ${activeItem.price}` : ''}</p>
     <button type="button" className="uhub-event-arrow right" onClick={(event) => { event.stopPropagation(); setIndex(value => (value + 1) % items.length); }}>›</button>
@@ -829,13 +823,15 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: ManagedCarousel
     return () => window.clearInterval(timer);
   }, [paused, items.length]);
   useEffect(() => setIndex(0), [items]);
-  usePreloadSlides(items.map(item => item.image_url));
+  useEffect(() => retainQueuedImages(items.map(item => item.image_url)), [items]);
   const item = items[index] || fallbackItems[0];
   return <div className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
     <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + items.length) % items.length)}>‹</button>
-    <img
+    <QueuedImage
       src={item.image_url}
       alt={item.title || 'Carousel image'}
+      queuePriority={IMAGE_LOAD_PRIORITY.critical}
+      keepPreviousWhileLoading
     />
     <div className="uhub-header-product-overlay">
       {item.title && <span>{item.title}</span>}
