@@ -29,11 +29,11 @@ const getCarouselLimit = (slot: CarouselSlot) => slot === 'cover' ? 9 : slot ===
 
 // About Us (button 9998) and Terms of Use (button 9999) pages are stored in the existing carousel table under
 // private slots, so no migration is needed. title = '1'/'0' (enabled), description = HTML, price = last updated.
-type SitePageKey = 'about' | 'terms';
+type SitePageKey = 'about' | 'terms' | 'welcome';
 const sitePageSlot = (key: SitePageKey) => `page-${key}` as const;
 const normalizePageKey = (value: any): SitePageKey | null => {
   const key = getString(value);
-  return key === 'about' || key === 'terms' ? key : null;
+  return key === 'about' || key === 'terms' || key === 'welcome' ? key : null;
 };
 const sanitizePageHtml = (html: string) => html
   .replace(/<\s*(script|iframe|object|embed|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')

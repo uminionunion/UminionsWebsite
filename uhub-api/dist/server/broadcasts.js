@@ -23,7 +23,7 @@ const getCarouselLimit = (slot) => slot === 'cover' ? 9 : slot === 'bottom' ? 8 
 const sitePageSlot = (key) => `page-${key}`;
 const normalizePageKey = (value) => {
     const key = getString(value);
-    return key === 'about' || key === 'terms' ? key : null;
+    return key === 'about' || key === 'terms' || key === 'welcome' ? key : null;
 };
 const sanitizePageHtml = (html) => html
     .replace(/<\s*(script|iframe|object|embed|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
