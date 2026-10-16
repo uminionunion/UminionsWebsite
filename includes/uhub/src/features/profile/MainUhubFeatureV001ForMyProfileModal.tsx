@@ -18,6 +18,7 @@ import EverythingProductsList from './EverythingProductsList';
 import QueuedImage from '../../components/QueuedImage';
 import ProductQueuedImage from '../../components/ProductQueuedImage';
 import { IMAGE_LOAD_PRIORITY, retainQueuedImages } from '../../lib/image-load-queue';
+import { useQueuedCarouselRotation } from '../../lib/carousel-rotation-queue';
 import { enqueueProductImageBatch, setProductImageQueueActive } from '../../lib/product-image-cache';
 import ProductSearchDropdown from './ProductSearchDropdown';
 import MainUhubFeatureV001ForEditProductModal from './MainUhubFeatureV001ForEditProductModal';
@@ -766,12 +767,8 @@ const RotatingUnionEventCard = () => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const { items } = useManagedCarouselItems('left-top', upperEventFallbackItems);
-  useEffect(() => retainQueuedImages(items.map(item => item.image_url)), [items]);
-  useEffect(() => {
-    if (paused) return;
-    const timer = window.setInterval(() => setIndex(value => (value + 1) % items.length), 4500);
-    return () => window.clearInterval(timer);
-  }, [items.length, paused]);
+  // Retired 10/16/26: retainQueuedImages(all items) and the fixed 4500ms interval; replaced by the carousel rotation queue.
+  useQueuedCarouselRotation({ carouselId: 'left-top', urls: items.map(item => item.image_url), index, setIndex, intervalMs: 4500, paused });
   useEffect(() => setIndex(0), [items]);
   const activeItem = items[index] || upperEventFallbackItems[0];
   return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeItem.website && window.open(activeItem.website, '_blank')}>
@@ -817,13 +814,9 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: ManagedCarousel
   const { items } = useManagedCarouselItems(slot, fallbackItems);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  useEffect(() => {
-    if (paused) return;
-    const timer = window.setInterval(() => setIndex(value => (value + 1) % items.length), 3000);
-    return () => window.clearInterval(timer);
-  }, [paused, items.length]);
+  // Retired 10/16/26: retainQueuedImages(all items) and the fixed 3000ms interval; replaced by the carousel rotation queue at 6s.
+  useQueuedCarouselRotation({ carouselId: `product-${slot}`, urls: items.map(item => item.image_url), index, setIndex, intervalMs: 6000, paused });
   useEffect(() => setIndex(0), [items]);
-  useEffect(() => retainQueuedImages(items.map(item => item.image_url)), [items]);
   const item = items[index] || fallbackItems[0];
   return <div className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
     <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + items.length) % items.length)}>‹</button>
@@ -856,28 +849,19 @@ const FooterPosterCarousel = () => <ManagedProductCarousel slot="right" fallback
 const noManagedCarouselItems: ManagedCarouselItem[] = [];
 const defaultCoverImageUrl = '/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg';
 
+const randomCoverDelay = () => 3000 + Math.random() * 2000;
+const pickRandomOtherIndex = (current: number, count: number) => {
+  const choices = Array.from({ length: count }, (_, position) => position).filter(position => position !== current);
+  return choices[Math.floor(Math.random() * choices.length)];
+};
+
 // Slot 1 is the user's own (or default) cover; admin-added covers rotate with it at random 3-5s intervals.
 const CoverImageRotator = ({ userCoverUrl, opacity }: { userCoverUrl: string | null; opacity: number }) => {
   const { items } = useManagedCarouselItems('cover', noManagedCarouselItems);
   const urls = useMemo(() => [userCoverUrl || defaultCoverImageUrl, ...items.map(item => item.image_url).filter(Boolean)], [userCoverUrl, items]);
   const [index, setIndex] = useState(0);
-  useEffect(() => retainQueuedImages(urls), [urls]);
-  useEffect(() => {
-    setIndex(0);
-    if (urls.length < 2) return;
-    let timer: number;
-    const schedule = () => {
-      timer = window.setTimeout(() => {
-        setIndex(current => {
-          const choices = urls.map((_, position) => position).filter(position => position !== current);
-          return choices[Math.floor(Math.random() * choices.length)];
-        });
-        schedule();
-      }, 3000 + Math.random() * 2000);
-    };
-    schedule();
-    return () => window.clearTimeout(timer);
-  }, [urls]);
+  useEffect(() => setIndex(0), [urls]);
+  useQueuedCarouselRotation({ carouselId: 'cover', urls, index, setIndex, intervalMs: randomCoverDelay, pickNext: pickRandomOtherIndex });
   return <QueuedImage
     src={urls[index] || defaultCoverImageUrl}
     alt="uHub cover"
@@ -895,13 +879,8 @@ const AnchorRotator = () => {
   const { items } = useManagedCarouselItems('center', noManagedCarouselItems);
   const slides = useMemo(() => [{ image_url: anchorImageUrl, title: '' }, ...items.filter(item => item.image_url)], [items]);
   const [index, setIndex] = useState(0);
-  useEffect(() => retainQueuedImages(slides.map(slide => slide.image_url)), [slides]);
-  useEffect(() => {
-    setIndex(0);
-    if (slides.length < 2) return;
-    const timer = window.setInterval(() => setIndex(value => (value + 1) % slides.length), 6000);
-    return () => window.clearInterval(timer);
-  }, [slides]);
+  useEffect(() => setIndex(0), [slides]);
+  useQueuedCarouselRotation({ carouselId: 'center', urls: slides.map(slide => slide.image_url), index, setIndex, intervalMs: 6000 });
   const slide = slides[index] || slides[0];
   return <div className="relative h-full w-full">
     <QueuedImage src={slide.image_url} alt={slide.title || 'Uminion anchor artwork'} className="h-full w-full object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />
