@@ -243,7 +243,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
                 justify-content: space-between; /* <<<<<<<<<<<<<<<<<<<< do i want this? Flex row layout */
                 position: relative;
                 padding: 10px;
-                background-color: #333333; /* Darker background for header */
+                background-color: #111827; /* Header: same dark blue-gray as the top-left uHub carousel placeholder */
                 border-bottom: 2px solid transparent;
                 border-image: linear-gradient(90deg, #b8f1ff 0%, #1683ff 100%) 1;
 				min-width: 1275px;
@@ -418,7 +418,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
                 margin-top: auto;
                 
                 padding-top: 0;
-                background-color: #333333; /* Darker background for footer */
+                background-color: #1f2937; /* Footer: same dark blue-gray as the bottom-left uHub carousel placeholder */
                 border-top: 2px solid transparent;
                 border-image: linear-gradient(90deg, #1683ff 0%, #b8f1ff 100%) 1;
             }
@@ -476,7 +476,7 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             align-items: center;
             height: 48px;
             box-sizing: border-box;
-            background-color: #333333;
+            background-color: #1f2937; /* Footer inner strip: matches footer blue-gray (was #333333) */
             color: #fff;
             margin: 0px;
             overflow: hidden;
@@ -10351,10 +10351,12 @@ document.getElementById('submitMp3').addEventListener('click', function() {
 
 
 // Initialize videoSchedule002 and start playback 20 seconds after page load
-setTimeout(() => {
-    initializeVideoSchedule(); // Initialize the video schedule
-    setTimeout(playScheduledVideos, 20000); // Schedule the first video playback check in 20 seconds
-}, 20000); // Start the initialization process 20 seconds after the page loads
+// RETIRED 10/15/26 by StorytellingSalem: the old .webm video schedule (getUpcomingVideos.php + playScheduledVideos re-arming every 20 seconds)
+// was replaced by the UnionRadio#15 player in uHub. Un-comment this block to bring it back.
+// setTimeout(() => {
+//     initializeVideoSchedule(); // Initialize the video schedule
+//     setTimeout(playScheduledVideos, 20000); // Schedule the first video playback check in 20 seconds
+// }, 20000); // Start the initialization process 20 seconds after the page loads
 
 
 // ***************************************** This area above, is for: "Video implementation" ******************************************************

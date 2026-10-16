@@ -100,17 +100,20 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
         <Button className="w-full justify-center text-center whitespace-normal h-auto" onClick={() => setActiveView('host')} variant="secondary">
           Know-of a Pantry? Host a Pantry?
         </Button>
+        {/* Running for Office? disabled 10/15/26 by StorytellingSalem; remove disabled and restore onClick to bring it back */}
         <Button 
           className={cn(
             "w-full justify-center text-center",
             "bg-yellow-400 hover:bg-yellow-500 text-black"
           )}
-          onClick={() => setActiveView('running')}
+          disabled
+          // onClick={() => setActiveView('running')}
         >
           Running for Office?
         </Button>
       </div>
-      <div className="max-h-28 overflow-y-auto">
+      <div className="relative min-h-0">
+      <div className="absolute inset-0 overflow-y-auto">
         <PantryControls
           addPantry={addPantry}
           activeView="find"
@@ -128,7 +131,8 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
         />
       </div>
       </div>
-      <div className="grid min-h-0 grid-cols-[66%_34%]">
+      </div>
+      <div className={cn('grid min-h-0', activeView === 'find' ? 'grid-cols-1' : 'grid-cols-[66%_34%]')}>
       <div className="h-full min-h-[360px] overflow-hidden">
         <PantryMap
           pantries={filteredPantries}
@@ -137,8 +141,8 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
           onViewDetails={handleViewDetails}
         />
       </div>
-      <div className="h-full border-l overflow-y-auto">
-        {activeView === 'find' ? <div className="p-4 text-sm text-muted-foreground">Select map filters above.</div> : <PantryControls
+      {activeView !== 'find' && <div className="h-full border-l overflow-y-auto">
+        <PantryControls
           addPantry={addPantry}
           activeView={activeView}
           setActiveView={setActiveView}
@@ -152,8 +156,8 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
           filterOptions={filterOptions}
           setFilterOptions={setFilterOptions}
           onCandidateCreated={refreshCandidates}
-        />}
-      </div>
+        />
+      </div>}
       </div>
     </div>
   );

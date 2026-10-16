@@ -206,6 +206,7 @@ export const CreateBroadcastView = () => {
 
         if (res.ok) {
           alert('Episode created successfully!');
+          window.dispatchEvent(new Event('uhub:episodes-changed'));
           setEpisodeName('');
           setEpisodeDescription('');
           setMediaFile(null);

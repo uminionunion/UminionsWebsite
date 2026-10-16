@@ -31,6 +31,7 @@ import { renderTheMemeBox, unmountTheMemeBox } from '@/TheMemeBoxRenderer';
 import { additionalHardCodedCustomButtonPages } from './additional-hard-coded-custom-button-pages';
 import { TheFoodPantryFeature } from '../../../../pantry-finder/src/pages/pantry-feature/the-food-pantry-feature';
 import { pantryApiUrl } from '@/lib/api';
+import 'leaflet/dist/leaflet.css';
 
 
 
@@ -160,8 +161,8 @@ interface ManagedCarouselItem {
   style?: CaptionStyle;
 }
 
-type ManagedCarouselSlot = 'left-top' | 'left' | 'right' | 'cover' | 'bottom';
-type ManagedCarouselAdminTarget = 'left' | 'right' | 'cover' | 'bottom';
+type ManagedCarouselSlot = 'left-top' | 'left' | 'right' | 'cover' | 'bottom' | 'center';
+type ManagedCarouselAdminTarget = 'left' | 'right' | 'cover' | 'bottom' | 'center';
 
 const parseCaptionStyle = (description?: string | null): CaptionStyle => {
   try {
@@ -182,7 +183,7 @@ const captionStyleToCss = (style: CaptionStyle): React.CSSProperties => ({
 const isAcceptedCaptionUrl = (value: string) => /^(https?:\/\/|www\.)/i.test(value.trim());
 const normalizeCaptionUrl = (value: string) => /^www\./i.test(value.trim()) ? ('https://' + value.trim()) : value.trim();
 
-const getManagedCarouselLimit = (slot: ManagedCarouselSlot) => slot === 'cover' ? 9 : slot === 'bottom' ? 8 : 10;
+const getManagedCarouselLimit = (slot: ManagedCarouselSlot) => slot === 'cover' ? 9 : slot === 'bottom' ? 8 : slot === 'center' ? 48 : 10;
 
 const UnionPoliticCandidates = ({ filtersOpen }: { filtersOpen: boolean }) => {
   const { user } = useAuth();
@@ -294,7 +295,9 @@ const UnionRadioPlayer = () => {
   const playerRef = useRef<HTMLMediaElement | null>(null);
   const replayPlayerRef = useRef<HTMLMediaElement | null>(null);
   const checkingScheduleRef = useRef(false);
-
+  const scheduleTimerRef = useRef<number | null>(null);
+  const findDueEpisodeRef = useRef<() => void>(() => {});
+  const loadCalendarRef = useRef<() => void>(() => {});
   const loadArchive = useCallback(async (mode: 'recent' | 'popular' | 'random') => {
     const response = await fetch(`/api/episode-archive/${mode}`, { credentials: 'include' });
     if (response.ok) setArchiveEpisodes((await response.json()).episodes || []);
@@ -307,34 +310,66 @@ const UnionRadioPlayer = () => {
 
   const findDueEpisode = useCallback(async () => {
     if (nowPlaying || checkingScheduleRef.current) return;
+    if (scheduleTimerRef.current) {
+      window.clearTimeout(scheduleTimerRef.current);
+      scheduleTimerRef.current = null;
+    }
     checkingScheduleRef.current = true;
     try {
       const response = await fetch('/api/episodes/scheduled', { credentials: 'include' });
       if (!response.ok) return;
-      const { episode } = await response.json();
+      const { episode, next_scheduled_at } = await response.json();
       if (episode) {
         setMediaIndex(0);
         setNowPlaying(episode);
+      } else if (next_scheduled_at) {
+        // One timer for the next scheduled episode (no polling). Capped so long waits re-check safely.
+        const delay = Math.min(Math.max(new Date(next_scheduled_at).getTime() - Date.now(), 0) + 500, 2147483647);
+        scheduleTimerRef.current = window.setTimeout(() => findDueEpisodeRef.current(), delay);
       }
     } finally {
       checkingScheduleRef.current = false;
     }
   }, [nowPlaying]);
+  findDueEpisodeRef.current = findDueEpisode;
 
+  // PREVIOUS POLLING (retired 10/15/26 by StorytellingSalem): checked /api/episodes/scheduled every 15 seconds.
+  // useEffect(() => {
+  //   findDueEpisode();
+  //   const interval = window.setInterval(findDueEpisode, 15000);
+  //   return () => window.clearInterval(interval);
+  // }, [findDueEpisode]);
+
+  // Check once on mount / after an episode finishes, whenever an episode is created, edited or deleted,
+  // and when the tab becomes visible again.
   useEffect(() => {
     findDueEpisode();
-    const interval = window.setInterval(findDueEpisode, 15000);
-    return () => window.clearInterval(interval);
+    const onChanged = () => { findDueEpisodeRef.current(); loadCalendarRef.current(); };
+    const onVisible = () => { if (document.visibilityState === 'visible') onChanged(); };
+    window.addEventListener('uhub:episodes-changed', onChanged);
+    window.addEventListener('focus', onChanged);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('uhub:episodes-changed', onChanged);
+      window.removeEventListener('focus', onChanged);
+      document.removeEventListener('visibilitychange', onVisible);
+      if (scheduleTimerRef.current) window.clearTimeout(scheduleTimerRef.current);
+    };
   }, [findDueEpisode]);
 
   useEffect(() => {
     loadArchive(archiveMode);
   }, [archiveMode, loadArchive]);
 
+  // PREVIOUS POLLING (retired 10/15/26 by StorytellingSalem): refreshed the calendar every 30 seconds.
+  // useEffect(() => {
+  //   loadCalendar();
+  //   const interval = window.setInterval(loadCalendar, 30000);
+  //   return () => window.clearInterval(interval);
+  // }, [loadCalendar]);
   useEffect(() => {
+    loadCalendarRef.current = loadCalendar;
     loadCalendar();
-    const interval = window.setInterval(loadCalendar, 30000);
-    return () => window.clearInterval(interval);
   }, [loadCalendar]);
 
   const finishEpisode = async () => {
@@ -543,7 +578,7 @@ const PantryFinderBroadcastView = () => {
     return created;
   };
 
-  return <div className="uhub-pantry-finder min-h-[620px] h-[70vh] overflow-hidden border rounded-md bg-gray-950"><TheFoodPantryFeature pantries={pantries} addPantry={addPantry} /></div>;
+  return <div className="uhub-pantry-finder min-h-[920px] h-[calc(70vh+300px)] overflow-hidden border rounded-md bg-gray-950"><TheFoodPantryFeature pantries={pantries} addPantry={addPantry} /></div>;
 };
 
 const BetaButtonView = () => (
@@ -854,16 +889,189 @@ const CoverImageRotator = ({ userCoverUrl, opacity }: { userCoverUrl: string | n
   />;
 };
 
+// The default anchor image is slide 1; admin images from the "C" button follow and rotate every 6 seconds.
+const anchorImageUrl = '/uhub/dist/UminionAnchor.png';
+const AnchorRotator = () => {
+  const { items } = useManagedCarouselItems('center', noManagedCarouselItems);
+  const slides = useMemo(() => [{ image_url: anchorImageUrl, title: '' }, ...items.filter(item => item.image_url)], [items]);
+  const [index, setIndex] = useState(0);
+  useEffect(() => retainQueuedImages(slides.map(slide => slide.image_url)), [slides]);
+  useEffect(() => {
+    setIndex(0);
+    if (slides.length < 2) return;
+    const timer = window.setInterval(() => setIndex(value => (value + 1) % slides.length), 6000);
+    return () => window.clearInterval(timer);
+  }, [slides]);
+  const slide = slides[index] || slides[0];
+  return <div className="relative h-full w-full">
+    <QueuedImage src={slide.image_url} alt={slide.title || 'Uminion anchor artwork'} className="h-full w-full object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />
+    {slide.title ? <p className="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-center text-xs text-white">{slide.title}</p> : null}
+  </div>;
+};
+
+type SitePageKey = 'about' | 'terms';
+interface SitePageData { content: string; enabled: boolean; lastUpdated: string }
+
+// To override the "Last Updated" date by hand, put text here (for example 'May 1, 2025'); empty means "use the date of the last save".
+const TERMS_LAST_UPDATED_OVERRIDE = '';
+
+const sanitizeSitePageHtml = (html: string) => html
+  .replace(/<\s*(script|iframe|object|embed|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+  .replace(/<\s*(script|iframe|object|embed|style)[^>]*>/gi, '')
+  .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+  .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1=$2#$2');
+
+const sitePageConfig: Record<SitePageKey, { button: string; title: string; line: (lastUpdated: string) => string }> = {
+  about: { button: 'Button 9998', title: 'About Us', line: () => 'Welcome To The Uminion Union About Us Section:' },
+  terms: { button: 'Button 9999', title: 'Terms of Use & Service', line: (lastUpdated) => `Last Updated ${TERMS_LAST_UPDATED_OVERRIDE || lastUpdated || '___'}` },
+};
+
+const useSitePage = (key: SitePageKey, enabled = true) => {
+  const [page, setPage] = useState<SitePageData>({ content: '', enabled: false, lastUpdated: '' });
+  const [loaded, setLoaded] = useState(false);
+  const load = useCallback(() => {
+    fetch(`/api/site-pages/${key}`, { credentials: 'include' })
+      .then(response => response.ok ? response.json() : null)
+      .then((data: SitePageData | null) => { if (data) setPage(data); })
+      .catch(() => undefined)
+      .finally(() => setLoaded(true));
+  }, [key]);
+  useEffect(() => { if (enabled) load(); }, [enabled, load]);
+  return { page, setPage, loaded, reload: load };
+};
+
+const GroupIcon = ({ withChat = false }: { withChat?: boolean }) => (
+  <svg viewBox="0 0 32 32" className="h-5 w-6" fill="currentColor" aria-hidden="true">
+    {withChat && <path d="M9 1h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-6l-4 3v-3H9a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2z" />}
+    <circle cx="16" cy={withChat ? 16 : 10} r="3.6" />
+    <circle cx="7" cy={withChat ? 18 : 12} r="3" />
+    <circle cx="25" cy={withChat ? 18 : 12} r="3" />
+    <path d={withChat ? 'M9.5 30v-6a6.5 6.5 0 0 1 13 0v6z' : 'M9.5 28v-6a6.5 6.5 0 0 1 13 0v6z'} />
+    <path d={withChat ? 'M1 30v-4.5a4.5 4.5 0 0 1 7-3.7A8 8 0 0 0 7.500 30z' : 'M1 28v-4.500a4.500 4.500 0 0 1 7-3.700A8 8 0 0 0 7.500 28z'} />
+    <path d={withChat ? 'M31 30v-4.500a4.500 4.500 0 0 0-7-3.700A8 8 0 0 1 24.500 30z' : 'M31 28v-4.500a4.500 4.500 0 0 0-7-3.700A8 8 0 0 1 24.500 28z'} />
+  </svg>
+);
+
+const SitePageModal = ({ pageKey, isAdmin, onClose, onChanged }: { pageKey: SitePageKey; isAdmin: boolean; onClose: () => void; onChanged: () => void }) => {
+  const config = sitePageConfig[pageKey];
+  const { page, setPage, loaded } = useSitePage(pageKey);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [textColor, setTextColor] = useState('#ffffff');
+
+  useEffect(() => {
+    if (isEditing && editorRef.current) editorRef.current.innerHTML = sanitizeSitePageHtml(page.content);
+    // Only seed the editor when edit mode starts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing]);
+
+  const save = async (body: Partial<SitePageData>) => {
+    const response = await fetch(`/api/site-pages/${pageKey}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'Could not save.');
+    const data: SitePageData = await response.json();
+    setPage(data);
+    onChanged();
+  };
+
+  const handleUpdateOrSave = async () => {
+    if (!isEditing) return setIsEditing(true);
+    setIsSaving(true);
+    try {
+      const lastUpdated = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+      await save({ content: editorRef.current?.innerHTML || '', lastUpdated });
+      setIsEditing(false);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Could not save.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const toggleEnabled = async () => {
+    try { await save({ enabled: !page.enabled }); } catch (error) { alert(error instanceof Error ? error.message : 'Could not update.'); }
+  };
+
+  const format = (command: string, value?: string) => {
+    editorRef.current?.focus();
+    document.execCommand(command, false, value);
+  };
+
+  const uploadImage = async (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await fetch(`/api/site-pages/${pageKey}/image`, { method: 'POST', credentials: 'include', body: formData });
+    if (!response.ok) return alert((await response.json().catch(() => ({}))).error || 'Image upload failed.');
+    const { url } = await response.json();
+    format('insertImage', url);
+  };
+
+  const toolbarButton = 'rounded border border-white/20 bg-gray-800 px-2 py-1 text-xs text-white hover:bg-gray-700';
+
+  return (
+    <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/75 p-4">
+      <div className="relative z-[2147483647] flex max-h-[90vh] w-full max-w-[640px] flex-col rounded-2xl border border-white/10 bg-[#0b0b0f] p-4 shadow-2xl shadow-orange-400/30">
+        <button type="button" onClick={onClose} className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black text-xl font-bold text-white ring-1 ring-white/20 transition hover:bg-gray-800" aria-label={`Close ${config.title}`}>
+          <X className="h-4 w-4" />
+        </button>
+        <div className="mb-4 flex items-center justify-between gap-3 pr-10">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-white">{config.button}</p>
+            <h2 className="text-2xl font-black text-white">{config.title}</h2>
+          </div>
+          <div className="rounded-full border border-orange-400/40 bg-orange-400/10 px-3 py-1 text-sm font-semibold text-orange-400">
+            Present: General-Union-Secretary: &quot;StorytellingSalem&quot;
+          </div>
+        </div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-300">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
+            {config.line(page.lastUpdated)}
+          </div>
+          {isAdmin && (
+            <div className="flex gap-2">
+              <Button type="button" onClick={handleUpdateOrSave} disabled={isSaving} className="bg-orange-400 text-black hover:bg-orange-500">{isSaving ? 'Saving...' : isEditing ? 'Save?' : 'Update?'}</Button>
+              <Button type="button" onClick={toggleEnabled} disabled={isEditing} className={page.enabled ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-600 text-white hover:bg-gray-500'}>{page.enabled ? 'Enabled' : 'Disabled'}</Button>
+            </div>
+          )}
+        </div>
+        {isAdmin && isEditing && (
+          <div className="mb-2 flex flex-wrap items-center gap-1">
+            <button type="button" className={toolbarButton} onClick={() => format('formatBlock', 'h1')}>H1</button>
+            <button type="button" className={toolbarButton} onClick={() => format('formatBlock', 'h2')}>H2</button>
+            <button type="button" className={toolbarButton} onClick={() => format('formatBlock', 'h3')}>H3</button>
+            <button type="button" className={toolbarButton} onClick={() => format('formatBlock', 'p')}>Text</button>
+            <button type="button" className={`${toolbarButton} font-bold`} onClick={() => format('bold')}>B</button>
+            <button type="button" className={`${toolbarButton} italic`} onClick={() => format('italic')}>I</button>
+            <button type="button" className={`${toolbarButton} underline`} onClick={() => format('underline')}>U</button>
+            <label className={`${toolbarButton} flex items-center gap-1`}>Color<input type="color" value={textColor} onChange={event => { setTextColor(event.target.value); format('foreColor', event.target.value); }} /></label>
+            <button type="button" className={toolbarButton} onClick={() => imageInputRef.current?.click()}>Add image</button>
+            <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={event => { const file = event.target.files?.[0]; if (file) void uploadImage(file); event.target.value = ''; }} />
+          </div>
+        )}
+        {isAdmin && isEditing ? (
+          <div ref={editorRef} contentEditable suppressContentEditableWarning className="min-h-[240px] flex-1 overflow-y-auto rounded-xl border border-orange-400/40 bg-[#111827] p-3 text-sm text-gray-100 outline-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-bold [&_img]:max-w-full" />
+        ) : (
+          <div className="min-h-[240px] flex-1 overflow-y-auto rounded-xl border border-white/10 bg-[#111827] p-3 text-sm text-gray-100 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-bold [&_img]:max-w-full [&_a]:text-orange-400 [&_a]:underline">
+            {!loaded ? <p className="text-gray-400">Loading...</p> : page.content ? <div dangerouslySetInnerHTML={{ __html: sanitizeSitePageHtml(page.content) }} /> : <p className="text-gray-400">Nothing has been written here yet.</p>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdminTarget | null; onClose: () => void }) => {
   const [activeLeftSlot, setActiveLeftSlot] = useState<'left-top' | 'left'>('left');
   const [items, setItems] = useState<Array<ManagedCarouselItem & { file?: File }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const activeSlot: ManagedCarouselSlot = slot === 'left' ? activeLeftSlot : slot === 'right' ? 'right' : slot === 'cover' ? 'cover' : 'bottom';
+  const activeSlot: ManagedCarouselSlot = slot === 'left' ? activeLeftSlot : slot === 'right' ? 'right' : slot === 'cover' ? 'cover' : slot === 'center' ? 'center' : 'bottom';
   const maxItems = getManagedCarouselLimit(activeSlot);
   const isBottom = activeSlot === 'bottom';
-  const slotLabel = slot === 'left' ? (activeSlot === 'left-top' ? 'upper left' : 'lower left') : slot === 'cover' ? 'cover image' : slot === 'bottom' ? 'bottom promo' : 'right';
+  const slotLabel = slot === 'left' ? (activeSlot === 'left-top' ? 'upper left' : 'lower left') : slot === 'cover' ? 'cover image' : slot === 'bottom' ? 'bottom promo' : slot === 'center' ? 'center image' : 'right';
   useEffect(() => {
     if (!slot) return;
     let cancelled = false;
@@ -928,6 +1136,7 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
         <Button type="button" size="sm" variant={activeLeftSlot === 'left' ? 'default' : 'outline'} onClick={() => setActiveLeftSlot('left')}>Below uHome-Hub</Button>
       </div>}
       {slot === 'cover' && <p className="my-2 text-xs text-muted-foreground">The default cover image (which users can change for their own profile) is always the first image. Images added here rotate with it randomly every 3–5 seconds and can only be changed here.</p>}
+      {slot === 'center' && <p className="my-2 text-xs text-muted-foreground">The default Uminion anchor image is always image 1. Add up to 48 more images (49 in total); they rotate every 6 seconds. Captions are optional and only appear when filled in.</p>}
       {isBottom && <p className="my-2 text-xs text-muted-foreground">The existing bottom image is entry 9 and the “Become an Official Member…” caption is entry 10. Add up to 8 more entries (image and/or caption).</p>}
       <p className="my-2 text-xs text-muted-foreground">Manage images, captions, prices, and order. Existing images stay in place unless replaced or removed.</p>
       {isLoading ? <p className="py-5 text-center">Loading carousel…</p> : loadError ? <p className="py-5 text-center text-red-400">{loadError}</p> : <div className="space-y-2">
@@ -969,6 +1178,41 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
   </div>;
 };
 
+
+// World Feed (everyone can read) + My Posts (only logged-in users can post), shown on the front page of uHub.
+const FrontPageSocial = ({ user, stacked = false }: { user: any; stacked?: boolean }) => {
+  const [content, setContent] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const createPost = async () => {
+    if (!user || !content.trim()) return;
+    setIsPosting(true);
+    try {
+      const response = await fetch('/api/social-posts', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content.trim() }),
+      });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'Could not create your post.');
+      setContent('');
+      setRefreshKey(key => key + 1);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Could not create your post.');
+    } finally { setIsPosting(false); }
+  };
+  return (
+    <div className="mt-4 flex shrink-0 flex-col gap-2" data-stacked={stacked}>
+      <div className="flex h-72 flex-col"><WorldFeed refreshKey={refreshKey} /></div>
+      <div className="flex flex-col gap-1 rounded-lg border p-2">
+        <textarea className="w-full resize-none rounded border bg-gray-800 p-2 text-xs text-white placeholder-gray-500" style={{ color: '#ffffff', height: '2.5rem' }} aria-label="My Posts" placeholder={user ? 'Write a post...' : 'Log in to post to the World Feed'} maxLength={1000} value={content} onChange={(event) => setContent(event.target.value)} disabled={!user} />
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-gray-400" aria-live="polite">{1000 - content.length}/1000</span>
+          <Button size="sm" className="h-7 bg-orange-400 px-3 text-xs hover:bg-orange-500" onClick={createPost} disabled={!user || isPosting || !content.trim()}>{isPosting ? 'Posting...' : 'Create Post'}</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const BroadcastView = ({ 
   broadcast, 
@@ -1169,6 +1413,7 @@ const BroadcastView = ({
                   Add Images?
                 </Button>
                 <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-sm" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
+                <Button className="bg-gray-300 hover:bg-gray-200 text-[#b87333] font-extrabold text-sm" title="CenterImageCarousel" onClick={() => onOpenManagedCarouselAdmin('center')}>C</Button>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
                 <Button className="bg-pink-500 hover:bg-pink-600 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
                 <Button className="bg-purple-600 hover:bg-purple-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
@@ -1178,7 +1423,7 @@ const BroadcastView = ({
             <div className="flex-1 overflow-hidden">
               <div className="flex h-full min-w-0 gap-2">
                 <div className="flex h-48 w-1/3 min-w-0 items-center justify-center overflow-hidden rounded-md bg-transparent p-2">
-                  <QueuedImage src="/uhub/dist/UminionAnchor.png" alt="Uminion anchor artwork" className="h-full w-full object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />
+                  <AnchorRotator />
                 </div>
                 <div className="w-2/3 min-w-0">
                   <BroadcastCarousel 
@@ -1222,6 +1467,7 @@ if (isMobile) {
                 Add
               </Button>
               <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
+              <Button className="bg-gray-300 hover:bg-gray-200 text-[#b87333] font-extrabold text-xs h-8" title="CenterImageCarousel" onClick={() => onOpenManagedCarouselAdmin('center')}>C</Button>
               <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
               <Button className="bg-pink-500 hover:bg-pink-600 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
               <Button className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
@@ -1233,7 +1479,7 @@ if (isMobile) {
           <div className="flex-shrink-0">
             <div className="flex w-full gap-2">
               <div className="flex h-48 w-1/3 min-w-0 items-center justify-center overflow-hidden rounded-md bg-transparent p-2">
-                <QueuedImage src="/uhub/dist/UminionAnchor.png" alt="Uminion anchor artwork" className="h-full w-full object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />
+                <AnchorRotator />
               </div>
               <div className="w-2/3 min-w-0">
                 <div
@@ -1259,6 +1505,7 @@ if (isMobile) {
               </div>
             </div>
           </div>
+          <FrontPageSocial user={user} stacked />
         </div>
       )}
 
@@ -1365,7 +1612,7 @@ if (isMobile) {
 
         {/* RIGHT HALF - Carousel Area */}
         {!isBroadcastCarouselCollapsed && (
-          <div style={{ width: `${broadcastRightWidth}%` }} className="flex flex-col overflow-hidden">
+          <div style={{ width: `${broadcastRightWidth}%` }} className="flex flex-col overflow-y-auto overflow-x-hidden">
             <div className="flex items-center gap-2 mb-2">
               <Button variant="outline" size="icon" className="h-8 w-8 uhub-play-button" style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }}><Play className="h-4 w-4" /></Button>
               <p className="text-xs text-muted-foreground flex-grow text-center">{broadcast.description}</p>
@@ -1381,6 +1628,7 @@ if (isMobile) {
                   Add
                 </Button>
                 <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
+                <Button className="bg-gray-300 hover:bg-gray-200 text-[#b87333] font-extrabold text-xs h-8" title="CenterImageCarousel" onClick={() => onOpenManagedCarouselAdmin('center')}>C</Button>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
                 <Button className="bg-pink-500 hover:bg-pink-600 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
                 <Button className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
@@ -1389,10 +1637,10 @@ if (isMobile) {
             </div>
 
             {/* CAROUSEL - Shows limited images based on width */}
-            <div className="flex-1 overflow-hidden">
+            <div className="shrink-0 overflow-hidden">
               <div className="flex h-full min-w-0 gap-2">
                 <div className="flex h-48 w-1/3 min-w-0 items-center justify-center overflow-hidden rounded-md bg-transparent p-2">
-                  <QueuedImage src="/uhub/dist/UminionAnchor.png" alt="Uminion anchor artwork" className="h-full w-full object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />
+                  <AnchorRotator />
                 </div>
                 <div className="w-2/3 min-w-0">
                   <BroadcastCarousel
@@ -1406,6 +1654,7 @@ if (isMobile) {
                 </div>
               </div>
             </div>
+            <FrontPageSocial user={user} />
           </div>
         )}
         
@@ -2785,6 +3034,9 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [areProfileSurfacesOpaque, setAreProfileSurfacesOpaque] = useState(true);
   const [isButton18Active, setIsButton18Active] = useState(false);
   const [isSnakeModalOpen, setIsSnakeModalOpen] = useState(false);
+  const [openSitePage, setOpenSitePage] = useState<SitePageKey | null>(null);
+  const aboutPage = useSitePage('about', customizableButtonPage === 715);
+  const termsPage = useSitePage('terms', customizableButtonPage === 715);
   const [snakeGamePhase, setSnakeGamePhase] = useState<'idle' | 'playing' | 'over'>('idle');
   const [snakeGameScore, setSnakeGameScore] = useState(0);
   const [snakeSegments, setSnakeSegments] = useState<Array<{ x: number; y: number }>>([]);
@@ -4485,6 +4737,11 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             return;
           }
 
+          if (customizableButtonPage === 715 && (buttonNumber === 9998 || buttonNumber === 9999)) {
+            setOpenSitePage(buttonNumber === 9998 ? 'about' : 'terms');
+            return;
+          }
+
           if (customizableButtonPage === 715 && buttonNumber === 10000) {
             window.open('https://www.uminion.com', '_blank', 'noopener,noreferrer');
             return;
@@ -4606,7 +4863,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             setIsQuadrantsModalOpen(true);
           }
         }}
-        disabled={(typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 && !(customizableButtonPage === 715 && buttonNumber === 10011 && (user?.id === 1 || user?.id === 2))) || (customizableButtonPage === 1 && (buttonNumber === 4 && user?.id !== 1 || buttonNumber === 6))}
+        disabled={(customizableButtonPage === 715 && ((buttonNumber === 9998 && !aboutPage.page.enabled) || (buttonNumber === 9999 && !termsPage.page.enabled)) && user?.is_high_high_high_admin !== 1) || (typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 && !(customizableButtonPage === 715 && buttonNumber === 10011 && (user?.id === 1 || user?.id === 2))) || (customizableButtonPage === 1 && (buttonNumber === 4 && user?.id !== 1 || buttonNumber === 6))}
         title={typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')
           ? 'Previous button page'
           : typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')
@@ -4672,6 +4929,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton') ? '⏮' :
             typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton') ? '⏭' :
             customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton ? '⏭' :
+            customizableButtonPage === 715 && buttonNumber === 9998 ? <GroupIcon /> :
+            customizableButtonPage === 715 && buttonNumber === 9999 ? <GroupIcon withChat /> :
             customizableButtonPage === 715 && buttonNumber === 10000 ? '🐾' : buttonNumber}
         </span>
       </Button>
@@ -4910,7 +5169,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                 variant="outline"
                 size="icon"
                 aria-label="Previous promotion"
-                className="absolute left-1 z-10 h-7 w-7 border-gray-700 bg-black text-white hover:bg-gray-700 hover:text-white"
+                className="absolute left-[11px] z-10 h-7 w-7 border-gray-700 bg-black text-white hover:bg-gray-700 hover:text-white"
                 onClick={() => navigatePromo('left')}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -4939,7 +5198,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                 variant="outline"
                 size="icon"
                 aria-label="Next promotion"
-                className="absolute right-1 z-10 h-7 w-7 border-gray-700 bg-black text-white hover:bg-gray-700 hover:text-white"
+                className="absolute right-[11px] z-10 h-7 w-7 border-gray-700 bg-black text-white hover:bg-gray-700 hover:text-white"
                 onClick={() => navigatePromo('right')}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -4967,6 +5226,15 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         </div>
 
       
+        {openSitePage && (
+          <SitePageModal
+            pageKey={openSitePage}
+            isAdmin={user?.is_high_high_high_admin === 1}
+            onClose={() => setOpenSitePage(null)}
+            onChanged={() => { aboutPage.reload(); termsPage.reload(); }}
+          />
+        )}
+
         {isSnakeModalOpen && (
           <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/75 p-4">
             <div className="relative z-[2147483647] w-full max-w-[520px] rounded-2xl border border-white/10 bg-[#0b0b0f] p-4 shadow-2xl shadow-green-500/30">

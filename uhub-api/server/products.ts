@@ -141,7 +141,7 @@ router.patch('/:productId', authenticate, async (req, res) => {
     return;
   }
 
-  const { productId } = req.params;
+  const { productId } = req.params as Record<string, string>;
 
   try {
     const product = await db
@@ -325,7 +325,7 @@ router.post('/:productId/trash', authenticate, async (req, res) => {
     return;
   }
 
-  const { productId } = req.params;
+  const { productId } = req.params as Record<string, string>;
 
   try {
     const product = await db
@@ -374,7 +374,7 @@ router.post('/:productId/restore', authenticate, async (req, res) => {
     return;
   }
 
-  const { productId } = req.params;
+  const { productId } = req.params as Record<string, string>;
 
   try {
     const product = await db
@@ -505,7 +505,7 @@ router.delete('/cart/:itemId', authenticate, async (req, res) => {
   }
 
   try {
-    const { itemId } = req.params;
+    const { itemId } = req.params as Record<string, string>;
 
     const cartItem = await db
       .selectFrom('MainHubUpgradeV001ForInternalCart')
@@ -613,7 +613,7 @@ router.delete('/looking-for/:itemId', authenticate, async (req, res) => {
     return;
   }
 
-  const { itemId } = req.params;
+  const { itemId } = req.params as Record<string, string>;
 
   console.log(`[Looking For] User ${req.user.userId} deleting item ${itemId}`);
 
@@ -680,7 +680,7 @@ router.get('/admin/all', authenticate, async (req, res) => {
 
 // GET - Get products by high-high admin user (different from regular user products)
 router.get('/high-high-admin/:userId', authenticate, async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.params as Record<string, string>;
 
   try {
     // Verify user is high-high admin
@@ -720,7 +720,7 @@ router.delete('/admin/:productId', authenticate, async (req, res) => {
     return;
   }
 
-  const { productId } = req.params;
+  const { productId } = req.params as Record<string, string>;
 
   try {
     // Check if user is HIGH-HIGH-HIGH admin
@@ -776,7 +776,7 @@ router.delete('/user-stores/:userStoreId', authenticate, async (req, res) => {
     return;
   }
 
-  const { userStoreId } = req.params;
+  const { userStoreId } = req.params as Record<string, string>;
   const parsedStoreId = parseInt(userStoreId);
 
   try {
@@ -945,7 +945,7 @@ router.put('/:productId/user-store', authenticate, async (req, res) => {
     return;
   }
 
-  const { productId } = req.params;
+  const { productId } = req.params as Record<string, string>;
   const { userStoreId } = req.body;
 
   console.log(`[PRODUCTS] PUT /:productId/user-store called: productId=${productId}, userStoreId=${userStoreId}, userId=${req.user.userId}`);
@@ -1189,7 +1189,7 @@ router.get('/user/:userId/stores', async (req, res) => {
 
 // POST - Create a new user store (for regular users adding from Add Product modal)
 router.post('/user/:userId/stores', authenticate, async (req, res) => {
-  const { userId } = req.params;
+  const { userId } = req.params as Record<string, string>;
   const parsedUserId = parseInt(userId);
 
   // Verify the user is creating stores for themselves only
@@ -1471,7 +1471,7 @@ router.put('/user-stores/:userStoreId/:imageType', authenticate, async (req, res
     return;
   }
 
-  const { userStoreId, imageType } = req.params;
+  const { userStoreId, imageType } = req.params as Record<string, string>;
   const parsedStoreId = parseInt(userStoreId);
 
   if (imageType !== 'badge' && imageType !== 'banner') {
