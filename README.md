@@ -1,226 +1,173 @@
-# UminionsWebsite
+# Uminion Website: Architecture and Maintenance Guide
 
-•This repository contains the page001 (uminionClassic's) Uminion website deployment,
-and, 
-•the Pantry Finder feature (of quest issue #54) integrated from page002 (which will be shutting down to be replaced with something else, (page002 that is)). 
+Last updated: 2026-10-16. Start here before changing the website. Keep this README updated alongside changes to navigation, features, APIs, database structure, loading behavior, or deployment. This guide covers the public application and ordinary development workflow.
 
-•While:
-Page001 remains a WordPress/Astra child-theme site backed by MySQL. 
-•While:
-Pantry Finder is an isolated React frontend with its own Node/Express/SQLite service and its own persistent Docker volume.
+## 1. System overview
 
-## Architecture
+This is not a single React application or a single database:
 
-```mermaid
-flowchart LR
-	Browser[Browser]
-	Nginx[Host nginx\npublic domain routing]
-	WP[wordpress container\nPHP 8.2 + Apache\nVPS 4002:80]
-	React[Pantry Finder bundle\n/pantry-finder/dist]
-	Proxy[Apache reverse proxy\n/pantry-api/]
-	API[pantry-api container\nExpress + Kysely\ninternal port 4000]
-	SQLite[(pantry_data volume\ndatabase.sqlite)]
-	SQLiteWeb[sqlite-web container\nSQLite admin UI\nVPS 127.0.0.1:8091]
-	MySQL[(Existing MySQL\nexternal uminionnet)]
-	Mounts[/root/private-includes\nlegacy page001 files]
+| Layer | Source | Responsibility |
+|---|---|---|
+| WordPress / Astra child theme | [wp-content/themes/astra-child](wp-content/themes/astra-child) | Outer page, legacy PHP functionality, mount points, page styling |
+| uHub React / TypeScript / Vite | [includes/uhub](includes/uhub) | Main interactive interface, numbered buttons, profiles, stores, feed, broadcasts, chat |
+| uHub Express / Kysely / SQLite | [uhub-api](uhub-api) | Accounts, application records, uploads, chat sockets, feature APIs |
+| Pantry React / Leaflet | [includes/pantry-finder](includes/pantry-finder) | Standalone pantry launcher and components also imported directly into uHub |
+| Pantry Express / Kysely / SQLite | [pantry-api](pantry-api) | Pantry records, location data, geocoding, candidate routes |
 
-	Browser -->|page001 domain| Nginx
-	Nginx -->|VPS port 4002| WP
-	WP -->|serves| React
-	Browser -->|same-origin /pantry-api| WP
-	WP --> Proxy
-	Proxy -->|Docker DNS| API
-	API --> SQLite
-	SQLiteWeb --> SQLite
-	WP -->|WORDPRESS_DB_*| MySQL
-	WP --> Mounts
-	WP ---|uminionnet| API
-	WP ---|uminionnet| MySQL
+WordPress uses MySQL. Each Node service uses its own SQLite database. Do not assume that WordPress accounts, uHub accounts, and pantry records share one schema.
+
+Browser requests follow this path:
+
+```text
+Browser -> host nginx -> WordPress / Apache (published port 4002)
+  /uhub/dist/                 -> compiled uHub frontend
+  /pantry-finder/dist/        -> compiled standalone pantry frontend
+  /api/...                   -> uhub-api:4001
+  /socket.io/...              -> uhub-api:4001 (chat connection)
+  /data/...                  -> uHub runtime static data
+  /pantry-api/api/...         -> pantry-api:4000
 ```
 
-### Request and data flow
+Routing is configured in [apache-uhub-proxy.conf](apache-uhub-proxy.conf), [apache-pantry-proxy.conf](apache-pantry-proxy.conf), and [docker-compose.yml](docker-compose.yml). Use same-origin browser URLs; do not hard-code internal Docker addresses into React.
 
-1. Host nginx owns public port 80 and routes the page001 domain to the WordPress container on VPS port `4002`.
-2. Apache serves the WordPress page and the repository-built Pantry Finder assets from `/pantry-finder/dist`.
-3. The browser calls `/pantry-api/api/...` on the same page001 origin. Apache forwards that path to `pantry-api:4000` over the Docker network.
-4. `pantry-api` reads and writes `/app/data/database.sqlite` through Kysely and better-sqlite3.
-5. The `pantry_data` volume is mounted by both `pantry-api` and `sqlite-web`, so the API and database browser see the same records.
-6. WordPress continues using its existing MySQL connection and legacy private bind mounts. Pantry Finder does not call page002 and does not use page001 MySQL for pantry data.
+## 2. Start with the active entry points
 
-## Services and deployment
+- [front-page.php](wp-content/themes/astra-child/front-page.php): outer page markup, substantial inline CSS/JavaScript, legacy media/archive/forms, and React integration. Read surrounding code before changing it.
+- [functions.php](wp-content/themes/astra-child/functions.php): child-theme hooks, parent stylesheet, PHP session and CSRF setup.
+- [style.css](wp-content/themes/astra-child/style.css): child-theme metadata and stylesheet; not the only location of page CSS.
+- [uHub main.tsx](includes/uhub/src/main.tsx): mounts on `emojiLineForGitHubQuest34onFrontPage001`, falling back to `root`, and establishes the isolated root.
+- [uHub App.tsx](includes/uhub/src/App.tsx): authentication provider, launcher/autolaunch, profile dialogs, shared-profile URL handling and top-level routing.
+- [MainUhubFeatureV001ForMyProfileModal.tsx](includes/uhub/src/features/profile/MainUhubFeatureV001ForMyProfileModal.tsx): main hub composition, desktop/mobile layouts, navigation, feature selection, stores, carousels and many inline feature components.
 
-### `wordpress`
+Important: similarly named `MainHubUpgradeV001...` and `MainUhubFeatureV001...` files coexist. Follow imports from the active entry point before editing; a similar filename is not proof it is used.
 
-Built from the root [Dockerfile](Dockerfile). It runs WordPress with Apache, enables `rewrite`, `proxy`, and `proxy_http`, copies the Astra child theme, and copies the built Pantry Finder bundle to `/var/www/html/pantry-finder/dist`.
+## 3. The 10,000 buttons: where and how to modify them
 
-The Compose service preserves page001's existing configuration:
+The numbered button area is a hard-coded page/slot map, not 10,000 separate React files and not a SQL-generated menu.
 
-- Container port `80` is published as VPS port `4002`.
-- Existing `WORDPRESS_DB_HOST`, user, password, and database variables connect to the external MySQL container/network.
-- Existing `/root/private-includes` mounts provide legacy includes, uploads, imagery, and testing files.
-- The service joins the external Docker network `uminionnet`.
+1. Open [MainUhubFeatureV001ForMyProfileModal.tsx](includes/uhub/src/features/profile/MainUhubFeatureV001ForMyProfileModal.tsx).
+2. Find `hardCodedCustomButtonPages`: the page-to-slot lookup starts here and spreads `additionalHardCodedCustomButtonPages`.
+3. Open [additional-hard-coded-custom-button-pages.ts](includes/uhub/src/features/profile/additional-hard-coded-custom-button-pages.ts) for the extended lookup (starting at page 73).
+4. Find `customizableButtonPage` and `setCustomizableButtonPage`: they track the selected page.
+5. Follow the renderer's `buttonNumber` branches for labels, icons, styling and click behavior. A number's presence in the lookup does not necessarily mean it already has a dedicated feature.
 
-### `pantry-api`
+Lookup values are ordered arrays: numbers identify buttons; string values such as `CustomButtonsPage073sNextPageButton` identify page navigation; `null` represents an empty slot. Preserve slot order and navigation tokens. The current navigation clamps pages to 1 through 715; changing the range requires updating the lookup and navigation limits together.
 
-Built from [pantry-api/Dockerfile](pantry-api/Dockerfile) using a Node 22 Alpine multi-stage build. It compiles the TypeScript server, installs production dependencies, initializes the SQLite schema, runs the idempotent location backfill, and starts Express on internal port `4000`.
+The renderer handles previous/next string suffixes before feature-specific actions. Some actions are additionally gated by page number, so do not attach a new global number branch without checking that distinction.
 
-It is not published directly to the internet. Apache reaches it by the Docker service name `pantry-api`. Its database is stored in the named `pantry_data` volume at `/app/data/database.sqlite`.
+Public examples on page 715: button 9998 opens About Us, 9999 opens Terms of Use & Service, and 10000 opens the main Uminion website. The informational modal implementation is in the main hub file.
 
-### `sqlite-web`
+For a button change:
+- Locate its page and slot, then its renderer/click branches.
+- Update display and action together; preserve unrelated buttons and page controls.
+- If it opens a feature, follow the selected-view state through to that feature's rendering branch.
+- For persistence, add or reuse a backend route and database contract rather than storing records in the button lookup.
+- Check desktop/mobile layouts, pagination, keyboard access, and visitor/logged-in behavior.
+- Rebuild uHub and update this section if the navigation architecture changes.
 
-Runs the `sqlite-web` browser in a Python 3.12 container and mounts the same `pantry_data` volume at `/data`. It is bound only to VPS loopback port `8091`, because page002 already uses VPS port `8090`.
+## 4. Feature-to-file map
 
-### Compose and proxy files
+Paths below are under [includes/uhub/src](includes/uhub/src), unless a backend is named.
 
-[docker-compose.yml](docker-compose.yml) defines the three-service stack, the persistent volume, the existing external network, health checks, ports, and legacy bind mounts.
+| Task | Start here |
+|---|---|
+| Hub layout, header/footer, view selection | [features/profile/MainUhubFeatureV001ForMyProfileModal.tsx](includes/uhub/src/features/profile/MainUhubFeatureV001ForMyProfileModal.tsx) |
+| Sister Union routes | [features/uminion/MainUhubFeatureV001ForSisterUnionRoutes.tsx](includes/uhub/src/features/uminion/MainUhubFeatureV001ForSisterUnionRoutes.tsx) |
+| Login/signup and session state | [features/auth](includes/uhub/src/features/auth), [hooks/useAuth.tsx](includes/uhub/src/hooks/useAuth.tsx); backend [auth.ts](uhub-api/server/auth.ts) |
+| Own/other profile, settings, friends | Active `MainUhubFeatureV001For...` components in [features/profile](includes/uhub/src/features/profile); backend [friends.ts](uhub-api/server/friends.ts) |
+| My Store, product forms/detail | [MyStoreView.tsx](includes/uhub/src/features/profile/MyStoreView.tsx), [MyStoreProductSection.tsx](includes/uhub/src/features/profile/MyStoreProductSection.tsx), related product modal components |
+| Everything / Users' Stores / quadrants | [EverythingProductsList.tsx](includes/uhub/src/features/profile/EverythingProductsList.tsx), [UserStoresQuadrantView.tsx](includes/uhub/src/features/profile/UserStoresQuadrantView.tsx), main hub; backend [products.ts](uhub-api/server/products.ts) |
+| World Feed / post rendering | [WorldFeed.tsx](includes/uhub/src/features/profile/WorldFeed.tsx), [FeedEntryCard.tsx](includes/uhub/src/features/profile/FeedEntryCard.tsx), [hooks/usePaginatedFeed.ts](includes/uhub/src/hooks/usePaginatedFeed.ts); backend [social-posts.ts](uhub-api/server/social-posts.ts) |
+| MemeBoxes | [TheMemeBoxRenderer.tsx](includes/uhub/src/TheMemeBoxRenderer.tsx), [TheMemeBoxImplementation001.jsx](includes/uhub/src/features/profile/TheMemeBoxImplementation001.jsx); backend [memes.ts](uhub-api/server/memes.ts) |
+| MyBroadcasts uploads/recording/schedule UI | [CreateBroadcastView.tsx](includes/uhub/src/features/profile/CreateBroadcastView.tsx); backend [broadcasts.ts](uhub-api/server/broadcasts.ts) |
+| UnionRadio playback/calendar | `UnionRadioPlayer` in the main hub file; backend [broadcasts.ts](uhub-api/server/broadcasts.ts) |
+| Broadcast image gallery/zoom | [BroadcastCarousel.tsx](includes/uhub/src/features/profile/BroadcastCarousel.tsx), [BroadcastCarouselZoomModal.tsx](includes/uhub/src/features/profile/BroadcastCarouselZoomModal.tsx) |
+| Chat | [MainUhubFeatureV001ForChatModal.tsx](includes/uhub/src/features/uminion/MainUhubFeatureV001ForChatModal.tsx); backend [chat.ts](uhub-api/server/chat.ts) |
+| UmiMatch / Million-Pixel | Inline feature views in the main hub; backend [umimatch.ts](uhub-api/server/umimatch.ts), [million-pixel.ts](uhub-api/server/million-pixel.ts) |
+| Reusable UI, style utilities | [components](includes/uhub/src/components), [lib/utils.ts](includes/uhub/src/lib/utils.ts), [index.css](includes/uhub/src/index.css) |
 
-[apache-pantry-proxy.conf](apache-pantry-proxy.conf) maps `/pantry-api/` to the internal `pantry-api:4000` service. The browser therefore uses a same-origin API path and has no page002 dependency.
+Frontend state chooses what is visible; backend records provide persistent content. After finding a frontend request, follow its exact URL into the backend route instead of assuming a similarly named component owns the data.
 
-Do not remove the `pantry_data` volume during routine deployments. It contains page001's pantry records. The repository intentionally does not ship a database seed. 
+## 5. API and persistent storage
 
-## WordPress page001
+[uhub-api/server/index.ts](uhub-api/server/index.ts) configures Express, upload handling, cookie parsing, route mounts, Socket.IO and startup. Authentication, friends and products mount under `/api/auth`, `/api/friends`, and `/api/products`. Other route modules define their full paths; inspect the route declarations before adding a prefix.
 
-[wp-content/themes/astra-child/front-page.php](wp-content/themes/astra-child/front-page.php) is the complete page001 front-page template. It contains the legacy page markup, inline CSS, inline JavaScript, forms, archive/store sections, the Pantry Finder stylesheet/script tags, the API base-path declaration, and the React mount element `emojiLineForGitHubQuest54onFrontPage`.
+[db.ts](uhub-api/server/db.ts) creates the uHub SQLite connection; [db-types.ts](uhub-api/server/db-types.ts) defines table contracts. [scripts](uhub-api/scripts) contains initialization/startup scripts. Changing a TypeScript table interface alone does not migrate an existing SQL database: update schema initialization/migration logic and preserve existing records.
 
-[wp-content/themes/astra-child/functions.php](wp-content/themes/astra-child/functions.php) is the child-theme hook file. It enqueues the Astra parent stylesheet, adds homepage head hooks, excludes or branches page-specific behavior, starts the PHP session, and creates the CSRF token.
+Both Node services resolve `DATA_DIRECTORY`, falling back to a local `data` directory, and open `database.sqlite` there. In Compose, `uhub_data` and `pantry_data` mount separately at `/app/data`. Uploaded media is runtime data too; [static-serve.ts](uhub-api/server/static-serve.ts) and the upload routes determine its served URLs.
 
-[wp-content/themes/astra-child/style.css](wp-content/themes/astra-child/style.css) is the Astra child-theme metadata stylesheet. Most page001 styling currently lives in `front-page.php` rather than here. (This CSS is more for mounting)
+Never commit database files, credentials, session tokens, or production uploads. Back up each live database and media directory before migrations. Do not remove named volumes during normal deployment. UI changes must not silently change API response shapes or bypass server-side checks.
 
-The root [Dockerfile](Dockerfile) is the WordPress image definition. It enables Apache modules/configuration and copies the child theme and Pantry Finder production assets into the image. It does not copy the legacy private includes because those remain runtime bind mounts.
+## 6. Pantry Finder and its SQL data
 
-## Pantry Finder frontend
+There are two entry paths:
+- Standalone: [pantry main.tsx](includes/pantry-finder/src/main.tsx) -> [App.tsx](includes/pantry-finder/src/App.tsx) -> [landing-page.tsx](includes/pantry-finder/src/pages/landing/landing-page.tsx).
+- Embedded in uHub: `PantryFinderBroadcastView` in the main hub imports [TheFoodPantryFeature](includes/pantry-finder/src/pages/pantry-feature/the-food-pantry-feature.tsx) directly.
 
-The frontend lives under `includes/pantry-finder`. Its source is page002's ("Find a Food Pantry") feature:> adapted into a standalone page001 bundle. <:It is built with Vite, React 18, TypeScript, Tailwind CSS, Radix UI, Lucide, and Leaflet.
+The embedded view requests `/pantry-api/api/pantries` three seconds after opening. Closing it clears the timer and aborts the request. The server returns the collection in one response; the browser filters it and reveals 50 matching records at a time, every three seconds. This is **render batching**, not SQL pagination or 50-row network requests. Changing country/state/category restarts the visible batch. The standalone entry has a separate fetch lifecycle; do not assume the embedded delay applies there.
 
-### Entry and application
+Data comes from the pantry service's SQLite database, not from a static pantry list. [pantry-api/server/index.ts](pantry-api/server/index.ts) defines pantry CRUD, politician/candidate and geocoding routes. [db.ts](pantry-api/server/db.ts) maps SQL tables; [types.ts](pantry-api/server/types.ts) defines server contracts. Startup [init-db.cjs](pantry-api/scripts/init-db.cjs) initializes schema; [backfill-pantry-locations.cjs](pantry-api/scripts/backfill-pantry-locations.cjs) maintains location metadata.
 
-[includes/pantry-finder/src/main.tsx](includes/pantry-finder/src/main.tsx) finds the page001 mount element, applies the Pantry Finder isolation boundary, and mounts React. It also sets the transparent, content-sized launcher styles without changing page001 CSS.
+Frontend modification map:
+- Layout/batch size/filters: [the-food-pantry-feature.tsx](includes/pantry-finder/src/pages/pantry-feature/the-food-pantry-feature.tsx).
+- Controls/view switching: [pantry-controls.tsx](includes/pantry-finder/src/pages/pantry-feature/pantry-controls.tsx).
+- Filter UI: [find-pantry-view.tsx](includes/pantry-finder/src/pages/pantry-feature/find-pantry-view.tsx).
+- Countries/states: [countries-data.ts](includes/pantry-finder/src/pages/pantry-feature/countries-data.ts).
+- Map/markers: [map.tsx](includes/pantry-finder/src/pages/home/map.tsx), [marker-icons.ts](includes/pantry-finder/src/pages/home/marker-icons.ts).
+- Submission/details: [host-pantry-form.tsx](includes/pantry-finder/src/pages/home/host-pantry-form.tsx), [pantry-details-view.tsx](includes/pantry-finder/src/pages/pantry-feature/pantry-details-view.tsx).
+- Browser contracts/API base: [types.ts](includes/pantry-finder/src/pages/home/types.ts), [api.ts](includes/pantry-finder/src/lib/api.ts).
 
-[includes/pantry-finder/src/App.tsx](includes/pantry-finder/src/App.tsx) owns the top-level pantry collection, loads pantries from the API, filters deleted records, and submits new pantry records.
+Running for Office is disabled, its filter options are commented out, and its automatic politician/candidate fetches are disabled. Preserve that state unless explicitly changing the feature. Leaflet styling and Tailwind scanning of shared pantry components are necessary for the embedded map to display correctly.
 
-[includes/pantry-finder/src/lib/api.ts](includes/pantry-finder/src/lib/api.ts) joins the configured `window.PANTRY_API_BASE_URL` with API paths.
+## 7. Loading and performance: preserve these boundaries
 
-[includes/pantry-finder/src/lib/utils.ts](includes/pantry-finder/src/lib/utils.ts) combines conditional class names and merges Tailwind classes with `clsx` and `tailwind-merge`.
+- [image-load-queue.ts](includes/uhub/src/lib/image-load-queue.ts): general queued media, 4 concurrent loads, decoded-image cache targets of 40 images / 48 MiB. Retained images can exceed eviction targets because they are protected. [QueuedImage.tsx](includes/uhub/src/components/QueuedImage.tsx) integrates it with React.
+- [product-image-cache.ts](includes/uhub/src/lib/product-image-cache.ts): separate product media cache, 3 concurrent loads, 48 images / 48 MiB. Stores alternate 2-second work slices; in-flight requests are allowed to finish, so a turn is not a hard network deadline. At most two entries per store, with extra URLs merged into an existing entry. Unfinished work can return indefinitely; a no-progress check stops repeated work and leaves the spinner visible.
+- [ProductQueuedImage.tsx](includes/uhub/src/components/ProductQueuedImage.tsx): product image display. Do not route product media or MemeBox media through the general queue indiscriminately.
+- [carousel-rotation-queue.ts](includes/uhub/src/lib/carousel-rotation-queue.ts): one browser scheduler visits registered carousels, chooses a random different slide, then waits five seconds before the next visit. There are no independent autoplay clocks for these registered carousels. Manual arrows remain separate.
+- The scheduler retains each carousel's image URLs and requests the chosen image through the image cache. **Current implementation caveat:** it races that request against four seconds and advances the index even on timeout/failure; it does not guarantee a ready image or skip a slow slide. `keepPreviousWhileLoading` can keep the previous image visible. Do not describe this as guaranteed network-free display.
+- Registration order determines the visit order; instance IDs distinguish multiple covers. Hover state is consulted on a visit. Legacy `intervalMs`/`pickNext` arguments remain in call sites but are ignored by the current hook.
+- Carousel metadata is fetched on mount and relevant update events, not on every rotation. No carousel socket is currently implemented; chat Socket.IO is separate.
+- Startup all-store request fan-out stays disabled. MemeBox 1 mounts normally; the extra boxes mount on expansion.
+- UnionRadio uses the next scheduled time and a single timer, plus `uhub:episodes-changed` and focus refreshes. Retired WordPress video scheduling and old interval pollers must not be casually re-enabled.
 
-### Pages and feature components
+User testing found major lag improvements with caches and serialized rotations; occasional transition hitches remain. This is not a measured browser performance profile. Image fetching, decoding, React rendering and paint remain distinct possible costs. Change one performance variable at a time and test on slow connections.
 
-[includes/pantry-finder/src/pages/landing/landing-page.tsx](includes/pantry-finder/src/pages/landing/landing-page.tsx) renders the page001 launcher button and the full-screen Pantry Finder dialog.
+## 8. Build, deployment and validation
 
-[includes/pantry-finder/src/pages/pantry-feature/the-food-pantry-feature.tsx](includes/pantry-finder/src/pages/pantry-feature/the-food-pantry-feature.tsx) is the main three-column feature layout: navigation, map, and controls. It loads politicians/candidates and applies country, state, category, and office filters.
+Run from the relevant package directory (PowerShell on Windows can use `npm.cmd`):
 
-[includes/pantry-finder/src/pages/pantry-feature/pantry-controls.tsx](includes/pantry-finder/src/pages/pantry-feature/pantry-controls.tsx) switches the right-side panel between find, host, details, and running-for-office views.
+| Changed source | Command / output |
+|---|---|
+| uHub, or pantry components imported into uHub | In `includes\uhub`: `npm.cmd run build` -> `dist\uhub.js`, `dist\uhub.css` |
+| Standalone pantry | In `includes\pantry-finder`: `npm.cmd run build` -> `dist` |
+| uHub API | In `uhub-api`: `npm.cmd run build` -> `dist`; use `npx.cmd tsc --project tsconfig.server.json --noEmit` for an unmasked type check |
+| Pantry API | In `pantry-api`: `npm.cmd run build` -> `dist` |
 
-[includes/pantry-finder/src/pages/pantry-feature/find-pantry-view.tsx](includes/pantry-finder/src/pages/pantry-feature/find-pantry-view.tsx) renders category checkboxes and country/state filters.
+The uHub API build script currently ends with `|| true`; a successful exit code alone does not prove compilation succeeded. Read compiler output and verify emitted files. Frontend Vite builds do not substitute for full TypeScript checks.
 
-[includes/pantry-finder/src/pages/pantry-feature/pantry-details-view.tsx](includes/pantry-finder/src/pages/pantry-feature/pantry-details-view.tsx) displays a selected pantry and its feedback controls.
+[Dockerfile](Dockerfile) copies built frontends, the child theme, and selected public assets into WordPress. The backend Dockerfiles compile their services. Source edits without rebuilding do not update the served frontend bundles. Ensure generated assets are included in delivery; never hand-edit minified output.
 
-[includes/pantry-finder/src/pages/pantry-feature/running-for-office-form.tsx](includes/pantry-finder/src/pages/pantry-feature/running-for-office-form.tsx) renders the candidate submission form and ballot-information response flow.
+[docker-compose.yml](docker-compose.yml) defines WordPress, both APIs, persistent volumes and database browsers. WordPress uses the existing external MySQL/network and private bind mounts. Pantry/uHub API ports are internal; database browsers are loopback-bound on 8091/8092. Preserve these boundaries and inspect the active deployment configuration before restarting services.
 
-[includes/pantry-finder/src/pages/pantry-feature/countries-data.ts](includes/pantry-finder/src/pages/pantry-feature/countries-data.ts) supplies country-to-state/province lists for the forms and filters.
+[deploy.yml](.github/workflows/deploy.yml) handles the Compose deployment. [AutoDeployWebsite.yml](.github/workflows/AutoDeployWebsite.yml) is a separate FTP delivery path. Check which workflow actually deploys a changed file; editing one does not update the other.
 
-[includes/pantry-finder/src/pages/home/host-pantry-form.tsx](includes/pantry-finder/src/pages/home/host-pantry-form.tsx) validates and submits pantry details, calls geocoding, and renders the host-a-pantry form.
+After a functional change, verify: correct feature/view and button page, visitor and logged-in paths, desktop/mobile layout, browser network/console, persisted records after reopening, and timer/request cleanup after closing. For pantry work, check the three-second delay, 50-record increments, filter resets and SQL-backed data. For rotation work, watch for overlapping transitions and test slow image responses.
 
-[includes/pantry-finder/src/pages/home/map.tsx](includes/pantry-finder/src/pages/home/map.tsx) creates the Leaflet map and renders pantry, politician, and candidate markers/popups.
+## 9. Maintenance rules for future changes
 
-[includes/pantry-finder/src/pages/home/marker-icons.ts](includes/pantry-finder/src/pages/home/marker-icons.ts) defines marker icons, colors, and marker selection behavior.
+1. Read this guide, then follow the current imports and request path in code. The code is the final authority.
+2. Keep changes localized. Do not replace the entire main hub file to change one feature.
+3. Preserve instance-specific layouts, login gates, and storage contracts.
+4. Update both frontend and backend types when changing an API; migrate SQL explicitly where required.
+5. Rebuild the actual consuming bundle, especially when editing shared pantry components.
+6. Update this README in the same change: file map, navigation, API/storage changes, loading semantics, validation and deployment steps. Document actual behavior, not just the intended outcome.
+7. Report what was tested and what remains unverified. Do not treat expected visitor `/api/auth/me` 401 responses as the same as server 500 failures.
 
-[includes/pantry-finder/src/pages/home/types.ts](includes/pantry-finder/src/pages/home/types.ts) defines the TypeScript data contracts for pantries, politicians, candidates, and related form values.
+### Dialog integration and documentation baseline (2026-10-16)
 
-### UI components and styling
+Dialogs must be mounted in the React render tree, not created as unused JSX inside upload/save callbacks. Callbacks update state; the rendered dialog consumes that state. Validate opening, closing, loading, saving, and refreshing displayed content independently of profile-photo uploads. Retain frontend visibility rules and backend permission checks.
 
-The files under [includes/pantry-finder/src/components/ui](includes/pantry-finder/src/components/ui) are reusable Radix/Tailwind controls:
+Carousel help text now describes the shared random scheduler and its five-second gap between visits, not independent three-to-six-second rotations. The bottom strip starts with two built-in entries followed by added entries; random rotation does not guarantee that display order.
 
-- `button.tsx`, `input.tsx`, `textarea.tsx`, and `label.tsx`: form primitives and Pantry Finder-specific isolation classes.
-- `checkbox.tsx`, `radio-group.tsx`, `switch.tsx`, `toggle.tsx`, and `slider.tsx`: selection and value controls.
-- `select.tsx`, `popover.tsx`, `command.tsx`, `calendar.tsx`, and `tooltip.tsx`: menus, lookup controls, date selection, and overlays.
-- `dialog.tsx`: modal portal, overlay, close button, and dialog content.
-- `card.tsx`, `table.tsx`, `progress.tsx`: general display and status primitives.
-
-[includes/pantry-finder/src/index.css](includes/pantry-finder/src/index.css) contains Tailwind input plus the Pantry Finder isolation layer. It scopes generated/vendor selectors, controls, Leaflet popups, launcher behavior, modal stacking, dropdown colors, and field typography under `.pantry-finder-root`.
-
-[includes/pantry-finder/tailwind.config.js](includes/pantry-finder/tailwind.config.js) tells Tailwind to scan the embedded `src` tree, scopes important utilities to `.pantry-finder-root`, disables global preflight, and defines the feature theme.
-
-[includes/pantry-finder/postcss.config.js](includes/pantry-finder/postcss.config.js) runs Tailwind, prefixes generated selectors with `.pantry-finder-root`, and applies Autoprefixer.
-
-[includes/pantry-finder/vite.config.js](includes/pantry-finder/vite.config.js) builds the standalone bundle into `dist` with the stable filenames `pantry-finder.js` and `pantry-finder.css`.
-
-
-The frontend [package.json](includes/pantry-finder/package.json) defines the Vite build and runtime/UI dependencies. [package-lock.json](includes/pantry-finder/package-lock.json) locks those dependencies.
-
-`includes/pantry-finder/index.html` is the standalone development/build entry document. The generated `includes/pantry-finder/dist/index.html`, `pantry-finder.js`, and `pantry-finder.css` are deployment artifacts consumed by the WordPress image.
-
-## Pantry API backend
-
-[pantry-api/server/index.ts](pantry-api/server/index.ts) creates the Express app, normalizes an optional base path, registers JSON/form middleware, defines pantry/politician/candidate/geocoding endpoints, and starts the server.
-
-[pantry-api/server/db.ts](pantry-api/server/db.ts) opens the SQLite file from `DATA_DIRECTORY` and defines the Kysely database schema types.
-
-[pantry-api/server/types.ts](pantry-api/server/types.ts) defines shared backend TypeScript types.
-
-[pantry-api/server/static-serve.ts](pantry-api/server/static-serve.ts) contains the backend's static-serving helper used by the server entry point.
-
-[pantry-api/scripts/init-db.cjs](pantry-api/scripts/init-db.cjs) creates missing SQLite tables and adds the country/state columns needed by Pantry Finder. It is safe to run repeatedly.
-
-[pantry-api/scripts/backfill-pantry-locations.cjs](pantry-api/scripts/backfill-pantry-locations.cjs) classifies existing pantry addresses into country/state metadata, including international formats and ambiguous regional abbreviations. It runs during API startup.
-
-[pantry-api/package.json](pantry-api/package.json) defines backend build/start scripts and dependencies. [pantry-api/tsconfig.server.json](pantry-api/tsconfig.server.json) configures TypeScript compilation for the server. [pantry-api/Dockerfile](pantry-api/Dockerfile) packages the compiled API and startup scripts into a production Node image.
-
-The backend's `data/` directory is runtime storage when running outside Docker. Local SQLite files and dependency directories are excluded by [.gitignore](.gitignore) and [.dockerignore](.dockerignore). The repository should not commit production database files.
-
-## Deployment automation
-
-[.github/workflows/deploy.yml](.github/workflows/deploy.yml) deploys this Docker Compose stack to `/docker/uminionclassicv001` over SSH when its configured branch receives a push. It pulls the repository, rebuilds the images, and restarts Compose.
-
-[.github/workflows/AutoDeployWebsite.yml](.github/workflows/AutoDeployWebsite.yml) is the existing FTP deployment workflow for selected page001 PHP/includes files and the Astra child theme. Its large comments describe the older Hostinger FTP model. It is separate from the Docker Compose deployment and should be changed only with awareness that it controls a different delivery path.
-
-## Files that combine responsibilities
-
-These are recommendations for later organization, not current changes:
-
-- `wp-content/themes/astra-child/front-page.php` combines the complete page markup, 
-a very large inline stylesheet, 
-extensive inline JavaScript, 
-PHP session/database setup, 
-and Pantry Finder bootstrapping. 
-
-It is the clearest future split candidate: 
-template markup, 
-page001 CSS, 
-page001 JavaScript, 
-and small integration partials could eventually become separate files.
-
-- `wp-content/themes/astra-child/functions.php` combines parent-theme setup, 
-homepage hooks, 
-page exclusions, 
-session startup, 
-and CSRF initialization. 
-
-Session/security initialization could eventually move into a dedicated bootstrap/plugin boundary.
-
-- `pantry-api/server/index.ts` combines Express setup, 
-environment/base-path normalization, 
-diagnostics, 
-route definitions, 
-and server startup. 
-
-Routes could eventually be separated into route modules, with startup/configuration kept in the entry point.
-
-- `pantry-api/server/db.ts` combines database connection construction with all table schema interfaces. A later split could keep the connection in `db.ts` and shared table types in a schema/types module.
-
-- `pantry-api/scripts/backfill-pantry-locations.cjs` combines the country/state dataset, address parsing rules, coordinate disambiguation, and migration execution. The lookup dataset and classifier could eventually be separated from the migration runner.
-
-- `includes/pantry-finder/src/pages/pantry-feature/the-food-pantry-feature.tsx` combines API loading, filter state, derived filtering, and the three-column layout. A later split could extract hooks for data/filter state and leave the component focused on layout.
-
-- `includes/pantry-finder/src/index.css` combines Tailwind entry styles, isolation rules, form-control overrides, modal rules, dropdown rules, and Leaflet customization. These could later become separate scoped style modules if the feature grows.
-
-- `docker-compose.yml` combines the page001 web service, Pantry API, SQLite administration service, persistent storage, external networking, health checks, and legacy mounts. It is still an appropriate deployment manifest, but service-specific Compose fragments could help if more features are added.
-
-## Adding the next feature
-
-Use this architecture as the placement guide:
-
-- A visual React feature belongs under `includes/<feature-name>`, with its own build output and a mount point in the WordPress template.
-- A feature-specific API belongs in its own service or an explicitly separated backend module. Avoid coupling new browser code directly to page002 or to page001's MySQL unless that is intentional.
-- Persistent feature data belongs in a named Docker volume with an explicit backup/import plan.
-- Apache proxy paths should be same-origin paths such as `/feature-api/`, routed to an internal Docker service.
-- Page001's existing private mounts, MySQL environment, port `4002`, nginx routing, and Astra child-theme structure are infrastructure boundaries. New features should fit around them rather than replace them.
+This README is the maintained architecture reference. Update it whenever implementation changes. Older guides with an OUTDATED notice are historical context, not an implementation specification. Privileged-tool details remain outside this public guide.

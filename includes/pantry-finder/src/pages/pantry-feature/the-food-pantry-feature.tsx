@@ -28,21 +28,12 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
     showCandidateHouse: false,
   });
 
-   React.useEffect(() => {
-    fetch(pantryApiUrl('/api/politicians'))
-       .then(res => res.json())
-       .then(data => {
-         // DEBUG NOTE: re-enable only when you need to inspect politician load counts.
-         // console.log('Fetched politicians:', data.length, 'total');
-         setPoliticians(data);
-       })
-       .catch(console.error);
-     
-    fetch(pantryApiUrl('/api/candidates'))
-       .then(res => res.json())
-       .then(data => setCandidates(data))
-       .catch(console.error);
-   }, []);
+   // Politicians and candidates are not requested while their checkboxes and the Running for Office button are
+   // disabled (10/15/26 by StorytellingSalem). Un-comment this effect when they come back.
+   // React.useEffect(() => {
+   //  fetch(pantryApiUrl('/api/politicians')).then(res => res.json()).then(data => setPoliticians(data)).catch(console.error);
+   //  fetch(pantryApiUrl('/api/candidates')).then(res => res.json()).then(data => setCandidates(data)).catch(console.error);
+   // }, []);
 
   const handleViewDetails = (pantry: Pantry) => {
     setSelectedPantry(pantry);
@@ -59,8 +50,25 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
     if (selectedState && p.state !== selectedState) return false;
     return selectedCategories.includes(p.type);
   });
+
+  // Leaky bucket: show 50 matching pantries, then 50 more every 3 seconds until all are on the map.
+  // Changing a filter restarts the flow with only the matching pantries.
+  const FLOW_BATCH = 50;
+  const FLOW_INTERVAL_MS = 3000;
+  const [visibleCount, setVisibleCount] = React.useState(0);
+  const filterKey = `${selectedCountry}|${selectedState}|${selectedCategories.join(',')}`;
+
+  React.useEffect(() => {
+    setVisibleCount(pantries.length ? FLOW_BATCH : 0);
+  }, [filterKey, pantries.length]);
+
+  React.useEffect(() => {
+    if (visibleCount === 0 || visibleCount >= filteredPantries.length) return;
+    const timer = window.setTimeout(() => setVisibleCount(count => count + FLOW_BATCH), FLOW_INTERVAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [visibleCount, filteredPantries.length]);
   
-  const filteredPoliticians = selectedCategories.includes('politicians') 
+  const filteredPoliticians = selectedCategories.includes('politicians')
     ? politicians.filter(p => {
         if (filterOptions.showPoliticianSenate && p.office === 'Senate') return true;
         if (filterOptions.showPoliticianHouse && p.office === 'House') return true;
@@ -135,7 +143,7 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
       <div className={cn('grid min-h-0', activeView === 'find' ? 'grid-cols-1' : 'grid-cols-[66%_34%]')}>
       <div className="h-full min-h-[360px] overflow-hidden">
         <PantryMap
-          pantries={filteredPantries}
+          pantries={filteredPantries.slice(0, visibleCount)}
           politicians={filteredPoliticians}
           candidates={filteredCandidates}
           onViewDetails={handleViewDetails}
