@@ -567,8 +567,20 @@ const UnionRadioPlayer = () => {
 const PantryFinderBroadcastView = () => {
   const [pantries, setPantries] = useState<any[]>([]);
 
+  // Leaky-bucket loading: the view renders first, then the pantry data is requested 3 seconds later.
+  // This component only exists while Find-a-Pantry#13 is open, so closing it cancels the request and frees the data.
   useEffect(() => {
-    fetch('/pantry-api/api/pantries').then((response) => response.ok ? response.json() : []).then((items) => setPantries(Array.isArray(items) ? items.filter((item) => item.deleted === 0) : [])).catch(() => setPantries([]));
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      fetch('/pantry-api/api/pantries', { signal: controller.signal })
+        .then((response) => response.ok ? response.json() : [])
+        .then((items) => setPantries(Array.isArray(items) ? items.filter((item) => item.deleted === 0) : []))
+        .catch((error) => { if (error?.name !== 'AbortError') setPantries([]); });
+    }, 3000);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
   }, []);
 
   const addPantry = async (pantry: any) => {
@@ -1147,9 +1159,9 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
         <Button type="button" size="sm" variant={activeLeftSlot === 'left-top' ? 'default' : 'outline'} onClick={() => setActiveLeftSlot('left-top')}>Above uHome-Hub</Button>
         <Button type="button" size="sm" variant={activeLeftSlot === 'left' ? 'default' : 'outline'} onClick={() => setActiveLeftSlot('left')}>Below uHome-Hub</Button>
       </div>}
-      {slot === 'cover' && <p className="my-2 text-xs text-muted-foreground">The default cover image (which users can change for their own profile) is always the first image. Images added here rotate with it randomly every 3–5 seconds and can only be changed here.</p>}
-      {slot === 'center' && <p className="my-2 text-xs text-muted-foreground">The default Uminion anchor image is always image 1. Add up to 48 more images (49 in total); they rotate every 6 seconds. Captions are optional and only appear when filled in.</p>}
-      {isBottom && <p className="my-2 text-xs text-muted-foreground">The existing bottom image is entry 9 and the “Become an Official Member…” caption is entry 10. Add up to 8 more entries (image and/or caption).</p>}
+      {slot === 'cover' && <p className="my-2 text-xs text-muted-foreground">The user's own or default cover is the initial image. Add up to 9 images; each cover carousel takes its turn in the shared random rotation scheduler, which waits 5 seconds between carousel visits.</p>}
+      {slot === 'center' && <p className="my-2 text-xs text-muted-foreground">The default Uminion anchor is the initial image. Add up to 48 more images (49 in total); this carousel takes its turn in the shared random rotation scheduler, which waits 5 seconds between carousel visits. Captions are optional and only appear when filled in.</p>}
+      {isBottom && <p className="my-2 text-xs text-muted-foreground">The existing bottom image and the “Become an Official Member…” caption are the first two built-in entries. Add up to 8 more entries (image and/or caption); all entries participate in the shared random rotation scheduler.</p>}
       <p className="my-2 text-xs text-muted-foreground">Manage images, captions, prices, and order. Existing images stay in place unless replaced or removed.</p>
       {isLoading ? <p className="py-5 text-center">Loading carousel…</p> : loadError ? <p className="py-5 text-center text-red-400">{loadError}</p> : <div className="space-y-2">
         {items.map((item, index) => <div key={item.id ?? `new-${index}`} className="grid grid-cols-[72px_1fr] gap-2 rounded border p-2 text-xs">
@@ -5545,6 +5557,10 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
 
 
+{user?.is_high_high_high_admin === 1 && (
+  <ManagedCarouselAdminModal slot={managedCarouselAdminSlot} onClose={() => setManagedCarouselAdminSlot(null)} />
+)}
+
 {isEditingProfileImage && (
   <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100001]">
     <div className="bg-background border rounded-lg p-6 max-w-md w-[90%]">
@@ -5578,8 +5594,6 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                   // The Avatar component is bound to user.profile_image_url
                 }
 
-                <ManagedCarouselAdminModal slot={managedCarouselAdminSlot} onClose={() => setManagedCarouselAdminSlot(null)} />
-                
                 alert('Profile picture updated successfully!');
                 setIsEditingProfileImage(false);
                 
