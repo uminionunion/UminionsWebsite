@@ -18,7 +18,9 @@ import EverythingProductsList from './EverythingProductsList';
 import QueuedImage from '../../components/QueuedImage';
 import ProductQueuedImage from '../../components/ProductQueuedImage';
 import { IMAGE_LOAD_PRIORITY, retainQueuedImages } from '../../lib/image-load-queue';
-import { useQueuedCarouselRotation } from '../../lib/carousel-rotation-queue';
+import { useQueuedImageSlot } from '../../lib/carousel-rotation-queue';
+import { useSiteWideMute } from '../../lib/media-sound';
+import { Volume2, VolumeX } from 'lucide-react';
 import { enqueueProductImageBatch, setProductImageQueueActive } from '../../lib/product-image-cache';
 import ProductSearchDropdown from './ProductSearchDropdown';
 import MainUhubFeatureV001ForEditProductModal from './MainUhubFeatureV001ForEditProductModal';
@@ -32,6 +34,8 @@ import { renderTheMemeBox, unmountTheMemeBox } from '@/TheMemeBoxRenderer';
 import { additionalHardCodedCustomButtonPages } from './additional-hard-coded-custom-button-pages';
 import { TheFoodPantryFeature } from '../../../../pantry-finder/src/pages/pantry-feature/the-food-pantry-feature';
 import { pantryApiUrl } from '@/lib/api';
+import ProfilePhotoEditor, { ProfilePhotoSuccessToast, type ProfilePhotoPurpose } from './ProfilePhotoEditor';
+import { PROFILE_PHOTOS_CHANGED_EVENT, type ProfilePhotosChangedDetail } from '../../lib/profile-photo-events';
 import 'leaflet/dist/leaflet.css';
 
 
@@ -184,7 +188,7 @@ const captionStyleToCss = (style: CaptionStyle): React.CSSProperties => ({
 const isAcceptedCaptionUrl = (value: string) => /^(https?:\/\/|www\.)/i.test(value.trim());
 const normalizeCaptionUrl = (value: string) => /^www\./i.test(value.trim()) ? ('https://' + value.trim()) : value.trim();
 
-const getManagedCarouselLimit = (slot: ManagedCarouselSlot) => slot === 'cover' ? 9 : slot === 'bottom' ? 8 : slot === 'center' ? 48 : 10;
+const getManagedCarouselLimit = (slot: ManagedCarouselSlot) => slot === 'center' ? 49 : 10;
 
 const UnionPoliticCandidates = ({ filtersOpen }: { filtersOpen: boolean }) => {
   const { user } = useAuth();
@@ -280,7 +284,18 @@ const ProductBox = ({ product, onMagnify, onAddToCart }) => {
     );
 };
 
+const SiteWideMuteButton = ({ small = false }: { small?: boolean }) => {
+  const { muted, toggle } = useSiteWideMute();
+  return <Button type="button" variant="outline" size="icon" className={`${small ? 'h-8 w-8 ' : ''}uhub-play-button`} style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }} onClick={toggle} aria-label={muted ? 'Unmute UnionRadio audio and video' : 'Mute UnionRadio audio and video'} aria-pressed={!muted} title={muted ? 'Site sound muted' : 'Site sound on'}>
+    {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+  </Button>;
+};
+
 const UnionRadioPlayer = () => {
+  const { muted } = useSiteWideMute();
+  const enforceSiteMute = (event: React.SyntheticEvent<HTMLMediaElement>) => {
+    if (muted && !event.currentTarget.muted) event.currentTarget.muted = true;
+  };
   const { user } = useAuth();
   const [nowPlaying, setNowPlaying] = useState<any>(null);
   const [mediaIndex, setMediaIndex] = useState(0);
@@ -466,18 +481,18 @@ const UnionRadioPlayer = () => {
               {nowPlaying.description && <p className="text-sm text-muted-foreground">{nowPlaying.description}</p>}
             </div>
             {media.media_type === 'video' ? (
-              <video key={`${nowPlaying.id}-${media.id}`} ref={playerRef as React.RefObject<HTMLVideoElement>} className={`w-full max-h-[420px] bg-black ${replayEpisode ? 'hidden' : ''}`} controls autoPlay={!replayEpisode} playsInline onEnded={handleMediaEnded}>
+              <video key={`${nowPlaying.id}-${media.id}`} data-union-radio-player muted={muted} onVolumeChange={enforceSiteMute} ref={playerRef as React.RefObject<HTMLVideoElement>} className={`w-full max-h-[420px] bg-black ${replayEpisode ? 'hidden' : ''}`} controls autoPlay={!replayEpisode} playsInline onEnded={handleMediaEnded}>
                 <source src={media.media_url} />
               </video>
             ) : (
-              <audio key={`${nowPlaying.id}-${media.id}`} ref={playerRef as React.RefObject<HTMLAudioElement>} className={replayEpisode ? 'hidden' : 'w-full'} controls autoPlay={!replayEpisode} onEnded={handleMediaEnded}>
+              <audio key={`${nowPlaying.id}-${media.id}`} data-union-radio-player muted={muted} onVolumeChange={enforceSiteMute} ref={playerRef as React.RefObject<HTMLAudioElement>} className={replayEpisode ? 'hidden' : 'w-full'} controls autoPlay={!replayEpisode} onEnded={handleMediaEnded}>
                 <source src={media.media_url} />
               </audio>
             )}
             {replayMedia && (replayMedia.media_type === 'video' ? (
-              <video key={`replay-${replayEpisode.id}-${replayMedia.id}`} ref={replayPlayerRef as React.RefObject<HTMLVideoElement>} className="w-full max-h-[420px] bg-black" controls autoPlay playsInline onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></video>
+              <video key={`replay-${replayEpisode.id}-${replayMedia.id}`} data-union-radio-player muted={muted} onVolumeChange={enforceSiteMute} ref={replayPlayerRef as React.RefObject<HTMLVideoElement>} className="w-full max-h-[420px] bg-black" controls autoPlay playsInline onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></video>
             ) : (
-              <audio key={`replay-${replayEpisode.id}-${replayMedia.id}`} ref={replayPlayerRef as React.RefObject<HTMLAudioElement>} className="w-full" controls autoPlay onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></audio>
+              <audio key={`replay-${replayEpisode.id}-${replayMedia.id}`} data-union-radio-player muted={muted} onVolumeChange={enforceSiteMute} ref={replayPlayerRef as React.RefObject<HTMLAudioElement>} className="w-full" controls autoPlay onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></audio>
             ))}
             <EpisodeActions episode={nowPlaying} />
           </div>
@@ -488,9 +503,9 @@ const UnionRadioPlayer = () => {
               {replayEpisode.description && <p className="text-sm text-muted-foreground">{replayEpisode.description}</p>}
             </div>
             {replayMedia.media_type === 'video' ? (
-              <video key={`replay-${replayEpisode.id}-${replayMedia.id}`} ref={replayPlayerRef as React.RefObject<HTMLVideoElement>} className="w-full max-h-[420px] bg-black" controls autoPlay playsInline onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></video>
+              <video key={`replay-${replayEpisode.id}-${replayMedia.id}`} data-union-radio-player muted={muted} onVolumeChange={enforceSiteMute} ref={replayPlayerRef as React.RefObject<HTMLVideoElement>} className="w-full max-h-[420px] bg-black" controls autoPlay playsInline onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></video>
             ) : (
-              <audio key={`replay-${replayEpisode.id}-${replayMedia.id}`} ref={replayPlayerRef as React.RefObject<HTMLAudioElement>} className="w-full" controls autoPlay onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></audio>
+              <audio key={`replay-${replayEpisode.id}-${replayMedia.id}`} data-union-radio-player muted={muted} onVolumeChange={enforceSiteMute} ref={replayPlayerRef as React.RefObject<HTMLAudioElement>} className="w-full" controls autoPlay onEnded={handleReplayEnded}><source src={replayMedia.media_url} /></audio>
             )}
           </div>
         ) : <p className="text-sm text-muted-foreground">No scheduled episode is playing.</p>}
@@ -762,54 +777,39 @@ const MillionPixelView = () => {
   </div>;
 };
 
-const getNextUnionEventDateLabel = (short = false) => {
-  const today = new Date();
-  const eventDate = new Date(today.getFullYear(), today.getMonth() + (today.getDate() >= 25 ? 1 : 0), 24);
-  return eventDate.toLocaleDateString('en-US', { month: short ? 'short' : 'long', day: 'numeric', year: 'numeric' });
-};
-
-const upperEventFallbackItems: ManagedCarouselItem[] = [
-  { image_url: '/includes/Uminionad001.png', title: `Next Union Event: ${getNextUnionEventDateLabel()} 9am to 9pm` },
-  { image_url: '/includes/WYSad001.png', title: 'AD - Sponsored By: WhatsYorStory.com', website: 'https://WhatsYorStory.com' },
-  { image_url: '/includes/Uminionad001.png', title: `Next Union Event: ${getNextUnionEventDateLabel(true)} (9am to 9pm)` },
-  { image_url: '/includes/WYSad001.png', title: 'AD - Sponsored By: WhatsYorStory.com', website: 'https://WhatsYorStory.com' },
-];
-
 const RotatingUnionEventCard = () => {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const { items } = useManagedCarouselItems('left-top', upperEventFallbackItems);
-  // Retired 10/16/26: retainQueuedImages(all items) and the fixed 4500ms interval; replaced by the carousel rotation queue.
-  useQueuedCarouselRotation({ carouselId: 'left-top', urls: items.map(item => item.image_url), index, setIndex, intervalMs: 4500, paused });
+  const { items } = useManagedCarouselItems('left-top');
+  const imageVisible = useQueuedImageSlot({ carouselId: 'left-top', urls: items.map(item => item.image_url), index, setIndex, paused });
   useEffect(() => setIndex(0), [items]);
-  const activeItem = items[index] || upperEventFallbackItems[0];
+  const activeItem = items[index] || items[0];
+  if (!activeItem) return <div className="uhub-event-rotator" />;
   return <div className="uhub-event-rotator" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onClick={() => activeItem.website && window.open(activeItem.website, '_blank')}>
     <button type="button" className="uhub-event-arrow left" onClick={(event) => { event.stopPropagation(); setIndex(value => (value - 1 + items.length) % items.length); }}>‹</button>
-    <QueuedImage
+    {imageVisible && <QueuedImage
+      key={activeItem.image_url}
       src={activeItem.image_url}
       alt={activeItem.title || 'uHome-Hub upper carousel image'}
       queuePriority={IMAGE_LOAD_PRIORITY.carousel}
-      keepPreviousWhileLoading
-    />
+    />}
     <p>{activeItem.title || activeItem.description}{activeItem.price ? ` · ${activeItem.price}` : ''}</p>
     <button type="button" className="uhub-event-arrow right" onClick={(event) => { event.stopPropagation(); setIndex(value => (value + 1) % items.length); }}>›</button>
   </div>;
 };
 
-const headerStoreItems = [
-  { image_url: '/StoreProductsAndImagery/UkraineLogo001.png', title: 'Ukraine Poster', price: 'u24.gov.ua', website: 'https://u24.gov.ua' },
-  { image_url: '/StoreProductsAndImagery/TapestryVersion001.png', title: 'BYO Tapestry', price: '$1,499.95 BYO Tapestry', website: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.001AAAAA' },
-  { image_url: '/StoreProductsAndImagery/Tshirtbatchversion001.png', title: 'Union Shirts', price: null, website: null },
-];
-
-const useManagedCarouselItems = (slot: ManagedCarouselSlot, fallbackItems: ManagedCarouselItem[]) => {
-  const [items, setItems] = useState<ManagedCarouselItem[]>(fallbackItems);
+const useManagedCarouselItems = (slot: ManagedCarouselSlot) => {
+  const [items, setItems] = useState<ManagedCarouselItem[]>([]);
   const loadItems = useCallback(() => {
     fetch(`/api/carousels/${slot}/items`, { credentials: 'include' })
-      .then(response => response.ok ? response.json() : { items: [] })
-      .then(data => setItems(Array.isArray(data.items) && data.items.length ? data.items : fallbackItems))
-      .catch(() => setItems(fallbackItems));
-  }, [slot, fallbackItems]);
+      .then(async response => {
+        if (!response.ok) throw new Error(`Unable to load carousel (${response.status}).`);
+        const data: { items?: ManagedCarouselItem[] } = await response.json();
+        if (!Array.isArray(data.items)) throw new Error('The carousel response was invalid.');
+        setItems(data.items);
+      })
+      .catch(error => console.error('[CAROUSELS] Unable to load displayed entries:', error));
+  }, [slot]);
   useEffect(() => loadItems(), [loadItems]);
   useEffect(() => {
     const handleUpdated = (event: Event) => {
@@ -822,22 +822,22 @@ const useManagedCarouselItems = (slot: ManagedCarouselSlot, fallbackItems: Manag
   return { items, refresh: loadItems };
 };
 
-const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: ManagedCarouselSlot; fallbackItems: ManagedCarouselItem[] }) => {
-  const { items } = useManagedCarouselItems(slot, fallbackItems);
+const ManagedProductCarousel = ({ slot }: { slot: ManagedCarouselSlot }) => {
+  const { items } = useManagedCarouselItems(slot);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  // Retired 10/16/26: retainQueuedImages(all items) and the fixed 3000ms interval; replaced by the carousel rotation queue at 6s.
-  useQueuedCarouselRotation({ carouselId: `product-${slot}`, urls: items.map(item => item.image_url), index, setIndex, intervalMs: 6000, paused });
+  const imageVisible = useQueuedImageSlot({ carouselId: `product-${slot}`, urls: items.map(item => item.image_url), index, setIndex, paused });
   useEffect(() => setIndex(0), [items]);
-  const item = items[index] || fallbackItems[0];
+  const item = items[index] || items[0];
+  if (!item) return <div className="uhub-header-product-carousel" />;
   return <div className="uhub-header-product-carousel" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
     <button type="button" className="uhub-mini-carousel-arrow left" onClick={() => setIndex(value => (value - 1 + items.length) % items.length)}>‹</button>
-    <QueuedImage
+    {imageVisible && <QueuedImage
+      key={item.image_url}
       src={item.image_url}
       alt={item.title || 'Carousel image'}
       queuePriority={IMAGE_LOAD_PRIORITY.carousel}
-      keepPreviousWhileLoading
-    />
+    />}
     <div className="uhub-header-product-overlay">
       {item.title && <span>{item.title}</span>}
       {item.description && <small>{item.description}</small>}
@@ -849,53 +849,45 @@ const ManagedProductCarousel = ({ slot, fallbackItems }: { slot: ManagedCarousel
   </div>;
 };
 
-const footerPosterItems = [
-  { image_url: '/StoreProductsAndImagery/UminionLogo014.00.2024Classic.png', title: 'Sister Union #14: Union News - 2024 Classic', price: '$69.95', website: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.026.01A' },
-  { image_url: '/StoreProductsAndImagery/UminionLogo015.00.2024Classic.png', title: 'Sister Union #15: Union Radio - 2024 Classic', price: '$69.95', website: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.027.01A' },
-  { image_url: '/StoreProductsAndImagery/UminionLogo016.00.2024Classic.png', title: 'Sister Union #16: Union Drive - 2024 Classic', price: '$69.95', website: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.028.01A' },
-];
+const HeaderProductCarousel = () => <ManagedProductCarousel slot="left" />;
+const FooterPosterCarousel = () => <ManagedProductCarousel slot="right" />;
 
-const HeaderProductCarousel = () => <ManagedProductCarousel slot="left" fallbackItems={headerStoreItems} />;
-const FooterPosterCarousel = () => <ManagedProductCarousel slot="right" fallbackItems={footerPosterItems} />;
-
-const noManagedCarouselItems: ManagedCarouselItem[] = [];
 const defaultCoverImageUrl = '/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg';
 
-const randomCoverDelay = () => 3000 + Math.random() * 2000;
-const pickRandomOtherIndex = (current: number, count: number) => {
-  const choices = Array.from({ length: count }, (_, position) => position).filter(position => position !== current);
-  return choices[Math.floor(Math.random() * choices.length)];
+// Saved images feed one cover placeholder; the shared queue replaces its image.
+const CoverImageRotator = ({ userCoverUrl, opacity }: { userCoverUrl: string | null; opacity: number }) => {
+  if (userCoverUrl) return <img src={userCoverUrl} alt="Your cover" className="absolute inset-0 h-full w-full object-contain" style={{ opacity }} />;
+  return <ManagedCoverImageSlot opacity={opacity} />;
 };
 
-// Slot 1 is the user's own (or default) cover; admin-added covers rotate with it at random 3-5s intervals.
-const CoverImageRotator = ({ userCoverUrl, opacity }: { userCoverUrl: string | null; opacity: number }) => {
-  const { items } = useManagedCarouselItems('cover', noManagedCarouselItems);
-  const urls = useMemo(() => [userCoverUrl || defaultCoverImageUrl, ...items.map(item => item.image_url).filter(Boolean)], [userCoverUrl, items]);
+const ManagedCoverImageSlot = ({ opacity }: { opacity: number }) => {
+  const { items } = useManagedCarouselItems('cover');
+  const urls = useMemo(() => items.map(item => item.image_url).filter(Boolean), [items]);
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [urls]);
-  useQueuedCarouselRotation({ carouselId: 'cover', urls, index, setIndex, intervalMs: randomCoverDelay, pickNext: pickRandomOtherIndex });
-  return <QueuedImage
+  const imageVisible = useQueuedImageSlot({ carouselId: 'cover', urls, index, setIndex });
+  return imageVisible && urls.length > 0 ? <QueuedImage
+    key={urls[index] || defaultCoverImageUrl}
     src={urls[index] || defaultCoverImageUrl}
     alt="uHub cover"
     className="absolute inset-0 h-full w-full object-cover"
     style={{ opacity }}
     queuePriority={IMAGE_LOAD_PRIORITY.critical}
     retainInCache
-    keepPreviousWhileLoading
-  />;
+  /> : null;
 };
 
-// The default anchor image is slide 1; admin images from the "C" button follow and rotate every 6 seconds.
-const anchorImageUrl = '/uhub/dist/UminionAnchor.png';
+// The anchor placeholder starts with the default image and is replaced by the shared queue.
 const AnchorRotator = () => {
-  const { items } = useManagedCarouselItems('center', noManagedCarouselItems);
-  const slides = useMemo(() => [{ image_url: anchorImageUrl, title: '' }, ...items.filter(item => item.image_url)], [items]);
+  const { items } = useManagedCarouselItems('center');
+  const slides = useMemo(() => items.filter(item => item.image_url), [items]);
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [slides]);
-  useQueuedCarouselRotation({ carouselId: 'center', urls: slides.map(slide => slide.image_url), index, setIndex, intervalMs: 6000 });
+  const imageVisible = useQueuedImageSlot({ carouselId: 'center', urls: slides.map(slide => slide.image_url), index, setIndex });
   const slide = slides[index] || slides[0];
+  if (!slide) return <div className="relative h-full w-full" />;
   return <div className="relative h-full w-full">
-    <QueuedImage src={slide.image_url} alt={slide.title || 'Uminion anchor artwork'} className="h-full w-full object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />
+    {imageVisible && <QueuedImage key={slide.image_url} src={slide.image_url} alt={slide.title || 'Uminion anchor artwork'} className="h-full w-full object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache />}
     {slide.title ? <p className="absolute inset-x-0 bottom-0 bg-black/60 px-1 py-0.5 text-center text-xs text-white">{slide.title}</p> : null}
   </div>;
 };
@@ -1120,7 +1112,7 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
   if (!slot) return null;
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (items.length > maxItems) return alert(`This carousel can contain up to ${maxItems} added items.`);
+    if (items.length > maxItems) return alert(`This collection can contain up to ${maxItems} entries.`);
     if (isBottom) {
       if (items.some(item => !item.image_url && !item.file && !(item.title || '').trim())) return alert('Each entry needs an image or a caption.');
       if (items.some(item => item.isUrl && !isAcceptedCaptionUrl(item.website || ''))) return alert('Caption URLs must start with http://, https:// or www.');
@@ -1159,9 +1151,9 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
         <Button type="button" size="sm" variant={activeLeftSlot === 'left-top' ? 'default' : 'outline'} onClick={() => setActiveLeftSlot('left-top')}>Above uHome-Hub</Button>
         <Button type="button" size="sm" variant={activeLeftSlot === 'left' ? 'default' : 'outline'} onClick={() => setActiveLeftSlot('left')}>Below uHome-Hub</Button>
       </div>}
-      {slot === 'cover' && <p className="my-2 text-xs text-muted-foreground">The user's own or default cover is the initial image. Add up to 9 images; each cover carousel takes its turn in the shared random rotation scheduler, which waits 5 seconds between carousel visits.</p>}
-      {slot === 'center' && <p className="my-2 text-xs text-muted-foreground">The default Uminion anchor is the initial image. Add up to 48 more images (49 in total); this carousel takes its turn in the shared random rotation scheduler, which waits 5 seconds between carousel visits. Captions are optional and only appear when filled in.</p>}
-      {isBottom && <p className="my-2 text-xs text-muted-foreground">The existing bottom image and the “Become an Official Member…” caption are the first two built-in entries. Add up to 8 more entries (image and/or caption); all entries participate in the shared random rotation scheduler.</p>}
+      {slot === 'cover' && <p className="my-2 text-xs text-muted-foreground">Manage up to 10 entries, including the editable default cover. While that default entry is present, members see their own cover in its place. Images use the shared queue with 5 seconds between visits.</p>}
+      {slot === 'center' && <p className="my-2 text-xs text-muted-foreground">Manage up to 49 entries, including the editable or removable anchor image. Captions are optional. Images use the shared queue with 5 seconds between visits.</p>}
+      {isBottom && <p className="my-2 text-xs text-muted-foreground">Manage up to 10 image and/or caption entries, including the existing membership caption and cover image. All entries can be edited, reordered or removed.</p>}
       <p className="my-2 text-xs text-muted-foreground">Manage images, captions, prices, and order. Existing images stay in place unless replaced or removed.</p>
       {isLoading ? <p className="py-5 text-center">Loading carousel…</p> : loadError ? <p className="py-5 text-center text-red-400">{loadError}</p> : <div className="space-y-2">
         {items.map((item, index) => <div key={item.id ?? `new-${index}`} className="grid grid-cols-[72px_1fr] gap-2 rounded border p-2 text-xs">
@@ -1423,7 +1415,7 @@ const BroadcastView = ({
           </div>
           <div className="w-2/3 flex flex-col">
             <div className="flex items-center gap-2 mb-2">
-              <Button variant="outline" size="icon" className="uhub-play-button" style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }}><Play className="h-4 w-4" /></Button>
+              <SiteWideMuteButton />
               <WelcomeDescription fallback={broadcast.description} className="text-sm text-muted-foreground flex-grow text-center" />
             </div>
             <div className="flex items-center gap-2 mb-4">
@@ -1478,7 +1470,7 @@ if (isMobile) {
       {!isBroadcastCarouselCollapsed && (
         <div className="flex-shrink-0 flex flex-col w-[100%] mx-auto py-4">
           <div className="flex items-center gap-2 mb-2">
-            <Button variant="outline" size="icon" className="h-8 w-8 uhub-play-button" style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }}><Play className="h-4 w-4" /></Button>
+            <SiteWideMuteButton small />
                     <WelcomeDescription fallback={broadcast.description} className="text-xs text-muted-foreground flex-grow text-center" />
           </div>
           <div className="flex items-center gap-2 mb-2">
@@ -1640,7 +1632,7 @@ if (isMobile) {
         {!isBroadcastCarouselCollapsed && (
           <div style={{ width: `${broadcastRightWidth}%` }} className="flex flex-col overflow-y-auto overflow-x-hidden">
             <div className="flex items-center gap-2 mb-2">
-              <Button variant="outline" size="icon" className="h-8 w-8 uhub-play-button" style={{ backgroundColor: 'transparent', color: '#ffffff', borderColor: '#374151' }}><Play className="h-4 w-4" /></Button>
+              <SiteWideMuteButton small />
                         <WelcomeDescription fallback={broadcast.description} className="text-xs text-muted-foreground flex-grow text-center" />
             </div>
             <div className="flex items-center gap-2 mb-2">
@@ -3043,9 +3035,10 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [isPromoHovered, setIsPromoHovered] = useState(false);
   const [isPromoAutoplayPaused, setIsPromoAutoplayPaused] = useState(false);
   const [promoIndex, setPromoIndex] = useState(0);
-  const { items: bottomPromoItems } = useManagedCarouselItems('bottom', noManagedCarouselItems);
-  const promoCount = 2 + bottomPromoItems.length;
-  const activeBottomPromo = promoIndex >= 2 ? bottomPromoItems[promoIndex - 2] : undefined;
+  const { items: bottomPromoItems } = useManagedCarouselItems('bottom');
+  useEffect(() => setPromoIndex(0), [bottomPromoItems]);
+  const promoCount = bottomPromoItems.length;
+  const activeBottomPromo = bottomPromoItems[promoIndex];
   const activeBottomPromoStyle = captionStyleToCss(parseCaptionStyle(activeBottomPromo?.description));
   const promoPauseTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const [leftWidthMobile, setLeftWidthMobile] = useState(25);
@@ -3173,8 +3166,32 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const broadcastKeys = ['UnionNews#14', 'UnionRadio#15', 'MyBroadcasts'];
   const [selectedFriendForModal, setSelectedFriendForModal] = useState<any>(null);
   const [isFriendProfileModalOpen, setIsFriendProfileModalOpen] = useState(false);
-  const [isEditingProfileImage, setIsEditingProfileImage] = useState(false);
+  const [photoEditorPurpose, setPhotoEditorPurpose] = useState<ProfilePhotoPurpose | null>(null);
+  const [photoSuccess, setPhotoSuccess] = useState<ProfilePhotoPurpose | null>(null);
+  const dismissPhotoSuccess = useCallback(() => setPhotoSuccess(null), []);
   const [unreadChatrooms, setUnreadChatrooms] = useState<Set<number>>(new Set());
+  const [unreadStatusError, setUnreadStatusError] = useState('');
+
+  useEffect(() => {
+    const onPhotosChanged = (event: Event) => {
+      const detail = (event as CustomEvent<ProfilePhotosChangedDetail>).detail;
+      if (!detail || typeof detail.userId !== 'number') return;
+      const updates = {
+        ...(detail.profile_image_url !== undefined ? { profile_image_url: detail.profile_image_url } : {}),
+        ...(detail.cover_photo_url !== undefined ? { cover_photo_url: detail.cover_photo_url } : {}),
+      };
+      setSelectedFriendForModal((selected: any) => selected?.id === detail.userId ? { ...selected, ...updates } : selected);
+    };
+    window.addEventListener(PROFILE_PHOTOS_CHANGED_EVENT, onPhotosChanged);
+    return () => window.removeEventListener(PROFILE_PHOTOS_CHANGED_EVENT, onPhotosChanged);
+  }, []);
+
+  useEffect(() => {
+    setPhotoEditorPurpose(null);
+    setPhotoSuccess(null);
+    setUnreadChatrooms(new Set());
+    setUnreadStatusError('');
+  }, [user?.id, isOpen]);
   const socketRef = useRef<Socket | null>(null);
 
 
@@ -3211,7 +3228,8 @@ useEffect(() => {
   if (isOpen && broadcastView === 'UnionNews#14') {
     const fetchUnionNews14Images = async () => {
   try {
-    console.log('[PROFILE MODAL] Fetching UnionNews14 images from database...');
+    // Enable this log when debugging UnionNews14 image loading.
+    // console.log('[PROFILE MODAL] Fetching UnionNews14 images from database...');
     const res = await fetch('/api/broadcasts/union-news-14/images');
     if (!res.ok) {
       console.error('[PROFILE MODAL] Failed to fetch images, status:', res.status);
@@ -3252,19 +3270,23 @@ useEffect(() => {
 
   // Load unread chatroom status for logged-in users OR load rooms with messages for all users
 useEffect(() => {
+  let cancelled = false;
   if (isOpen) {
+    setUnreadStatusError('');
     // For logged-in users, get their unread status
     if (user && user.id) {
-      fetch('/api/chat/unread-status')
+      fetch('/api/chat/unread-status', { credentials: 'include' })
         .then(res => {
-          if (!res.ok) return Promise.resolve([]);
+          if (!res.ok) throw new Error(`Could not load unread chat status (HTTP ${res.status}).`);
           return res.json();
         })
         .then(data => {
+          if (cancelled) return;
+          if (!Array.isArray(data)) throw new Error('The server returned invalid unread chat status.');
           if (Array.isArray(data)) {
             const unreadSet = new Set<number>();
             data.forEach((item: any) => {
-              const match = item.chatroom_room_name.match(/chatroom-(\d+)/);
+              const match = typeof item.chatroom_room_name === 'string' && item.chatroom_room_name.match(/chatroom-(\d+)/);
               if (match) {
                 // Extract the Sister Union number from the room name
                 const sisterUnionNum = parseInt(item.chatroom_room_name.split('-chatroom')[0].match(/\d+/)?.[0] || '0');
@@ -3272,28 +3294,40 @@ useEffect(() => {
               }
             });
             setUnreadChatrooms(unreadSet);
-            console.log('[PROFILE] Loaded unread chatrooms for logged-in user:', Array.from(unreadSet));
+            // Enable when debugging initial unread-room loading.
+            // console.log('[PROFILE] Loaded unread chatrooms for logged-in user:', Array.from(unreadSet));
           }
         })
-        .catch(error => console.error('[PROFILE] Error loading unread chatrooms:', error));
+        .catch(error => {
+          if (cancelled) return;
+          console.error('[PROFILE] Error loading unread chatrooms:', error);
+          setUnreadStatusError(error instanceof Error ? error.message : 'Could not load unread chat status.');
+        });
     } else {
       // For non-logged-in users, show green circle for ANY room with messages
       fetch('/api/chat/rooms-with-messages')
         .then(res => {
-          if (!res.ok) return Promise.resolve([]);
+          if (!res.ok) throw new Error(`Could not load chatroom message status (HTTP ${res.status}).`);
           return res.json();
         })
         .then(data => {
+          if (cancelled) return;
+          if (!Array.isArray(data)) throw new Error('The server returned invalid chatroom message status.');
           if (Array.isArray(data)) {
             const roomsWithMessagesSet = new Set<number>(data);
             setUnreadChatrooms(roomsWithMessagesSet);
             console.log('[PROFILE] Loaded rooms with messages for non-logged-in user:', Array.from(roomsWithMessagesSet));
           }
         })
-        .catch(error => console.error('[PROFILE] Error loading rooms with messages:', error));
+        .catch(error => {
+          if (cancelled) return;
+          console.error('[PROFILE] Error loading rooms with messages:', error);
+          setUnreadStatusError(error instanceof Error ? error.message : 'Could not load chatroom message status.');
+        });
     }
   }
-}, [user, isOpen]);
+  return () => { cancelled = true; };
+}, [user?.id, isOpen]);
 
 
 // Handle left divider (uHome-Hub ↔ Broadcasts) - WITH MOBILE TOUCH SUPPORT
@@ -3429,7 +3463,8 @@ useEffect(() => {
         })
         .then(data => {
           if (Array.isArray(data)) {
-            console.log(`[PROFILE MODAL] ✅ Loaded ${data.length} pending friend requests`);
+            // Enable this log when debugging pending friend-request loading.
+            // console.log(`[PROFILE MODAL] ✅ Loaded ${data.length} pending friend requests`);
             setPendingFriendRequests(data);
           }
         })
@@ -4509,7 +4544,7 @@ return (
       id: user.id,
       username: user.username,
       profile_image_url: user.profile_image_url,
-      cover_photo_url: null,
+      cover_photo_url: user.cover_photo_url || null,
     });
     setIsFriendProfileModalOpen(true);
   }
@@ -4521,7 +4556,7 @@ const handleEditProfileImageClick = (e: React.MouseEvent) => {
     alert('You must be logged in to edit your profile.');
     return;
   }
-  setIsEditingProfileImage(true);
+  setPhotoEditorPurpose('profile');
 };
 
   const isMobile = window.innerWidth < 768;
@@ -4548,9 +4583,9 @@ const handleEditProfileImageClick = (e: React.MouseEvent) => {
   };
 
   // Retired 10/16/26: the 7000ms promo interval; the bottom promo now rotates through the carousel scheduler.
-  useQueuedCarouselRotation({
+  const promoImageVisible = useQueuedImageSlot({
     carouselId: 'bottom-promo',
-    urls: [...Array(2).fill(''), ...bottomPromoItems.map(item => item.image_url || '')],
+    urls: bottomPromoItems.map(item => item.image_url || ''),
     index: promoIndex,
     setIndex: setPromoIndex,
     paused: !isOpen || isPromoHovered || isPromoAutoplayPaused,
@@ -4563,6 +4598,7 @@ const handleEditProfileImageClick = (e: React.MouseEvent) => {
   }, []);
 
   const navigatePromo = (direction: 'left' | 'right') => {
+    if (!promoCount) return;
     setPromoIndex(index => (index + (direction === 'right' ? 1 : -1) + promoCount) % promoCount);
     setIsPromoAutoplayPaused(true);
     if (promoPauseTimeoutRef.current !== null) {
@@ -4589,6 +4625,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
   return (
     <>
       <div className={areProfileSurfacesOpaque ? 'uhub-profile-surfaces text-foreground w-full h-full flex flex-col relative' : 'uhub-profile-surfaces uhub-transparent-mode text-foreground w-full h-full flex flex-col relative'} style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+        {unreadStatusError && <p role="alert" className="border-b border-red-700 bg-black px-4 py-2 pr-14 text-sm text-red-400">{unreadStatusError} Message indicators may be out of date.</p>}
         <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-50 h-8 w-8 p-1 text-white hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff', border: '0', boxShadow: 'none' }} onClick={onClose}>
           <X className="h-5 w-5" />
           <span className="sr-only">Close</span>
@@ -4613,8 +4650,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
              }} disabled={!user}><Home className="h-4 w-4 mb-1" /> Home</Button>
            </div>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative overflow-hidden" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: 'none' }}>
-             <CoverImageRotator userCoverUrl={(user as { cover_photo_url?: string | null } | null)?.cover_photo_url || null} opacity={areProfileSurfacesOpaque ? 1 : 0.5} />
-             {user && <Button className="absolute bottom-2 right-2" size="sm">Change Cover</Button>}
+             <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={areProfileSurfacesOpaque ? 1 : 0.5} />
+             {user && <Button className="absolute bottom-2 right-2" size="sm" onClick={() => setPhotoEditorPurpose('cover')}>Change Cover</Button>}
            </div>
 
             {/* 8-Button Grid - SMALLER BUTTONS - HIDDEN ON MOBILE */}
@@ -4978,6 +5015,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       <AvatarImage
         src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"}
         alt="Profile"
+        className="object-contain"
         style={{ opacity: areProfileSurfacesOpaque ? 1 : 0.5 }}
         queuePriority={IMAGE_LOAD_PRIORITY.critical}
       />
@@ -5206,23 +5244,12 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               </Button>
               {activeBottomPromo ? (
                 <div className="flex h-10 w-full items-center justify-center gap-2 px-9">
-                  {activeBottomPromo.image_url && <QueuedImage src={activeBottomPromo.image_url} alt={activeBottomPromo.title || 'Promotion'} className="h-10 max-w-[50%] rounded object-cover" queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache keepPreviousWhileLoading />}
+                  {promoImageVisible && activeBottomPromo.image_url && <QueuedImage key={activeBottomPromo.image_url} src={activeBottomPromo.image_url} alt={activeBottomPromo.title || 'Promotion'} className={activeBottomPromo.title ? 'h-10 max-w-[50%] rounded object-cover' : 'h-10 w-full max-w-none rounded object-cover'} queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache />}
                   {activeBottomPromo.title && (activeBottomPromo.website
                     ? <a href={activeBottomPromo.website} target="_blank" rel="noopener noreferrer" className="text-center text-orange-400 hover:underline text-xs md:text-sm" style={activeBottomPromoStyle}>{activeBottomPromo.title}</a>
                     : <span className="text-center text-white text-xs md:text-sm" style={activeBottomPromoStyle}>{activeBottomPromo.title}</span>)}
                 </div>
-              ) : promoIndex === 0 ? (
-                <a href="https://page001.uminion.com/product/official-uminion-union-card/" target="_blank" rel="noopener noreferrer" className="px-9 text-center text-orange-400 hover:underline text-xs md:text-sm">
-                  Become an Official Member of the Union via getting your Union Card Today!
-                </a>
-              ) : (
-                <QueuedImage
-                  src="/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg"
-                  alt="uHub cover"
-                  className="h-10 w-full max-w-none rounded object-cover"
-                  queuePriority={IMAGE_LOAD_PRIORITY.critical}
-                />
-              )}
+              ) : null}
               <Button
                 type="button"
                 variant="outline"
@@ -5561,69 +5588,20 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
   <ManagedCarouselAdminModal slot={managedCarouselAdminSlot} onClose={() => setManagedCarouselAdminSlot(null)} />
 )}
 
-{isEditingProfileImage && (
-  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100001]">
-    <div className="bg-background border rounded-lg p-6 max-w-md w-[90%]">
-      <h2 className="text-xl font-bold mb-4">Change Profile Picture</h2>
-      <div className="mb-4">
-        <input 
-          type="file" 
-          accept="image/*"
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            
-            const formData = new FormData();
-            formData.append('profileImage', file);
-            
-            try {
-              console.log('[PROFILE] Uploading profile image...');
-              const response = await fetch('/api/auth/profile-image', {
-                method: 'POST',
-                body: formData,
-              });
-              
-              if (response.ok) {
-                const data = await response.json();
-                console.log('[PROFILE] Upload successful:', data);
-                
-                // Update the user object with new profile image URL
-                if (user && data.profile_image_url) {
-                  console.log('[PROFILE] Updating user profile image to:', data.profile_image_url);
-                  // Force avatar to update by updating the user object
-                  // The Avatar component is bound to user.profile_image_url
-                }
-
-                alert('Profile picture updated successfully!');
-                setIsEditingProfileImage(false);
-                
-                // Reload page to fetch fresh user data from /api/auth/me
-                setTimeout(() => {
-                  window.location.reload();
-                }, 1000);
-              } else {
-                const errorData = await response.json();
-                console.error('[PROFILE] Upload failed:', errorData);
-                alert(`Failed to upload: ${errorData.error || 'Unknown error'}`);
-              }
-            } catch (error) {
-              console.error('[PROFILE] Error uploading profile picture:', error);
-              alert('Error uploading profile picture: ' + error);
-            }
-          }}
-          className="w-full p-2 border rounded bg-gray-800 text-white"
-        />
-      </div>
-      <Button 
-        variant="outline" 
-        className="w-full"
-        onClick={() => setIsEditingProfileImage(false)}
-      >
-        Cancel
-      </Button>
-    </div>
-  </div>
+{photoEditorPurpose && user && (
+  <ProfilePhotoEditor
+    key={`${user.id}-${photoEditorPurpose}`}
+    userId={user.id}
+    purpose={photoEditorPurpose}
+    currentImageUrl={photoEditorPurpose === 'profile' ? user.profile_image_url : user.cover_photo_url}
+    onClose={() => setPhotoEditorPurpose(null)}
+    onSaved={() => {
+      setPhotoSuccess(photoEditorPurpose);
+      setPhotoEditorPurpose(null);
+    }}
+  />
 )}
+{photoSuccess && <ProfilePhotoSuccessToast purpose={photoSuccess} onDismiss={dismissPhotoSuccess} />}
 
 
 

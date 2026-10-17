@@ -6349,7 +6349,8 @@ document.getElementById('logoInput').addEventListener('change', function(event) 
 
 // Function to manage Archive Visibility (showing only 10 archive entries at a time)
 function manageArchiveVisibility() {
-    console.log("Managing archive visibility"); // Log the action for debugging
+    // Retired debug output; uncomment when debugging archive visibility.
+    // console.log("Managing archive visibility");
     const archiveItems = document.querySelectorAll('#bottomArchiveContainer > div'); // Get all archive items
     const showButtonId = 'showMoreButton'; // Set the ID for the "Show More" button
 

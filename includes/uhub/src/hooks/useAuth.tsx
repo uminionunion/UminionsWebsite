@@ -3,11 +3,13 @@
 // mounts (all roots live in the same JS module scope, so this plain object acts as
 // a cross-root context without needing a <Provider> wrapper).
 import { useSyncExternalStore, type ReactNode } from 'react';
+import { PROFILE_PHOTOS_CHANGED_EVENT, type ProfilePhotosChangedDetail } from '../lib/profile-photo-events';
 
 interface User {
   id: number;
   username: string;
-  profile_image_url?: string;
+  profile_image_url?: string | null;
+  cover_photo_url?: string | null;
   is_high_high_high_admin?: number;
   is_high_high_admin?: number;
   is_high_admin?: number;
@@ -55,6 +57,22 @@ function ensureMeFetched() {
 
 const login = (userData: User) => setState({ user: userData });
 
+export const updateAuthUser = (updates: Partial<User>) => {
+  if (state.user) setState({ user: { ...state.user, ...updates } });
+};
+
+// Register once for the singleton, including when profile views are not mounted.
+if (typeof window !== 'undefined') {
+  window.addEventListener(PROFILE_PHOTOS_CHANGED_EVENT, (event: Event) => {
+    const detail = (event as CustomEvent<ProfilePhotosChangedDetail>).detail;
+    if (!state.user || !detail || detail.userId !== state.user.id) return;
+    updateAuthUser({
+      ...(detail.profile_image_url === null || typeof detail.profile_image_url === 'string' ? { profile_image_url: detail.profile_image_url } : {}),
+      ...(detail.cover_photo_url === null || typeof detail.cover_photo_url === 'string' ? { cover_photo_url: detail.cover_photo_url } : {}),
+    });
+  });
+}
+
 const logout = async () => {
   try {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
@@ -68,7 +86,7 @@ const logout = async () => {
 export const useAuth = () => {
   ensureMeFetched();
   const snapshot = useSyncExternalStore(subscribe, getSnapshot);
-  return { user: snapshot.user, isLoading: snapshot.isLoading, login, logout };
+  return { user: snapshot.user, isLoading: snapshot.isLoading, login, logout, updateUser: updateAuthUser };
 };
 
 // Kept as a no-op passthrough so any existing `<AuthProvider>` wrappers keep working

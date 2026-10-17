@@ -24,18 +24,23 @@ Avatar.displayName = AvatarPrimitive.Root.displayName
 
 type AvatarImageProps = React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> & {
   queuePriority?: number;
+  bypassQueue?: boolean;
 };
 
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   AvatarImageProps
->(({ className, src, queuePriority = IMAGE_LOAD_PRIORITY.critical, ...props }, ref) => {
+>(({ className, src, queuePriority = IMAGE_LOAD_PRIORITY.critical, bypassQueue = false, ...props }, ref) => {
   const [queuedSrc, setQueuedSrc] = React.useState<string>();
 
   React.useEffect(() => {
     let active = true;
     setQueuedSrc(undefined);
     if (typeof src !== "string" || !src) return () => { active = false; };
+    if (bypassQueue || src.startsWith('/api/uploads/user-photos/')) {
+      setQueuedSrc(src);
+      return () => { active = false; };
+    }
 
     preloadQueuedImage(src, queuePriority)
       .then(() => {
@@ -46,7 +51,7 @@ const AvatarImage = React.forwardRef<
       });
 
     return () => { active = false; };
-  }, [queuePriority, src]);
+  }, [queuePriority, src, bypassQueue]);
 
   return (
   <AvatarPrimitive.Image

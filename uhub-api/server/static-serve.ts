@@ -36,7 +36,12 @@ export function setupStaticServing(app: Express) {
   app.use(express.static(publicDir));
 
   // Serve uploads directory
-  app.use('/api/uploads', express.static(path.join(process.cwd(), 'data', 'uploads')));
+  app.use('/api/uploads/user-photos', express.static(path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'uploads', 'user-photos'), {
+    etag: false,
+    lastModified: false,
+    setHeaders: response => { response.setHeader('Cache-Control', 'no-store'); response.setHeader('X-Content-Type-Options', 'nosniff'); },
+  }));
+  app.use('/api/uploads', express.static(path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'uploads')));
 
   // SPA fallback: serve index.html for any unknown GET route except API routes
   app.get('/{*splat}', (req, res, next) => {

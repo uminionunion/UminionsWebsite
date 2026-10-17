@@ -1,8 +1,8 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { IMAGE_LOAD_PRIORITY, preloadQueuedImage, retainQueuedImages } from './image-load-queue';
 
-// Rewritten 10/16/26: carousels no longer have their own timers. One scheduler visits them one at a time,
-// loads a random next image into the cache, rotates to it, waits 5 seconds, then moves to the next carousel.
+// One scheduler clears and fills a single-image slot at a time, then waits five seconds.
 const STEP_MS = 5000;
 const LOAD_TIMEOUT_MS = 4000;
 
@@ -11,6 +11,7 @@ interface Registered {
   index: number;
   setIndex: (index: number) => void;
   paused: boolean;
+  setImageVisible: (visible: boolean) => void;
 }
 
 const carousels = new Map<string, Registered>();
@@ -23,37 +24,43 @@ async function step() {
     const id = ids[cursor++ % ids.length];
     const entry = carousels.get(id);
     if (entry && !entry.paused && entry.urls.length > 1) {
+      const urls = entry.urls;
       const choices = entry.urls.map((_, position) => position).filter(position => position !== entry.index);
       const next = choices[Math.floor(Math.random() * choices.length)];
       const src = entry.urls[next];
+      flushSync(() => entry.setImageVisible(false));
       if (src) {
         await Promise.race([
           preloadQueuedImage(src, IMAGE_LOAD_PRIORITY.carousel).catch(() => undefined),
           new Promise(resolve => window.setTimeout(resolve, LOAD_TIMEOUT_MS)),
         ]);
       }
-      if (carousels.get(id) === entry) entry.setIndex(next);
+      if (carousels.get(id) === entry) {
+        flushSync(() => {
+          if (entry.urls === urls) entry.setIndex(next);
+          entry.setImageVisible(true);
+        });
+      }
     }
   }
   timer = carousels.size ? window.setTimeout(step, STEP_MS) : undefined;
 }
 
-interface QueuedRotationOptions {
+interface QueuedImageSlotOptions {
   carouselId: string;
   urls: string[];
   index: number;
   setIndex: (index: number) => void;
-  intervalMs?: number | (() => number);
   paused?: boolean;
-  pickNext?: unknown;
 }
 
-export function useQueuedCarouselRotation({ carouselId: baseId, urls, index, setIndex, paused = false }: QueuedRotationOptions) {
+export function useQueuedImageSlot({ carouselId: baseId, urls, index, setIndex, paused = false }: QueuedImageSlotOptions) {
   // The top and bottom covers share a name, so each instance gets its own id.
   const carouselId = `${baseId}-${useId()}`;
   const urlsKey = urls.join('|');
-  const entryRef = useRef<Registered>({ urls, index, setIndex, paused });
-  entryRef.current.urls = urls;
+  const [imageVisible, setImageVisible] = useState(true);
+  const entryRef = useRef<Registered>({ urls, index, setIndex, paused, setImageVisible });
+  if (entryRef.current.urls.join('|') !== urlsKey) entryRef.current.urls = urls;
   entryRef.current.index = index;
   entryRef.current.setIndex = setIndex;
   entryRef.current.paused = paused;
@@ -69,4 +76,5 @@ export function useQueuedCarouselRotation({ carouselId: baseId, urls, index, set
       if (carousels.get(carouselId) === entry) carousels.delete(carouselId);
     };
   }, [carouselId]);
+  return imageVisible;
 }

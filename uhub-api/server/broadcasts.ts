@@ -3,6 +3,7 @@ import { db } from './db.js';
 import { requireAuth } from './auth-middleware.js';
 import fs from 'fs';
 import path from 'path';
+import { sanitizeRichText } from './input-validation.js';
 
 const router = Router();
 
@@ -23,9 +24,8 @@ const normalizeSlot = (slot: any): CarouselSlot | null => {
   return value === 'left' || value === 'left-top' || value === 'right' || value === 'cover' || value === 'bottom' || value === 'center' ? value : null;
 };
 
-// The default cover image and the default bottom image/caption occupy the remaining slots of 10.
-// The center carousel allows 49 images in total; the default anchor image is image 1, leaving 48 admin images.
-const getCarouselLimit = (slot: CarouselSlot) => slot === 'cover' ? 9 : slot === 'bottom' ? 8 : slot === 'center' ? 48 : 10;
+// Limits include the imported defaults, which are editable and removable like uploaded entries.
+const getCarouselLimit = (slot: CarouselSlot) => slot === 'center' ? 49 : 10;
 
 // About Us (button 9998) and Terms of Use (button 9999) pages are stored in the existing carousel table under
 // private slots, so no migration is needed. title = '1'/'0' (enabled), description = HTML, price = last updated.
@@ -35,18 +35,14 @@ const normalizePageKey = (value: any): SitePageKey | null => {
   const key = getString(value);
   return key === 'about' || key === 'terms' || key === 'welcome' ? key : null;
 };
-const sanitizePageHtml = (html: string) => html
-  .replace(/<\s*(script|iframe|object|embed|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
-  .replace(/<\s*(script|iframe|object|embed|style)[^>]*>/gi, '')
-  .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-  .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1=$2#$2');
+const sanitizePageHtml = sanitizeRichText;
 const isHighHighHighAdmin = async (userId: number) => {
   const user = await db.selectFrom('users').select('is_high_high_high_admin').where('id', '=', userId).executeTakeFirst();
   return user?.is_high_high_high_admin === 1;
 };
 const loadSitePage = async (key: SitePageKey) => {
   const row = await db.selectFrom('UhubManagedCarouselItems').selectAll().where('slot', '=', sitePageSlot(key)).executeTakeFirst();
-  return { content: row?.description || '', enabled: row ? row.title !== '0' : false, lastUpdated: row?.price || '' };
+  return { content: sanitizePageHtml(row?.description || ''), enabled: row ? row.title !== '0' : false, lastUpdated: row?.price || '' };
 };
 
 const isSafeWebsite = (value: string) => !value || /^(https?:\/\/|www\.)/i.test(value);
@@ -120,9 +116,9 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req: Reque
     }
     const limit = getCarouselLimit(slot);
     if (requestedItems !== null && (!Array.isArray(requestedItems) || requestedItems.length > limit)) {
-      return res.status(400).json({ error: `This carousel can contain up to ${limit} added items` });
+      return res.status(400).json({ error: `This collection can contain up to ${limit} entries` });
     }
-    if (files.length > limit) return res.status(400).json({ error: `This carousel can contain up to ${limit} added items` });
+    if (files.length > limit) return res.status(400).json({ error: `This collection can contain up to ${limit} entries` });
     if (!requestedItems && (!files.length || files.length > limit)) {
       return res.status(400).json({ error: `Add between 1 and ${limit} images` });
     }
@@ -227,6 +223,12 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req: Reque
 
     try {
       await db.transaction().execute(async (trx) => {
+        const retainedIds = values.flatMap(value => value.id === undefined ? [] : [value.id]);
+        if (retainedIds.length) {
+          await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).where('id', 'not in', retainedIds).execute();
+        } else {
+          await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).execute();
+        }
         for (const value of values) {
           if (value.id !== undefined) {
             const { id, ...update } = value;
@@ -235,12 +237,6 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req: Reque
             const { id: _unusedId, ...insert } = value;
             await trx.insertInto('UhubManagedCarouselItems').values(insert).execute();
           }
-        }
-        const retainedIds = values.flatMap(value => value.id === undefined ? [] : [value.id]);
-        if (retainedIds.length) {
-          await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).where('id', 'not in', retainedIds).execute();
-        } else {
-          await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).execute();
         }
       });
     } catch (error) {

@@ -2,8 +2,6 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { db } from './db.js';
-import path from 'path';
-import fs from 'fs';
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key';
 /**
@@ -196,6 +194,7 @@ router.post('/login', async (req, res) => {
             id: user.id,
             username: user.username,
             profile_image_url: user.profile_image_url,
+            cover_photo_url: user.cover_photo_url,
             is_high_high_high_admin: user.is_high_high_high_admin || 0,
             is_high_high_admin: user.is_high_high_admin || 0,
             is_high_admin: user.is_high_admin || 0,
@@ -240,8 +239,15 @@ router.get('/me', async (req, res) => {
         res.status(401).json({ message: 'Not authenticated' });
         return;
     }
+    let payload;
     try {
-        const payload = jwt.verify(token, JWT_SECRET);
+        payload = jwt.verify(token, JWT_SECRET);
+    }
+    catch (error) {
+        res.status(401).json({ message: 'Invalid token' });
+        return;
+    }
+    try {
         // Fetch fresh user data from database to get admin status
         const user = await db
             .selectFrom('users')
@@ -253,9 +259,11 @@ router.get('/me', async (req, res) => {
             return;
         }
         // IMPORTANT: Return admin fields
-        res.status(200).json({
+        res.set('Cache-Control', 'no-store').status(200).json({
             id: user.id,
             username: user.username,
+            profile_image_url: user.profile_image_url,
+            cover_photo_url: user.cover_photo_url,
             is_high_high_high_admin: user.is_high_high_high_admin || 0,
             is_high_high_admin: user.is_high_high_admin || 0,
             is_high_admin: user.is_high_admin || 0,
@@ -268,7 +276,8 @@ router.get('/me', async (req, res) => {
         });
     }
     catch (error) {
-        res.status(401).json({ message: 'Invalid token' });
+        console.error('[AUTH] Failed to retrieve current account:', error);
+        res.status(500).json({ message: 'Unable to retrieve the current account' });
     }
 });
 /**
@@ -278,66 +287,8 @@ router.get('/me', async (req, res) => {
  * Body: multipart/form-data with 'profileImage' file
  * Response: { success: true, profile_image_url: string }
  */
-router.post('/profile-image', async (req, res) => {
-    const token = req.cookies.token;
-    if (!token) {
-        console.log('[AUTH] Profile image upload: No token provided');
-        res.status(401).json({ error: 'Not authenticated' });
-        return;
-    }
-    try {
-        const payload = jwt.verify(token, JWT_SECRET);
-        console.log(`[AUTH] Uploading profile image for user ${payload.userId}`);
-        // Check if file was uploaded (express-fileupload uses req.files)
-        const files = req.files;
-        if (!files || !files.profileImage) {
-            console.log('[AUTH] No file uploaded in request');
-            res.status(400).json({ error: 'No file uploaded' });
-            return;
-        }
-        const uploadedFile = files.profileImage;
-        console.log(`[AUTH] File received: ${uploadedFile.name}, size: ${uploadedFile.size} bytes`);
-        // Create profile-images directory if it doesn't exist
-        const profileImagesDir = path.join(process.cwd(), 'data', 'profile-images');
-        if (!fs.existsSync(profileImagesDir)) {
-            fs.mkdirSync(profileImagesDir, { recursive: true });
-            console.log(`[AUTH] Created profile-images directory: ${profileImagesDir}`);
-        }
-        // Generate filename - use .jpg extension for consistency
-        const fileName = `profile-${payload.userId}-${Date.now()}.jpg`;
-        const filePath = path.join(profileImagesDir, fileName);
-        // Save file to disk
-        await uploadedFile.mv(filePath);
-        console.log(`[AUTH] Profile image saved to disk: ${filePath}`);
-        // Build the full URL path for serving
-        const imageUrl = `/data/profile-images/${fileName}`;
-        // Update user's profile_image_url in database
-        const updatedUser = await db
-            .updateTable('users')
-            .set({ profile_image_url: imageUrl })
-            .where('id', '=', payload.userId)
-            .returning(['id', 'username', 'profile_image_url'])
-            .executeTakeFirst();
-        if (!updatedUser) {
-            res.status(404).json({ error: 'User not found' });
-            return;
-        }
-        console.log(`[AUTH] Profile image updated for user ${payload.userId}: ${imageUrl}`);
-        console.log(`[AUTH] Returning updated user data:`, updatedUser);
-        res.status(200).json({
-            success: true,
-            profile_image_url: updatedUser.profile_image_url,
-            user: {
-                id: updatedUser.id,
-                username: updatedUser.username,
-                profile_image_url: updatedUser.profile_image_url
-            }
-        });
-    }
-    catch (error) {
-        console.error('[AUTH] ❌ Error uploading profile image:', error);
-        res.status(500).json({ error: 'Failed to upload profile image' });
-    }
+router.post('/profile-image', (_req, res) => {
+    res.status(410).json({ error: 'Please refresh the page and use the preview-and-save photo editor' });
 });
 /**
  * GET /api/auth/user/:userIdentifier

@@ -14,9 +14,13 @@ import socialPostsRouter from './social-posts.js';
 import broadcastsRouter from './broadcasts.js';
 import umiMatchRouter from './umimatch.js';
 import millionPixelRouter from './million-pixel.js';
+import userPhotosRouter from './user-photos.js';
+import { validateRequestInput } from './input-validation.js';
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
+// Large streaming uploads may take longer than Node's default five-minute deadline.
+server.requestTimeout = 0;
 const io = new SocketIOServer(server, {
     cors: {
         origin: process.env.NODE_ENV === 'production'
@@ -87,10 +91,16 @@ if (RouterProto) {
 app.use(express.json({ limit: "50gb" }));
 app.use(express.urlencoded({ limit: "50gb", extended: true }));
 app.use(cookieParser());
-app.use(fileUpload({
+const defaultUpload = fileUpload({
     createParentPath: true,
     limits: { fileSize: 50 * 1024 * 1024 * 1024 }, // 50GB
-}));
+});
+app.use((req, res, next) => {
+    if (req.method === 'POST' && /^\/api\/(?:memes\/posts|user-photos|auth\/(?:profile-image|cover-image))\/?$/i.test(req.path))
+        return next();
+    return defaultUpload(req, res, next);
+});
+app.use(validateRequestInput);
 const [{ setupStaticServing }, authMod, friendsMod, { setupChat }, productsMod] = await Promise.all([
     import('./static-serve.js'),
     import('./auth.js'),
@@ -143,6 +153,7 @@ app.use('/api/friends', friendsRouter);
 app.use('/api/products', productsRouter);
 // Register meme routes
 app.use(memesRouter);
+app.use(userPhotosRouter);
 // Register social media posts + feed routes
 app.use(socialPostsRouter);
 // Register broadcast/episode routes
@@ -568,7 +579,9 @@ export async function startServer(port) {
             const publicPath = resolvePublicPath();
             console.log('Production static path resolved to:', publicPath);
             app.use(express.static(publicPath, { index: false }));
-            app.use('/data', express.static(path.join(process.cwd(), 'data')));
+            app.use('/data', express.static(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), {
+                setHeaders: response => { response.setHeader('X-Content-Type-Options', 'nosniff'); },
+            }));
             app.get(/.*/, (req, res, next) => {
                 if (req.path.startsWith('/api/'))
                     return next();

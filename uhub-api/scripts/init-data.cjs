@@ -19,64 +19,54 @@ if (!fs.existsSync(dbPath) && fs.existsSync(seedPath)) {
   console.log('[init-data] Existing database.sqlite found (or no seed available); leaving as-is.');
 }
 
-// Keep older named volumes compatible with the active MemeBox API.
+// MemeBox schema/migration is owned by server/meme-db.ts, never recreated in the account database.
 const db = new Database(dbPath);
-db.exec(`
-  CREATE TABLE IF NOT EXISTS MemeImplementation001Posts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    title TEXT NOT NULL,
-    description TEXT,
-    upvotes INTEGER NOT NULL DEFAULT 0,
-    downvotes INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE TABLE IF NOT EXISTS MemeImplementation001Images (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id INTEGER NOT NULL,
-    image_url TEXT NOT NULL,
-    title TEXT,
-    description TEXT,
-    display_order INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE TABLE IF NOT EXISTS MemeImplementation001Comments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id INTEGER NOT NULL,
-    user_id INTEGER,
-    title TEXT,
-    description TEXT,
-    image_url TEXT,
-    upvotes INTEGER NOT NULL DEFAULT 0,
-    downvotes INTEGER NOT NULL DEFAULT 0,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    is_deleted INTEGER NOT NULL DEFAULT 0
-  );
-  CREATE TABLE IF NOT EXISTS MemeImplementation001PostVotes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
-    vote_type INTEGER NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(post_id, user_id)
-  );
-  CREATE TABLE IF NOT EXISTS MemeImplementation001CommentVotes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    comment_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
-    vote_type INTEGER NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(comment_id, user_id)
-  );
-  CREATE TABLE IF NOT EXISTS MemeImplementation001Favorites (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    post_id INTEGER NOT NULL,
-    user_id INTEGER NOT NULL,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(post_id, user_id)
-  );
-`);
-console.log('[init-data] MemeBox tables verified.');
+
+// Older shipped schemas lack fields used by the current store, gallery and unread-status routes.
+db.transaction(() => {
+  const addColumns = (table, columns) => {
+    const existing = new Set(db.prepare(`PRAGMA table_info("${table}")`).all().map(column => column.name));
+    for (const [name, definition] of columns) {
+      if (existing.has(name)) continue;
+      db.exec(`ALTER TABLE "${table}" ADD COLUMN "${name}" ${definition}`);
+      console.log(`[init-data] Added missing ${table}.${name}.`);
+    }
+  };
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS MainHubUpgradeV001ForProducts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, subtitle TEXT, description TEXT,
+      price REAL, image_url TEXT, store_type TEXT, user_id INTEGER
+    );
+    CREATE TABLE IF NOT EXISTS MainHubUpgradeV001ForBroadcasts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, name TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS user_stores (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id),
+      name TEXT NOT NULL, subtitle TEXT, description TEXT, badge_url TEXT, banner_url TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE TABLE IF NOT EXISTS chatroom_unread_status (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id),
+      chatroom_room_name TEXT NOT NULL, has_unread INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(user_id, chatroom_room_name)
+    );
+  `);
+  addColumns('MainHubUpgradeV001ForProducts', [
+    ['store_id', 'INTEGER'], ['user_store_id', 'INTEGER'], ['payment_method', 'TEXT'],
+    ['payment_url', 'TEXT'], ['is_in_trash', 'INTEGER NOT NULL DEFAULT 0'],
+    ['sku_id', 'TEXT'], ['url', 'TEXT'], ['created_at', 'TEXT'],
+  ]);
+  addColumns('MainHubUpgradeV001ForBroadcasts', [
+    ['image_url', 'TEXT'], ['click_url', 'TEXT'], ['description', 'TEXT'],
+    ['display_order', 'INTEGER NOT NULL DEFAULT 0'], ['created_at', 'TEXT'],
+  ]);
+  for (const table of ['MainHubUpgradeV001ForProducts', 'MainHubUpgradeV001ForBroadcasts']) {
+    db.exec(`CREATE TRIGGER IF NOT EXISTS "${table}_created_at_default"
+      AFTER INSERT ON "${table}" WHEN NEW.created_at IS NULL
+      BEGIN UPDATE "${table}" SET created_at = CURRENT_TIMESTAMP WHERE id = NEW.id; END`);
+  }
+  db.prepare("UPDATE MainHubUpgradeV001ForProducts SET store_id = 0 WHERE store_type = 'main' AND store_id IS NULL").run();
+})();
 
 // Heal older uhub_data volumes that predate the role/admin columns auth.ts relies on for signup/login.
 const usersTableExists = db
@@ -86,6 +76,8 @@ const usersTableExists = db
 if (usersTableExists) {
   const existingUserColumns = db.prepare('PRAGMA table_info(users)').all().map((c) => c.name);
   const requiredUserColumns = [
+    ['profile_image_url', 'TEXT'],
+    ['cover_photo_url', 'TEXT'],
     ['is_high_high_high_admin', 'INTEGER NOT NULL DEFAULT 0'],
     ['is_high_high_admin', 'INTEGER NOT NULL DEFAULT 0'],
     ['is_high_admin', 'INTEGER NOT NULL DEFAULT 0'],
@@ -106,19 +98,6 @@ if (usersTableExists) {
   console.log('[init-data] users table role/admin columns verified.');
 } else {
   console.log('[init-data] users table not found; skipping role/admin column check.');
-}
-
-// Heal older uhub_data volumes that predate the "-edited" tracking flag on MemeBox posts.
-const memePostsTableExists = db
-  .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='MemeImplementation001Posts'")
-  .get();
-
-if (memePostsTableExists) {
-  const existingMemePostColumns = db.prepare('PRAGMA table_info(MemeImplementation001Posts)').all().map((c) => c.name);
-  if (!existingMemePostColumns.includes('is_edited')) {
-    db.exec("ALTER TABLE MemeImplementation001Posts ADD COLUMN is_edited INTEGER NOT NULL DEFAULT 0");
-    console.log('[init-data] Added missing MemeImplementation001Posts.is_edited column.');
-  }
 }
 
 // Social Media Posts ("My Posts" / "My Feed") tables.
@@ -258,6 +237,52 @@ db.exec(`
   );
 `);
 console.log('[init-data] UhubManagedCarouselItems table verified.');
+
+// Import previously hard-coded display entries once. The marker preserves intentionally empty collections.
+db.exec('CREATE TABLE IF NOT EXISTS UhubCarouselDefaultsImported (slot TEXT PRIMARY KEY)');
+const defaultCover = '/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg';
+const today = new Date();
+const eventDate = new Date(today.getFullYear(), today.getMonth() + (today.getDate() >= 25 ? 1 : 0), 24);
+const defaults = {
+  'left-top': [
+    { image_url: '/includes/Uminionad001.png', title: `Next Union Event: ${eventDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} 9am to 9pm` },
+    { image_url: '/includes/WYSad001.png', title: 'AD - Sponsored By: WhatsYorStory.com', website: 'https://WhatsYorStory.com' },
+    { image_url: '/includes/Uminionad001.png', title: `Next Union Event: ${eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} (9am to 9pm)` },
+    { image_url: '/includes/WYSad001.png', title: 'AD - Sponsored By: WhatsYorStory.com', website: 'https://WhatsYorStory.com' },
+  ],
+  left: [
+    { image_url: '/StoreProductsAndImagery/UkraineLogo001.png', title: 'Ukraine Poster', price: 'u24.gov.ua', website: 'https://u24.gov.ua' },
+    { image_url: '/StoreProductsAndImagery/TapestryVersion001.png', title: 'BYO Tapestry', price: '$1,499.95 BYO Tapestry', website: 'https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.001AAAAA' },
+    { image_url: '/StoreProductsAndImagery/Tshirtbatchversion001.png', title: 'Union Shirts' },
+  ],
+  right: [14, 15, 16].map((number, index) => ({
+    image_url: `/StoreProductsAndImagery/UminionLogo0${number}.00.2024Classic.png`,
+    title: `Sister Union #${number}: ${['Union News', 'Union Radio', 'Union Drive'][index]} - 2024 Classic`,
+    price: '$69.95',
+    website: `https://page001.uminion.com/cart/?add-to-cart=UStoreButton005.0${26 + index}.01A`,
+  })),
+  cover: [{ image_url: defaultCover }],
+  center: [{ image_url: '/uhub/dist/UminionAnchor.png' }],
+  bottom: [
+    { image_url: '', title: 'Become an Official Member of the Union via getting your Union Card Today!', website: 'https://page001.uminion.com/product/official-uminion-union-card/' },
+    { image_url: defaultCover },
+  ],
+};
+db.transaction(() => {
+  const imported = db.prepare('SELECT slot FROM UhubCarouselDefaultsImported WHERE slot = ?');
+  const existing = db.prepare('SELECT COUNT(*) AS count FROM UhubManagedCarouselItems WHERE slot = ?');
+  const insert = db.prepare('INSERT INTO UhubManagedCarouselItems (slot, image_url, title, description, price, website, display_order) VALUES (?, ?, ?, ?, ?, ?, ?)');
+  for (const [slot, entries] of Object.entries(defaults)) {
+    if (imported.get(slot)) continue;
+    const additive = ['cover', 'center', 'bottom'].includes(slot);
+    if (additive || existing.get(slot).count === 0) {
+      if (additive) db.prepare('UPDATE UhubManagedCarouselItems SET display_order = display_order + ? WHERE slot = ?').run(entries.length, slot);
+      entries.forEach((item, index) => insert.run(slot, item.image_url, item.title || null, null, item.price || null, item.website || null, index));
+    }
+    db.prepare('INSERT INTO UhubCarouselDefaultsImported (slot) VALUES (?)').run(slot);
+  }
+})();
+console.log('[init-data] Editable carousel defaults imported (existing collections preserved).');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS UmiMatchProfiles (

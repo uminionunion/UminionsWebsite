@@ -11,6 +11,7 @@ import { MessageSquare, Eye, Pencil, Trash2 } from 'lucide-react';
 import ShareProfileButton from './ShareProfileButton';
 import EditableUStoreBadgeBanner from './EditableUStoreBadgeBanner';
 import { usePaginatedFeed } from '../../hooks/usePaginatedFeed';
+import UserPhotoLibrary, { PhotoZoom, type PhotoSelection } from './UserPhotoLibrary';
 
 interface MainUhubFeatureV001ForUserProfileModalProps {
   isOpen: boolean;
@@ -43,6 +44,17 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
   const [friendsList, setFriendsList] = useState<any[]>([]);
   const [friendsListError, setFriendsListError] = useState('');
   const [isLoadingFriendsList, setIsLoadingFriendsList] = useState(false);
+  const [photoSelection, setPhotoSelection] = useState<(PhotoSelection & { userId: number }) | null>(null);
+  const showPhotos = photoSelection?.userId === user?.id ? photoSelection : null;
+  const profileUrl = showPhotos ? showPhotos.profile_image_url : user?.profile_image_url;
+  const coverUrl = showPhotos ? showPhotos.cover_photo_url : user?.cover_photo_url;
+  useEffect(() => {
+    if (!isOpen) {
+      setPhotoSelection(null);
+      setZoomedBadge(null);
+      setIsEditMode(false);
+    }
+  }, [isOpen]);
 
   const isOwnProfile = currentUser && user.id === currentUser.id;
 
@@ -287,26 +299,28 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
                 </Button>
               )}
             </div>
-            <div className="w-3/5 h-40 bg-cover bg-center rounded-md" style={{ backgroundImage: `url(${user.cover_photo_url || 'https://uminion.com/wp-content/uploads/2025/03/UminionLogo018.00.2024Classic-1536x1536.png'})` }}>
+            <div className="w-3/5 h-40 rounded-md overflow-hidden">
+              <img src={coverUrl || '/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg'} alt={`${user.username} cover`} className="w-full h-full object-contain cursor-pointer" onClick={event => { event.stopPropagation(); setZoomedBadge({ url: coverUrl || '/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg', name: `${user.username} cover` }); }} />
             </div>
             <div className="w-1/5 flex justify-end items-start pl-4">
   <div 
-    onClick={() => {
-      if (user.profile_image_url) {
-        onBadgeZoomOpen?.({ url: user.profile_image_url, name: user.username });
+    onClick={event => {
+      event.stopPropagation();
+      if (profileUrl) {
+        setZoomedBadge({ url: profileUrl, name: user.username });
       }
     }}
     className="cursor-pointer relative group"
   >
     <Avatar className="h-32 w-32 group-hover:opacity-80 transition">
-      <AvatarImage src={user.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt={user.username} />
+      <AvatarImage src={profileUrl || '/defaultUminionUassets/defaultUminionUbadge.png'} alt={user.username} className="object-contain" bypassQueue />
       <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
     </Avatar>
   </div>
 </div>
           </div>
 
-          <div className="flex-grow flex overflow-hidden">
+          <div className="flex-grow min-h-0 flex overflow-hidden">
             <div className="w-[33%] p-4 border-r overflow-y-auto">
               <h3 className="font-bold mb-4">Products for Sale</h3>
               {isLoadingStores ? (
@@ -436,7 +450,8 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
                 <div className="text-center text-muted-foreground">No stores yet.</div>
               )}
             </div>
-            <div className="w-[34%] p-4 overflow-y-auto">
+            <div className="w-[34%] min-h-0 flex flex-col">
+            <section className="h-1/2 min-h-0 p-4 overflow-y-auto border-b">
               <h3 className="font-bold mb-4">Hosted Broadcasts</h3>
               {hostedBroadcasts.length ? (
                 <div className="space-y-3">
@@ -461,8 +476,8 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
                   })}
                 </div>
               ) : <div className="text-center text-muted-foreground">No broadcasts yet.</div>}
-            </div>
-            <div className="w-[33%] p-4 border-l overflow-y-auto">
+            </section>
+            <section className="h-1/2 min-h-0 p-4 overflow-y-auto">
               <h3 className="font-bold mb-4">Recent Posts &amp; Episodes</h3>
 
               <h4 className="text-sm font-semibold text-cyan-400 mb-2">Recent MemeBox Posts</h4>
@@ -619,6 +634,10 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
               ) : (
                 <div className="text-center text-muted-foreground">No episodes yet.</div>
               )}
+            </section>
+            </div>
+            <div className="w-[33%] p-4 border-l overflow-y-auto">
+              {isOpen && <UserPhotoLibrary key={user.id} userId={user.id} ownProfile={!!isOwnProfile} editMode={isEditMode} onSelection={selection => setPhotoSelection({ userId: user.id, profile_image_url: selection.profile_image_url, cover_photo_url: selection.cover_photo_url })} />}
             </div>
           </div>
 
@@ -627,6 +646,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
           </div>
         </div>
 
+        {isOpen && zoomedBadge && <PhotoZoom key={zoomedBadge.url} url={zoomedBadge.url} onClose={() => setZoomedBadge(null)} />}
         {editingEntry && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100010]">
             <div className="bg-background border rounded-lg p-6 max-w-md w-[90%]">
