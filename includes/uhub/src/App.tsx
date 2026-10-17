@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { MemoryRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import BadgeZoomToast from './features/profile/BadgeZoomToast';
 import QueuedImage from '@/components/QueuedImage';
 import { IMAGE_LOAD_PRIORITY } from '@/lib/image-load-queue';
 import { Pencil } from 'lucide-react';
+import ProfilePhotoEditor, { ProfilePhotoSuccessToast } from './features/profile/ProfilePhotoEditor';
+import { PROFILE_PHOTOS_CHANGED_EVENT, type ProfilePhotosChangedDetail } from './lib/profile-photo-events';
 
 const MainUhubFeatureV001Layout = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -24,8 +26,29 @@ const MainUhubFeatureV001Layout = () => {
   const [autoLaunch, setAutoLaunch] = useState(true);
   const [zoomedBadge, setZoomedBadge] = useState<{ url: string; name: string } | null>(null);
   const [isLauncherImageUploadOpen, setLauncherImageUploadOpen] = useState(false);
+  const [isLauncherPhotoSuccessOpen, setLauncherPhotoSuccessOpen] = useState(false);
+  const dismissLauncherPhotoSuccess = useCallback(() => setLauncherPhotoSuccessOpen(false), []);
   const [footerLauncher, setFooterLauncher] = useState<HTMLElement | null>(null);
   const [bodyAvatar, setBodyAvatar] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    const onPhotosChanged = (event: Event) => {
+      const detail = (event as CustomEvent<ProfilePhotosChangedDetail>).detail;
+      if (!detail || typeof detail.userId !== 'number') return;
+      const updates = {
+        ...(detail.profile_image_url !== undefined ? { profile_image_url: detail.profile_image_url } : {}),
+        ...(detail.cover_photo_url !== undefined ? { cover_photo_url: detail.cover_photo_url } : {}),
+      };
+      setSharedProfileUser((selected: any) => selected?.id === detail.userId ? { ...selected, ...updates } : selected);
+    };
+    window.addEventListener(PROFILE_PHOTOS_CHANGED_EVENT, onPhotosChanged);
+    return () => window.removeEventListener(PROFILE_PHOTOS_CHANGED_EVENT, onPhotosChanged);
+  }, []);
+
+  useEffect(() => {
+    setLauncherImageUploadOpen(false);
+    setLauncherPhotoSuccessOpen(false);
+  }, [user?.id]);
 
   // Handler for badge zoom that works in ANY modal context
   const handleBadgeZoom = (badge: { url: string; name: string }) => {
@@ -115,27 +138,6 @@ useEffect(() => {
     }
   };
 
-  const handleLauncherImageUpload = async (file: File) => {
-    const formData = new FormData();
-    formData.append('profileImage', file);
-
-    try {
-      const response = await fetch('/api/auth/profile-image', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Profile image upload failed');
-      }
-
-      setLauncherImageUploadOpen(false);
-      window.location.reload();
-    } catch (error) {
-      console.error('Profile image upload failed:', error);
-    }
-  };
-
   const launcherButton = (
     <Button onClick={handleOpenModalManually} className="relative uhub-launcher-uhub">
       uHub
@@ -151,7 +153,8 @@ useEffect(() => {
     <QueuedImage
       src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"}
       alt=""
-      className="uhub-body-avatar-image exclude-zoom"
+      className="uhub-body-avatar-image exclude-zoom object-contain"
+      style={{ objectFit: 'contain' }}
       queuePriority={IMAGE_LOAD_PRIORITY.critical}
     />
   );
@@ -173,6 +176,7 @@ useEffect(() => {
           <AvatarImage
             src={user?.profile_image_url || "/defaultUminionUassets/defaultUminionUbadge.png"}
             alt="Profile"
+            className="object-contain"
             queuePriority={IMAGE_LOAD_PRIORITY.critical}
           />
           <AvatarFallback>U</AvatarFallback>
@@ -230,29 +234,19 @@ useEffect(() => {
       )}
 
       {isLauncherImageUploadOpen && user && (
-        <div className="fixed inset-0 z-[1000002] flex items-center justify-center bg-black/70">
-          <div className="w-[90%] max-w-md rounded-lg border bg-black p-6 text-white">
-            <h2 className="mb-4 text-xl font-bold">Change Profile Picture</h2>
-            <input
-              type="file"
-              accept="image/*"
-              className="w-full"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void handleLauncherImageUpload(file);
-              }}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-4 w-full text-white"
-              onClick={() => setLauncherImageUploadOpen(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-        </div>
+        <ProfilePhotoEditor
+          key={user.id}
+          userId={user.id}
+          purpose="profile"
+          currentImageUrl={user.profile_image_url}
+          onClose={() => setLauncherImageUploadOpen(false)}
+          onSaved={() => {
+            setLauncherImageUploadOpen(false);
+            setLauncherPhotoSuccessOpen(true);
+          }}
+        />
       )}
+      {isLauncherPhotoSuccessOpen && <ProfilePhotoSuccessToast purpose="profile" onDismiss={dismissLauncherPhotoSuccess} />}
 
       {authModal.isOpen && (
         <AuthModal

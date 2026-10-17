@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { db } from './db.js';
+import { memeDb } from './meme-db.js';
 import { authenticateOptional, requireAuth } from './auth-middleware.js';
 
 const router = Router();
@@ -371,7 +372,7 @@ async function buildMergedFeed(userIds: number[], offset: number, limit: number,
   }
 
   const [memePosts, socialPosts, episodes, memeCount, socialCount, episodeCount] = await Promise.all([
-    db
+    memeDb
       .selectFrom('MemeImplementation001Posts')
       .selectAll()
       .where('user_id', 'in', userIds)
@@ -393,14 +394,14 @@ async function buildMergedFeed(userIds: number[], offset: number, limit: number,
       .orderBy('created_at', 'desc')
       .limit(FEED_SOURCE_FETCH_CAP)
       .execute(),
-    db.selectFrom('MemeImplementation001Posts').select(db.fn.countAll().as('count')).where('user_id', 'in', userIds).executeTakeFirstOrThrow(),
+    memeDb.selectFrom('MemeImplementation001Posts').select(memeDb.fn.countAll().as('count')).where('user_id', 'in', userIds).executeTakeFirstOrThrow(),
     db.selectFrom('SocialMediaPosts').select(db.fn.countAll().as('count')).where('user_id', 'in', userIds).executeTakeFirstOrThrow(),
     db.selectFrom('UserBroadcastEpisodes').select(db.fn.countAll().as('count')).where('user_id', 'in', userIds).executeTakeFirstOrThrow(),
   ]);
 
   const memeItems = await Promise.all(
     memePosts.map(async (post) => {
-      const images = await db
+      const images = await memeDb
         .selectFrom('MemeImplementation001Images')
         .select('image_url')
         .where('post_id', '=', post.id)
@@ -412,9 +413,9 @@ async function buildMergedFeed(userIds: number[], offset: number, limit: number,
       let userVote: number | null = null;
       let isFavorited = false;
       if (viewerUserId) {
-        const vote = await db.selectFrom('MemeImplementation001PostVotes').select('vote_type').where('post_id', '=', post.id).where('user_id', '=', viewerUserId).executeTakeFirst();
+        const vote = await memeDb.selectFrom('MemeImplementation001PostVotes').select('vote_type').where('post_id', '=', post.id).where('user_id', '=', viewerUserId).executeTakeFirst();
         userVote = vote?.vote_type ?? null;
-        const favorite = await db.selectFrom('MemeImplementation001Favorites').select('id').where('post_id', '=', post.id).where('user_id', '=', viewerUserId).executeTakeFirst();
+        const favorite = await memeDb.selectFrom('MemeImplementation001Favorites').select('id').where('post_id', '=', post.id).where('user_id', '=', viewerUserId).executeTakeFirst();
         isFavorited = !!favorite;
       }
 

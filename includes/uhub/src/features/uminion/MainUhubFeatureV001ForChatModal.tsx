@@ -17,7 +17,7 @@ import { Input } from '../../components/ui/input';
 // Import custom authentication hook to get logged-in user data
 import { useAuth } from '../../hooks/useAuth';
 // Import Lucide React icons for UI elements
-import { ChevronLeft, ChevronRight, User as UserIcon, RefreshCw, Palette, Type, MessageSquare, UserPlus, UserX, ShieldAlert } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User as UserIcon, RefreshCw, Palette, Type, MessageSquare, UserPlus, UserX, ShieldAlert, Loader2 } from 'lucide-react';
 // Import Popover component for context menus
 import { Popover, PopoverContent, PopoverTrigger } from '../../components/ui/popover';
 // Import user profile modal component
@@ -89,6 +89,8 @@ const [activeTab, setActiveTab] = useState(0);
 const [password, setPassword] = useState('');
 const [isUnlocked, setIsUnlocked] = useState(false);
 const [messages, setMessages] = useState<Message[]>([]);
+const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 const [archivedMessages, setArchivedMessages] = useState<Message[]>([]);
 const [showArchive, setShowArchive] = useState(false);
 const [archiveOffset, setArchiveOffset] = useState(0);
@@ -122,6 +124,8 @@ const [newMessage, setNewMessage] = useState('');
 
    useEffect(() => {
     if (isOpen) {
+      setIsLoadingMessages(true);
+      setIsLoadingUsers(true);
       const initializeSocket = async () => {
         try {
           // Verify authentication token exists in cookie
@@ -147,12 +151,15 @@ const [newMessage, setNewMessage] = useState('');
 
           socketRef.current.on('connect', () => {
             console.log('[CHAT] Connected to socket server');
+            setIsLoadingMessages(true);
+            setIsLoadingUsers(true);
             socketRef.current?.emit('joinRoom', roomName);
           });
 
           socketRef.current.on('loadMessages', (payload: Message[] | { messages: Message[]; hasMore: boolean }) => {
             const loadedMessages = Array.isArray(payload) ? payload : payload.messages;
             setMessages(loadedMessages);
+            if (loadedMessages.length > 0) setIsLoadingMessages(false);
             setHasMoreMessages(!Array.isArray(payload) && payload.hasMore);
           });
 
@@ -164,6 +171,7 @@ const [newMessage, setNewMessage] = useState('');
 
           socketRef.current.on('receiveMessage', (message: Message) => {
   setMessages((prevMessages) => [...prevMessages, message]);
+  setIsLoadingMessages(false);
   
   // Emit event to parent that chatroom has new messages
   // This will be caught by the parent profile modal
@@ -176,6 +184,7 @@ const [newMessage, setNewMessage] = useState('');
 
 socketRef.current.on('updateUserList', (userList: User[]) => {
   setUsers(userList);
+  if (userList.length > 0) setIsLoadingUsers(false);
 });
 
 socketRef.current.on('messagesCleared', () => {
@@ -230,6 +239,8 @@ socketRef.current.on('chatroomUnreadNotification', (notification: { room: string
    setActiveTab(index);
    setMessages([]);
    setUsers([]);
+   setIsLoadingMessages(true);
+   setIsLoadingUsers(true);
    setPassword('');
    if (index !== 2) {
      setIsUnlocked(false);
@@ -544,6 +555,7 @@ const formatMessageTime = (isoString: string): string => {
     )}
     {!showArchive && (
   <>
+    {isLoadingMessages && <div role="status" aria-label="Loading chat messages" className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>}
     {hasMoreMessages && <Button className="mb-2 w-full bg-white/5 text-white/55 hover:bg-white/10 hover:text-white" onClick={loadPreviousMessages} disabled={isLoadingPreviousMessages}>{isLoadingPreviousMessages ? 'Loading...' : 'View More?'}</Button>}
         {messages.map((msg) => (
   <div key={msg.id}>
@@ -597,6 +609,7 @@ const formatMessageTime = (isoString: string): string => {
     <span style={{ display: 'none' }}>({users.length})</span>
   </h3>
   <div className="space-y-2">
+    {isLoadingUsers && <div role="status" aria-label="Loading usernames" className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>}
     {users.map((u, i) => (
       <div key={i} className="text-sm hover:bg-white/10 p-2 rounded cursor-pointer transition-colors" onClick={() => handleViewProfile(u.username)}>
         {u.username}

@@ -1,9 +1,64 @@
 import { Router } from 'express';
-import { db } from './db.js';
+import { memeDb as db } from './meme-db.js';
 import { sql } from 'kysely';
 import jwt from 'jsonwebtoken';
 import { requireAuth } from './auth-middleware.js';
+import { promises as fs } from 'fs';
+import path from 'path';
+import { randomUUID } from 'crypto';
+import { parseMemeUpload, storeMemeUpload, MAX_MEME_FILES, MAX_MEME_FILE_SIZE, MEME_EXTENSIONS } from './meme-upload.js';
+import { InvalidMediaError, sanitizeUploadedMedia } from './media-sanitizer.js';
+import { validateInput } from './input-validation.js';
 const router = Router();
+const validText = (value) => value == null || (typeof value === 'string' && validateInput(value));
+const validPostCaption = (title, description) => typeof title === 'string' && !!title.trim() && validText(title) && validText(description);
+async function sanitizeCommentImage(image) {
+    if (!image)
+        return null;
+    const match = /^data:image\/(jpeg|png|gif);base64,([A-Za-z0-9+/]+={0,2})$/.exec(image);
+    if (!match || match[2].length % 4 !== 0)
+        throw new InvalidMediaError('Unsupported comment image');
+    const bytes = Buffer.from(match[2], 'base64');
+    if (!bytes.length || bytes.toString('base64') !== match[2])
+        throw new InvalidMediaError('Invalid comment image');
+    const directory = path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'uploads', 'memes');
+    await fs.mkdir(directory, { recursive: true });
+    const staging = await fs.mkdtemp(path.join(directory, '.comment-'));
+    try {
+        const source = path.join(staging, 'source');
+        const sanitized = await sanitizeUploadedMedia(source, `.${match[1] === 'jpeg' ? 'jpg' : match[1]}`, bytes);
+        const output = await fs.readFile(sanitized);
+        return `data:image/${match[1]};base64,${output.toString('base64')}`;
+    }
+    finally {
+        await fs.rm(staging, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 })
+            .catch(error => console.error('[MEME API] Comment image staging cleanup failed:', error));
+    }
+}
+async function deleteMemePost(postId, ownerId) {
+    const images = await db.transaction().execute(async (trx) => {
+        let query = trx.selectFrom('MemeImplementation001Posts').select('id').where('id', '=', postId);
+        if (ownerId !== undefined)
+            query = query.where('user_id', '=', ownerId);
+        if (!await query.executeTakeFirst())
+            return null;
+        const images = await trx.selectFrom('MemeImplementation001Images').select('image_url')
+            .where('post_id', '=', postId).execute();
+        await trx.deleteFrom('MemeImplementation001Posts').where('id', '=', postId).execute();
+        return images;
+    });
+    if (!images)
+        return false;
+    const directory = path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'uploads', 'memes');
+    await Promise.all(images.map(async ({ image_url }) => {
+        const match = /^\/api\/uploads\/memes\/([0-9a-f-]{36}\.(?:mp4|gif|jpe?g|png))$/.exec(image_url);
+        if (!match)
+            return;
+        await fs.rm(path.join(directory, match[1]), { force: true })
+            .catch(error => console.error('[MEME API] Deleted post media cleanup failed:', error));
+    }));
+    return true;
+}
 // ==========================================
 // POSTS ROUTES
 // ==========================================
@@ -39,7 +94,7 @@ router.get('/api/memes/posts/viral', async (req, res) => {
                 .execute();
             // ✅ Fetch post author's username
             const author = await db
-                .selectFrom('users')
+                .withSchema('accounts').selectFrom('users')
                 .select('username')
                 .where('id', '=', post.user_id)
                 .executeTakeFirst();
@@ -194,17 +249,38 @@ router.get('/api/memes/posts/:id', async (req, res) => {
     }
 });
 // Create new post (with images)
-router.post('/api/memes/posts', requireAuth, async (req, res) => {
+router.post('/api/memes/posts', requireAuth, parseMemeUpload, async (req, res) => {
+    const savedPaths = [];
     try {
-        const { title, description, imageBase64Array } = req.body;
-        const userId = req.user?.userId;
-        // ✅ FIXED: Handle both old format (images array of objects) and new format (imageBase64Array)
-        const imagesToAdd = imageBase64Array || [];
-        if (!title || !imagesToAdd || imagesToAdd.length === 0) {
-            console.log('[MEME API] Missing title or images. Title:', title, 'Images count:', imagesToAdd.length);
-            return res.status(400).json({ error: 'Title and images required' });
+        const { title, description } = req.body || {};
+        const userId = req.user.userId;
+        const files = req.memeUploads || [];
+        if (!validPostCaption(title, description)) {
+            return res.status(400).json({ error: 'A nonempty title and valid optional description are required' });
         }
-        console.log('[MEME API] Creating post for user', userId, 'with', imagesToAdd.length, 'images');
+        if (!files.length || files.length > MAX_MEME_FILES) {
+            return res.status(400).json({ error: 'Select between 1 and 10 media entries using the media field' });
+        }
+        for (const file of files) {
+            if (file.size > MAX_MEME_FILE_SIZE) {
+                return res.status(413).json({ error: 'Each media entry must be 50GB or smaller' });
+            }
+            if (!MEME_EXTENSIONS.has(path.extname(file.name).toLowerCase())) {
+                return res.status(400).json({ error: 'Supported media: MP4, GIF, JPG, JPEG and PNG' });
+            }
+        }
+        const directory = path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'uploads', 'memes');
+        await fs.mkdir(directory, { recursive: true });
+        const imagesToAdd = [];
+        for (const file of files) {
+            const extension = path.extname(file.name).toLowerCase();
+            file.tempFilePath = await sanitizeUploadedMedia(file.tempFilePath, extension);
+            const filename = `${randomUUID()}${extension}`;
+            const destination = path.join(directory, filename);
+            savedPaths.push(destination);
+            await storeMemeUpload(file, destination);
+            imagesToAdd.push(`/api/uploads/memes/${filename}`);
+        }
         // ✅ NEW: Calculate bonus upvotes for user_id=3
         let initialUpvotes = 0;
         if (userId === 3) {
@@ -212,40 +288,42 @@ router.post('/api/memes/posts', requireAuth, async (req, res) => {
             initialUpvotes = Math.floor(Math.random() * 7) + 6;
             console.log('[MEME API] ⭐ USER_ID=3 BONUS: Adding', initialUpvotes, 'initial upvotes to post');
         }
-        // Create post
-        const postResult = await db
-            .insertInto('MemeImplementation001Posts')
-            .values({
-            user_id: userId,
-            title,
-            description: description || null,
-            upvotes: initialUpvotes, // ✅ NEW: Use bonus upvotes if user_id=3
-            downvotes: 0,
-        })
-            .executeTakeFirstOrThrow();
-        const postId = Number(postResult.insertId);
-        // ✅ FIXED: Handle base64 strings directly
-        for (let i = 0; i < imagesToAdd.length; i++) {
-            const imageData = imagesToAdd[i];
-            // imageData can be either a string (base64) or an object with .url property
-            const imageUrl = typeof imageData === 'string' ? imageData : imageData.url;
-            console.log(`[MEME API] Storing image ${i + 1}/${imagesToAdd.length} for post ${postId}`);
-            await db
-                .insertInto('MemeImplementation001Images')
+        const postId = await db.transaction().execute(async (trx) => {
+            const postResult = await trx
+                .insertInto('MemeImplementation001Posts')
                 .values({
-                post_id: postId,
-                image_url: imageUrl, // ✅ Store base64 string directly
-                title: null,
-                description: null,
-                display_order: i,
+                user_id: userId,
+                title: title.trim(),
+                description: description || null,
+                upvotes: initialUpvotes,
+                downvotes: 0,
             })
-                .execute();
-        }
+                .executeTakeFirstOrThrow();
+            const postId = Number(postResult.insertId);
+            for (let i = 0; i < imagesToAdd.length; i++) {
+                await trx
+                    .insertInto('MemeImplementation001Images')
+                    .values({
+                    post_id: postId,
+                    image_url: imagesToAdd[i],
+                    title: null,
+                    description: null,
+                    display_order: i,
+                })
+                    .execute();
+            }
+            return postId;
+        });
         console.log('[MEME API] ✅ Post created with ID', postId, 'with', imagesToAdd.length, 'images', initialUpvotes > 0 ? `and ${initialUpvotes} bonus upvotes` : '');
-        res.status(201).json({ id: postId, message: 'Post created' });
+        res.status(201).json({ id: postId, images: imagesToAdd, message: 'Post created' });
     }
     catch (error) {
+        await Promise.all(savedPaths.map(filename => fs.rm(filename, { force: true })
+            .catch(cleanupError => console.error('[MEME API] Failed upload cleanup:', cleanupError))));
         console.error('[MEME API] Error creating post:', error);
+        if (error instanceof InvalidMediaError) {
+            return res.status(400).json({ error: 'Media must contain a valid MP4, GIF, JPG, JPEG or PNG file' });
+        }
         res.status(500).json({ error: 'Failed to create post' });
     }
 });
@@ -256,11 +334,9 @@ router.delete('/api/memes/posts/:id', requireAuth, async (req, res) => {
         const userId = req.user?.userId;
         console.log('[MEME API] Deleting post', id);
         // Delete post (cascades to images, comments, votes)
-        await db
-            .deleteFrom('MemeImplementation001Posts')
-            .where('id', '=', parseInt(id))
-            .where('user_id', '=', userId)
-            .execute();
+        if (!await deleteMemePost(parseInt(id), userId)) {
+            return res.status(404).json({ error: 'Post not found or not owned by you' });
+        }
         res.json({ message: 'Post deleted' });
     }
     catch (error) {
@@ -273,10 +349,13 @@ router.put('/api/memes/posts/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const userId = req.user?.userId;
-        const { title, description } = req.body;
+        const { title, description } = req.body || {};
+        if (!validPostCaption(title, description)) {
+            return res.status(400).json({ error: 'A nonempty title and valid optional description are required' });
+        }
         const result = await db
             .updateTable('MemeImplementation001Posts')
-            .set({ title, description: description || null, is_edited: 1 })
+            .set({ title: title.trim(), description: description || null, is_edited: 1 })
             .where('id', '=', parseInt(id))
             .where('user_id', '=', userId)
             .executeTakeFirst();
@@ -425,10 +504,7 @@ router.post('/api/memes/posts/:id/downvote', requireAuth, async (req, res) => {
             .executeTakeFirst();
         if (post && post.downvotes >= 10) {
             console.log('[MEME API] ⚠️ Auto-deleting post', postId, 'due to 10+ downvotes');
-            await db
-                .deleteFrom('MemeImplementation001Posts')
-                .where('id', '=', postId)
-                .execute();
+            await deleteMemePost(postId);
             return res.json({ message: 'Downvoted. Post auto-deleted due to too many downvotes' });
         }
         console.log('[MEME API] ✅ Downvote processed');
@@ -504,7 +580,7 @@ router.get('/api/memes/posts/:id/comments', async (req, res) => {
         }
         const comments = await db
             .selectFrom('MemeImplementation001Comments')
-            .innerJoin('users', 'MemeImplementation001Comments.user_id', 'users.id')
+            .innerJoin(sql `accounts.users`.as('users'), 'MemeImplementation001Comments.user_id', 'users.id')
             .select([
             'MemeImplementation001Comments.id',
             'MemeImplementation001Comments.post_id',
@@ -552,12 +628,18 @@ router.get('/api/memes/posts/:id/comments', async (req, res) => {
 router.post('/api/memes/posts/:id/comments', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, image } = req.body;
+        const { title, description, image } = req.body || {};
         const userId = req.user?.userId;
-        // ✅ FIXED: Check if at least one field exists
+        if (!validText(title) || !validText(description) || !validText(image)) {
+            return res.status(400).json({ error: 'Invalid comment text or image' });
+        }
         if ((!title || !title.trim()) && (!description || !description.trim())) {
             return res.status(400).json({ error: 'Title or description required' });
         }
+        if (!await db.selectFrom('MemeImplementation001Posts').select('id').where('id', '=', parseInt(id)).executeTakeFirst()) {
+            return res.status(404).json({ error: 'Post not found' });
+        }
+        const sanitizedImage = await sanitizeCommentImage(image);
         console.log('[MEME API] Creating comment for post', id, 'by user', userId);
         const result = await db
             .insertInto('MemeImplementation001Comments')
@@ -566,7 +648,7 @@ router.post('/api/memes/posts/:id/comments', requireAuth, async (req, res) => {
             user_id: userId,
             title: title?.trim() || null,
             description: description?.trim() || null,
-            image_url: image || null,
+            image_url: sanitizedImage,
             upvotes: 0,
             downvotes: 0,
         })
@@ -578,12 +660,15 @@ router.post('/api/memes/posts/:id/comments', requireAuth, async (req, res) => {
             id: commentId,
             title: title?.trim() || null,
             description: description?.trim() || null,
-            image_url: image || null,
+            image_url: sanitizedImage,
             message: 'Comment added'
         });
     }
     catch (error) {
         console.error('[MEME API] Error adding comment:', error);
+        if (error instanceof InvalidMediaError) {
+            return res.status(400).json({ error: 'Comment image must contain a valid JPEG, PNG or GIF image' });
+        }
         res.status(500).json({ error: 'Failed to add comment' });
     }
 });
@@ -593,11 +678,14 @@ router.delete('/api/memes/comments/:id', requireAuth, async (req, res) => {
         const { id } = req.params;
         const userId = req.user?.userId;
         console.log('[MEME API] Deleting comment', id);
-        await db
+        const result = await db
             .deleteFrom('MemeImplementation001Comments')
             .where('id', '=', parseInt(id))
             .where('user_id', '=', userId)
-            .execute();
+            .executeTakeFirst();
+        if (!result.numDeletedRows) {
+            return res.status(404).json({ error: 'Comment not found or not owned by you' });
+        }
         res.json({ message: 'Comment deleted' });
     }
     catch (error) {

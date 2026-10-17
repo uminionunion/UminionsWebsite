@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import MainUhubFeatureV001ForUserProfileModal from "./MainUhubFeatureV001ForUserProfileModal";
 import { useAuth } from "../../hooks/useAuth";
+import { useMemeMute } from "../../lib/media-sound";
+import { Volume2, VolumeX } from "lucide-react";
 
 export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, showExternalUploadButton = false, hideFooter = false }) {
   const { user: sharedUser } = useAuth();
+  const { muted: memeMuted, setMuted: setMemeMuted, owner: memeSoundOwner } = useMemeMute(sharedUser?.id);
   // =====================================================
   // STATE VARIABLES
   // =====================================================
@@ -12,6 +15,8 @@ export default function TheMemeBoxImplementation001({ postSource = "all", embedd
   const [currentPostIndex, setCurrentPostIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [uploadedImages, setUploadedImages] = useState([]);
+  const uploadPreviewsRef = useRef([]);
+  const [isUploading, setIsUploading] = useState(false);
   const [commentImageData, setCommentImageData] = useState(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
@@ -47,11 +52,14 @@ export default function TheMemeBoxImplementation001({ postSource = "all", embedd
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const SWIPE_THRESHOLD = 50;
-  const MAX_UPLOAD_IMAGES = 50;
+  const MAX_UPLOAD_IMAGES = 10;
   const ROTATION_IMAGE_DELAY_MS = 3000;
   const ROTATION_MOTION_DELAY_MS = 8000; // Videos/GIFs autoplay on their own, so give them more time before rotating.
   const toastTimerRef = useRef(null);
   const [toastMessage, setToastMessage] = useState("");
+  useEffect(() => () => {
+    uploadPreviewsRef.current.forEach(entry => URL.revokeObjectURL(entry.url));
+  }, []);
 
   const showToast = useCallback((message) => {
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
@@ -717,10 +725,13 @@ const handleDeletePost = useCallback(async () => {
 
   const openUploadDialog = () => setIsUploadDialogOpen(true);
   const closeUploadDialog = () => {
+    if (isUploading) return;
     setIsUploadDialogOpen(false);
     setUploadTitle("");
     setUploadDescription("");
     setUploadedImages([]);
+    uploadPreviewsRef.current.forEach(entry => URL.revokeObjectURL(entry.url));
+    uploadPreviewsRef.current = [];
   };
 
   const openCommentDialog = () => setIsCommentDialogOpen(true);
@@ -832,21 +843,30 @@ const closeCommentImageZoom = () => {
   // =====================================================
 
   const handleFileSelect = (e) => {
-  const files = Array.from(e.target.files);
+  const files = Array.from(e.target.files || []);
   const MAX_FILE_SIZE = 50 * 1024 * 1024 * 1024; // 50GB
-  
-  files.slice(0, MAX_UPLOAD_IMAGES - uploadedImages.length).forEach((file) => {
-    if (file.size > MAX_FILE_SIZE) {
-      showToast(`File "${file.name}" is too large. Max size: 50GB`);
+  const selected = [...uploadPreviewsRef.current];
+  if (files.length + selected.length > MAX_UPLOAD_IMAGES) {
+    showToast("A meme can have up to 10 media entries.");
+    e.target.value = "";
+    return;
+  }
+  for (const file of files) {
+    if (!/\.(mp4|gif|jpe?g|png)$/i.test(file.name)) {
+      showToast(`Unsupported file "${file.name}". Choose MP4, GIF, JPG, JPEG or PNG.`);
+      e.target.value = "";
       return;
     }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setUploadedImages((prev) => [...prev, event.target.result]);
-    };
-    reader.readAsDataURL(file);
-  });
+    if (file.size > MAX_FILE_SIZE) {
+      showToast(`File "${file.name}" is too large. Max size: 50GB`);
+      e.target.value = "";
+      return;
+    }
+  }
+  files.forEach(file => selected.push({ file, url: URL.createObjectURL(file) }));
+  uploadPreviewsRef.current = selected;
+  setUploadedImages(selected);
+  e.target.value = "";
 };
 
   const handleCommentImageSelect = (e) => {
@@ -861,7 +881,10 @@ const closeCommentImageZoom = () => {
   };
 
   const removeUploadedImage = (index) => {
-    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
+    if (isUploading) return;
+    URL.revokeObjectURL(uploadPreviewsRef.current[index].url);
+    uploadPreviewsRef.current = uploadPreviewsRef.current.filter((_, i) => i !== index);
+    setUploadedImages(uploadPreviewsRef.current);
   };
 
   // =====================================================
@@ -869,23 +892,24 @@ const closeCommentImageZoom = () => {
   // =====================================================
 
   const submitUpload = async () => {
+    if (isUploading) return;
     if (uploadedImages.length === 0) {
   showToast("Please enter a title and select at least one image");
   return;
 }
 
+    setIsUploading(true);
     try {
       console.log("[MEMEBOX] Uploading post with", uploadedImages.length, "images...");
 
+      const formData = new FormData();
+      formData.append("title", uploadTitle);
+      formData.append("description", uploadDescription);
+      uploadedImages.forEach(entry => formData.append("media", entry.file));
       const response = await fetch("/api/memes/posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          title: uploadTitle,
-          description: uploadDescription,
-          imageBase64Array: uploadedImages, // ✅ Raw base64 array
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -906,7 +930,7 @@ const closeCommentImageZoom = () => {
         id: result.id,
         title: uploadTitle,
         description: uploadDescription,
-        images: uploadedImages, // ✅ FIXED: Store as array
+        images: result.images,
         upvotes: 0,
         downvotes: 0,
         userVote: null,
@@ -916,10 +940,17 @@ const closeCommentImageZoom = () => {
       };
 
       setAllPosts((prev) => [newPost, ...prev]);
-      closeUploadDialog();
+      setIsUploadDialogOpen(false);
+      setUploadTitle("");
+      setUploadDescription("");
+      setUploadedImages([]);
+      uploadPreviewsRef.current.forEach(entry => URL.revokeObjectURL(entry.url));
+      uploadPreviewsRef.current = [];
     } catch (error) {
       console.error("[MEMEBOX] ❌ Upload error:", error);
       showToast("Failed to upload: " + error.message);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -1662,21 +1693,20 @@ const renderNavbar = () => {
       <>
         <video
           key={image}
+          data-meme-sound-owner={memeSoundOwner}
           style={styles.postVideo}
           controls={false}
           autoPlay
           loop
           playsInline
-          muted
-          onClick={(e) => {
-            e.stopPropagation();
-            const vid = e.currentTarget;
-            vid.muted = !vid.muted;
-          }}
+          muted={memeMuted}
+          onClick={(e) => e.stopPropagation()}
         >
           <source src={image} />
         </video>
-        <div style={styles.playIcon}>🔊</div>
+        <button type="button" aria-label={memeMuted ? "Unmute MemeBox" : "Mute MemeBox"} aria-pressed={!memeMuted} onClick={e => { e.stopPropagation(); setMemeMuted(!memeMuted); }} style={{ position: "absolute", bottom: 8, right: 8, zIndex: 2, background: "#000b", color: "#fff", borderRadius: 6, padding: 6 }}>
+          {memeMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+        </button>
       </>
     ) : (
       <img src={image} alt={`post-${idx}`} style={styles.postImage} />
@@ -1804,11 +1834,14 @@ const renderNavbar = () => {
           justifyContent: "flex-start",
         }}>
           {displayPost.images.map((media, idx) => (
-            <div key={idx}>
+            <div key={`${displayPost.id}-${idx}-${media}`} style={{ position: "relative" }}>
               {isVideoFile(media) ? (
                 <video
+                  data-meme-sound-owner={memeSoundOwner}
                   style={styles.zoomVideo}
                   controls
+                  muted={memeMuted}
+                  onVolumeChange={e => { if (e.currentTarget.muted !== memeMuted) setMemeMuted(e.currentTarget.muted); }}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <source src={media} />
@@ -1816,6 +1849,7 @@ const renderNavbar = () => {
               ) : (
                 <img src={media} alt={`zoom-${idx}`} style={styles.zoomImage} />
               )}
+              {isVideoFile(media) && <button type="button" aria-label={memeMuted ? "Unmute MemeBox" : "Mute MemeBox"} aria-pressed={!memeMuted} onClick={e => { e.stopPropagation(); setMemeMuted(!memeMuted); }} style={{ position: "absolute", bottom: 44, right: 8, background: "#000b", color: "#fff", borderRadius: 6, padding: 6 }}>{memeMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>}
             </div>
           ))}
         </div>
@@ -1855,6 +1889,7 @@ const renderNavbar = () => {
                 style={styles.input}
                 type="text"
                 value={uploadTitle}
+                disabled={isUploading}
                 onChange={(e) => setUploadTitle(e.target.value)}
                 placeholder="Enter a catchy title..."
               />
@@ -1865,6 +1900,7 @@ const renderNavbar = () => {
               <textarea
                 style={styles.textarea}
                 value={uploadDescription}
+                disabled={isUploading}
                 onChange={(e) => setUploadDescription(e.target.value)}
                 placeholder="Tell us about your meme..."
               />
@@ -1877,7 +1913,8 @@ const renderNavbar = () => {
                 style={styles.fileInput}
                 type="file"
                 multiple
-                accept="image/*,video/*,.gif"
+                accept=".mp4,.gif,.jpg,.jpeg,.png,video/mp4,image/gif,image/jpeg,image/png"
+                disabled={isUploading}
                 onChange={handleFileSelect}
               />
               <span style={styles.helpText}>
@@ -1891,7 +1928,7 @@ const renderNavbar = () => {
                 <div style={styles.imagePreviewGrid}>
                   {uploadedImages.map((img, idx) => (
                     <div key={idx} style={styles.imagePreviewItem}>
-                      <img src={img} alt={`preview-${idx}`} style={styles.imagePreview} />
+                      {img.file.name.toLowerCase().endsWith(".mp4") ? <video src={img.url} muted preload="metadata" style={styles.imagePreview} /> : <img src={img.url} alt={`preview-${idx}`} style={styles.imagePreview} />}
                       <button style={styles.removeImageButton} onClick={() => removeUploadedImage(idx)}>
                         ✕
                       </button>
@@ -1903,8 +1940,8 @@ const renderNavbar = () => {
           </div>
 
           <div style={styles.dialogFooter}>
-            <button style={styles.cancelButton} onClick={closeUploadDialog}>Cancel</button>
-            <button style={styles.submitButton} onClick={submitUpload}>Upload</button>
+            <button style={styles.cancelButton} disabled={isUploading} onClick={closeUploadDialog}>Cancel</button>
+            <button style={styles.submitButton} disabled={isUploading} onClick={submitUpload}>{isUploading ? "Uploading..." : "Upload"}</button>
           </div>
         </div>
       </div>
@@ -2312,8 +2349,13 @@ const renderUserProfileModal = () => {
                   }}
                 >
                   {selectedFavoritePost.images.map((image, idx) => (
-                    <img
-                      key={idx}
+                    <div key={`${selectedFavoritePost.id}-${idx}-${image}`} style={{ position: "relative" }}>
+                    {isVideoFile(image) ? (
+                      <>
+                        <video src={image} data-meme-sound-owner={memeSoundOwner} controls muted={memeMuted} playsInline onVolumeChange={e => { if (e.currentTarget.muted !== memeMuted) setMemeMuted(e.currentTarget.muted); }} style={{ maxWidth: "100%", maxHeight: "400px", borderRadius: "8px" }} />
+                        <button type="button" aria-label={memeMuted ? "Unmute MemeBox" : "Mute MemeBox"} aria-pressed={!memeMuted} onClick={e => { e.stopPropagation(); setMemeMuted(!memeMuted); }} style={{ position: "absolute", bottom: 44, right: 8, background: "#000b", color: "#fff", borderRadius: 6, padding: 6 }}>{memeMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
+                      </>
+                    ) : <img
                       src={image}
                       alt={`favorite-${idx}`}
                       style={{
@@ -2322,7 +2364,8 @@ const renderUserProfileModal = () => {
                         objectFit: "contain",
                         borderRadius: "8px",
                       }}
-                    />
+                    />}
+                    </div>
                   ))}
                 </div>
               )}
@@ -2398,7 +2441,7 @@ const renderUserProfileModal = () => {
                       setIsFavoriteDetailOpen(true);
                     }}
                   >
-                    <img
+                    {isVideoFile(post.images[0]) ? <video src={post.images[0]} muted preload="metadata" style={{ width: "100%", height: "150px", objectFit: "cover" }} /> : <img
                       src={post.images[0]}
                       alt={post.title}
                       style={{
@@ -2406,7 +2449,7 @@ const renderUserProfileModal = () => {
                         height: "150px",
                         objectFit: "cover",
                       }}
-                    />
+                    />}
                     <div style={{ padding: "12px" }}>
                       <h3
                         style={{

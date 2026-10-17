@@ -3,6 +3,7 @@ import { db } from './db.js';
 import { requireAuth } from './auth-middleware.js';
 import fs from 'fs';
 import path from 'path';
+import { sanitizeRichText } from './input-validation.js';
 const router = Router();
 // ==========================================
 // BROADCASTS & EPISODES (User-Created)
@@ -17,26 +18,21 @@ const normalizeSlot = (slot) => {
     const value = getString(slot);
     return value === 'left' || value === 'left-top' || value === 'right' || value === 'cover' || value === 'bottom' || value === 'center' ? value : null;
 };
-// The default cover image and the default bottom image/caption occupy the remaining slots of 10.
-// The center carousel allows 49 images in total; the default anchor image is image 1, leaving 48 admin images.
-const getCarouselLimit = (slot) => slot === 'cover' ? 9 : slot === 'bottom' ? 8 : slot === 'center' ? 48 : 10;
+// Limits include the imported defaults, which are editable and removable like uploaded entries.
+const getCarouselLimit = (slot) => slot === 'center' ? 49 : 10;
 const sitePageSlot = (key) => `page-${key}`;
 const normalizePageKey = (value) => {
     const key = getString(value);
     return key === 'about' || key === 'terms' || key === 'welcome' ? key : null;
 };
-const sanitizePageHtml = (html) => html
-    .replace(/<\s*(script|iframe|object|embed|style)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
-    .replace(/<\s*(script|iframe|object|embed|style)[^>]*>/gi, '')
-    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/(href|src)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '$1=$2#$2');
+const sanitizePageHtml = sanitizeRichText;
 const isHighHighHighAdmin = async (userId) => {
     const user = await db.selectFrom('users').select('is_high_high_high_admin').where('id', '=', userId).executeTakeFirst();
     return user?.is_high_high_high_admin === 1;
 };
 const loadSitePage = async (key) => {
     const row = await db.selectFrom('UhubManagedCarouselItems').selectAll().where('slot', '=', sitePageSlot(key)).executeTakeFirst();
-    return { content: row?.description || '', enabled: row ? row.title !== '0' : false, lastUpdated: row?.price || '' };
+    return { content: sanitizePageHtml(row?.description || ''), enabled: row ? row.title !== '0' : false, lastUpdated: row?.price || '' };
 };
 const isSafeWebsite = (value) => !value || /^(https?:\/\/|www\.)/i.test(value);
 const normalizeWebsite = (value) => /^www\./i.test(value) ? `https://${value}` : value;
@@ -114,10 +110,10 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req, res) 
         }
         const limit = getCarouselLimit(slot);
         if (requestedItems !== null && (!Array.isArray(requestedItems) || requestedItems.length > limit)) {
-            return res.status(400).json({ error: `This carousel can contain up to ${limit} added items` });
+            return res.status(400).json({ error: `This collection can contain up to ${limit} entries` });
         }
         if (files.length > limit)
-            return res.status(400).json({ error: `This carousel can contain up to ${limit} added items` });
+            return res.status(400).json({ error: `This collection can contain up to ${limit} entries` });
         if (!requestedItems && (!files.length || files.length > limit)) {
             return res.status(400).json({ error: `Add between 1 and ${limit} images` });
         }
@@ -213,6 +209,13 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req, res) 
         }
         try {
             await db.transaction().execute(async (trx) => {
+                const retainedIds = values.flatMap(value => value.id === undefined ? [] : [value.id]);
+                if (retainedIds.length) {
+                    await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).where('id', 'not in', retainedIds).execute();
+                }
+                else {
+                    await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).execute();
+                }
                 for (const value of values) {
                     if (value.id !== undefined) {
                         const { id, ...update } = value;
@@ -222,13 +225,6 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req, res) 
                         const { id: _unusedId, ...insert } = value;
                         await trx.insertInto('UhubManagedCarouselItems').values(insert).execute();
                     }
-                }
-                const retainedIds = values.flatMap(value => value.id === undefined ? [] : [value.id]);
-                if (retainedIds.length) {
-                    await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).where('id', 'not in', retainedIds).execute();
-                }
-                else {
-                    await trx.deleteFrom('UhubManagedCarouselItems').where('slot', '=', slot).execute();
                 }
             });
         }

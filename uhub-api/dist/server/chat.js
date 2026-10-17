@@ -1,5 +1,6 @@
 import { db } from './db.js';
 import jwt from 'jsonwebtoken';
+import { validateInput } from './input-validation.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-key';
 // ===============================================
 // TIMEZONE & ARCHIVING HELPER FUNCTIONS
@@ -221,6 +222,13 @@ export function setupChat(io) {
         next();
     });
     io.on('connection', (socket) => {
+        socket.use((packet, next) => {
+            if (validateInput(packet))
+                return next();
+            console.warn('[CHAT] Rejected malformed message fields');
+            socket.emit('error', { message: 'Invalid message fields' });
+            next(new Error('Invalid message fields'));
+        });
         console.log('A user connected:', socket.id, 'as', socket.user?.username || 'Anonymous_PENDING');
         socket.on('joinRoom', async (room) => {
             socket.join(room);

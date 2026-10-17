@@ -9,6 +9,16 @@ import App from './App';
 // Import the main CSS file for global styles.
 import './index.css';
 
+const firstLoadRefreshKey = 'uhub:first-load-refresh:v1';
+try {
+  if (!window.sessionStorage.getItem(firstLoadRefreshKey)) {
+    window.sessionStorage.setItem(firstLoadRefreshKey, 'scheduled');
+    window.setTimeout(() => window.location.reload(), 6000);
+  }
+} catch (error) {
+  console.error('[STARTUP] Unable to persist the one-time refresh marker; refresh not scheduled to avoid a reload loop.', error);
+}
+
 // Mount into page001's dedicated placeholder div (falls back to '#root' for local dev).
 const mountPoint = document.getElementById('emojiLineForGitHubQuest34onFrontPage001') || document.getElementById('root');
 
@@ -32,4 +42,3 @@ root.render(
     <App />
   </React.StrictMode>,
 );
-
