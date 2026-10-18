@@ -1,0 +1,19 @@
+services:
+  uhub-api:
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Set the existing production JWT_SECRET before cutover}
+      UHUB_REQUIRE_MIGRATION: "1"
+    volumes:
+      - type: bind
+        source: ${UHUB_MIGRATED_DATA_DIRECTORY:?Set the absolute path of the completed migration destination}
+        target: /app/data
+        bind:
+          create_host_path: false
+
+  uhub-sqlite-web:
+    volumes:
+      - type: bind
+        source: ${UHUB_MIGRATED_DATA_DIRECTORY:?Set the absolute path of the completed migration destination}
+        target: /data
+        bind:
+          create_host_path: false

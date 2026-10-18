@@ -6,3 +6,4 @@ pantry-api/data/*.sqlite-wal
 uhub-api/data/*.sqlite
 uhub-api/data/*.sqlite-shm
 uhub-api/data/*.sqlite-wal
+.env.migration

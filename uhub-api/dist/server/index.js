@@ -230,7 +230,7 @@ app.post('/api/broadcasts/union-news-14/images/add', authMiddleware, async (req,
             return;
         }
         // Create broadcast-images directory if it doesn't exist
-        const broadcastImagesDir = path.join(process.cwd(), 'data', 'broadcast-images');
+        const broadcastImagesDir = path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'broadcast-images');
         if (!fs.existsSync(broadcastImagesDir)) {
             fs.mkdirSync(broadcastImagesDir, { recursive: true });
             console.log(`[BROADCASTS] Created broadcast-images directory: ${broadcastImagesDir}`);

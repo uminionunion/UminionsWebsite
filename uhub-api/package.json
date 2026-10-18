@@ -4,8 +4,9 @@
   "type": "module",
   "scripts": {
     "test": "node --experimental-vm-modules --test",
-    "build": "tsc --project tsconfig.server.json || true",
+    "build": "tsc --project tsconfig.server.json",
     "test:memes": "node --experimental-vm-modules --test tests/meme-media.test.mjs",
+    "migrate:testing01": "node scripts/migrate-testing01.cjs",
     "start": "node scripts/init-data.cjs && node dist/server/index.js"
   },
   "dependencies": {

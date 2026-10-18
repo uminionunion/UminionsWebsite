@@ -40,6 +40,12 @@ CREATE TABLE IF NOT EXISTS MemeImplementation001Favorites (
   user_id INTEGER NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP, UNIQUE(post_id, user_id)
 );
 `;
+function separateAccountReferences(sql) {
+    const users = '(?:"users"|`users`|\\[users\\]|users)';
+    const actions = '(?:\\s+ON\\s+(?:DELETE|UPDATE)\\s+(?:CASCADE|RESTRICT|NO\\s+ACTION|SET\\s+(?:NULL|DEFAULT)))*';
+    // SQLite cannot enforce a foreign key into an attached database. API ownership checks use accounts.users.
+    return sql.replace(new RegExp(`,\\s*(?:CONSTRAINT\\s+\\S+\\s+)?FOREIGN\\s+KEY\\s*\\([^)]+\\)\\s*REFERENCES\\s+${users}\\s*\\([^)]+\\)${actions}`, 'gi'), '').replace(new RegExp(`\\s+REFERENCES\\s+${users}\\s*\\([^)]+\\)${actions}`, 'gi'), '');
+}
 /** Moves legacy tables, rather than retaining a second source of truth in the account database. */
 export function migrateMemeDatabase(main, memePath) {
     const foreignKeys = main.pragma('foreign_keys', { simple: true });
@@ -73,8 +79,12 @@ export function migrateMemeDatabase(main, memePath) {
                     const existing = main.prepare('SELECT 1 FROM memebox_move.sqlite_master WHERE type = ? AND name = ?').get('table', table.name);
                     if (existing)
                         throw new Error(`Refusing to overwrite untracked MemeBox table ${table.name}`);
-                    const create = table.sql.replace(/^CREATE TABLE\s+(?:IF NOT EXISTS\s+)?(?:"[^"]+"|`[^`]+`|\[[^\]]+\]|[^\s(]+)/i, `CREATE TABLE memebox_move.${quote(table.name)}`);
+                    const create = separateAccountReferences(table.sql).replace(/^CREATE TABLE\s+(?:IF NOT EXISTS\s+)?(?:"[^"]+"|`[^`]+`|\[[^\]]+\]|[^\s(]+)/i, `CREATE TABLE memebox_move.${quote(table.name)}`);
                     main.exec(create);
+                    const references = main.prepare(`PRAGMA memebox_move.foreign_key_list(${quote(table.name)})`).all();
+                    if (references.some(reference => reference.table.toLowerCase() === 'users')) {
+                        throw new Error(`Unsupported cross-database user reference in ${table.name}`);
+                    }
                     main.exec(`INSERT INTO memebox_move.${quote(table.name)} SELECT * FROM main.${quote(table.name)}`);
                 }
                 const hasSequence = main.prepare("SELECT 1 FROM main.sqlite_master WHERE name = 'sqlite_sequence'").get();

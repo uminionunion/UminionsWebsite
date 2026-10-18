@@ -3,10 +3,21 @@
 const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
+const { ensureLegacyCore, upgradeLegacyProducts, importLegacyEpisodes } = require('./legacy-compat.cjs');
 
 const dataDir = process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data');
 const dbPath = path.join(dataDir, 'database.sqlite');
 const seedPath = path.join(process.cwd(), 'seed', 'database.sqlite');
+
+if (process.env.UHUB_REQUIRE_MIGRATION === '1') {
+  const report = JSON.parse(fs.readFileSync(path.join(dataDir, 'testing01-migration.json'), 'utf8'));
+  if (report.version !== 1 || !report.completedAt || !report.sourceFingerprint) {
+    throw new Error('The configured data directory has no completed Testing01 migration.');
+  }
+  for (const filename of ['database.sqlite', 'memebox.sqlite', 'usersAddedProfileAndCoverImages.sqlite']) {
+    if (!fs.existsSync(path.join(dataDir, filename))) throw new Error(`Migrated database is missing: ${filename}`);
+  }
+}
 
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
@@ -21,6 +32,8 @@ if (!fs.existsSync(dbPath) && fs.existsSync(seedPath)) {
 
 // MemeBox schema/migration is owned by server/meme-db.ts, never recreated in the account database.
 const db = new Database(dbPath);
+ensureLegacyCore(db);
+upgradeLegacyProducts(db);
 
 // Older shipped schemas lack fields used by the current store, gallery and unread-status routes.
 db.transaction(() => {
@@ -222,6 +235,7 @@ if (!episodeColumns.includes('play_count')) {
   db.exec('ALTER TABLE UserBroadcastEpisodes ADD COLUMN play_count INTEGER NOT NULL DEFAULT 0');
 }
 console.log('[init-data] UserBroadcasts/UserBroadcastEpisodes tables verified.');
+importLegacyEpisodes(db);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS UhubManagedCarouselItems (

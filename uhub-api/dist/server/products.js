@@ -4,9 +4,10 @@ import { authenticate } from './auth-middleware.js';
 import path from 'path';
 import { promises as fs } from 'fs';
 const router = Router();
+const dataDirectory = process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data');
 // Ensure upload directory exists
 const ensureUploadDir = async () => {
-    const uploadDir = path.join(process.cwd(), 'data', 'uploads');
+    const uploadDir = path.join(dataDirectory, 'uploads');
     try {
         await fs.mkdir(uploadDir, { recursive: true });
     }
@@ -54,7 +55,7 @@ router.post('/', authenticate, async (req, res) => {
         if (req.files && req.files.image) {
             await ensureUploadDir();
             const uploadedFile = req.files.image;
-            const uploadDir = path.join(process.cwd(), 'data', 'uploads');
+            const uploadDir = path.join(dataDirectory, 'uploads');
             const filename = `${Date.now()}-${uploadedFile.name}`;
             const filepath = path.join(uploadDir, filename);
             await uploadedFile.mv(filepath);
@@ -173,7 +174,7 @@ router.patch('/:productId', authenticate, async (req, res) => {
         if (req.files && req.files.image) {
             await ensureUploadDir();
             const uploadedFile = req.files.image;
-            const uploadDir = path.join(process.cwd(), 'data', 'uploads');
+            const uploadDir = path.join(dataDirectory, 'uploads');
             const filename = `${Date.now()}-${uploadedFile.name}`;
             const filepath = path.join(uploadDir, filename);
             await uploadedFile.mv(filepath);
@@ -1051,7 +1052,7 @@ router.post('/user/:userId/stores', authenticate, async (req, res) => {
         if (req.files && req.files.badgeImage) {
             await ensureUploadDir();
             const uploadedFile = req.files.badgeImage;
-            const uploadsDir = path.join(process.cwd(), 'data', 'uploads', 'store-images');
+            const uploadsDir = path.join(dataDirectory, 'uploads', 'store-images');
             await fs.mkdir(uploadsDir, { recursive: true });
             const ext = uploadedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
             const filename = `badge-${parsedUserId}-${Date.now()}.${ext}`;
@@ -1065,7 +1066,7 @@ router.post('/user/:userId/stores', authenticate, async (req, res) => {
         if (req.files && req.files.bannerImage) {
             await ensureUploadDir();
             const uploadedFile = req.files.bannerImage;
-            const uploadsDir = path.join(process.cwd(), 'data', 'uploads', 'store-images');
+            const uploadsDir = path.join(dataDirectory, 'uploads', 'store-images');
             await fs.mkdir(uploadsDir, { recursive: true });
             const ext = uploadedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
             const filename = `banner-${parsedUserId}-${Date.now()}.${ext}`;
@@ -1281,7 +1282,7 @@ router.put('/user-stores/:userStoreId/:imageType', authenticate, async (req, res
             return;
         }
         // Create uploads directory
-        const uploadsDir = path.join(process.cwd(), 'data', 'uploads', 'store-images');
+        const uploadsDir = path.join(dataDirectory, 'uploads', 'store-images');
         await fs.mkdir(uploadsDir, { recursive: true });
         // Generate filename
         const ext = uploadedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
