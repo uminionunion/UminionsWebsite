@@ -1301,13 +1301,12 @@
   .uhub-root .meme-mobile-rail {
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 4px;
     min-height: 280px;
   }
 
   .uhub-root .meme-mobile-rail-spacer {
-    flex: 1;
-    min-height: 12px;
+    display: none;
   }
 
   .uhub-root .meme-mobile-rail button {
@@ -1315,26 +1314,28 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 3px;
+    gap: 2px;
     width: 46px;
-    min-height: 48px;
-    padding: 5px 1px;
+    height: 40px;
+    min-height: 40px;
+    padding: 2px 1px;
     border: 1px solid #374151;
     border-radius: 6px;
     background: #161616;
     color: #fff;
-    font-size: 9px;
+    font-size: 7px;
+    line-height: 1;
     overflow-wrap: anywhere;
   }
 
   .uhub-root .meme-mobile-rail button > span:first-child {
     color: #0f0;
-    font-size: 17px;
+    font-size: 15px;
   }
 
   .uhub-root .meme-mobile-rail img {
-    width: 21px;
-    height: 21px;
+    width: 18px;
+    height: 18px;
     object-fit: contain;
   }
 
