@@ -138,7 +138,7 @@ test('More stacks matching Friends, social toggle and Close rows while preservin
   const calls = [];
   const render = compile(`(user) => ([${rows.map(node => node.expression.right.getText(tree)).join(',')}])`, {
     React: { createElement: (type, props, ...children) => ({ type, props: { ...props, children } }) },
-    X: 'close-icon', ChevronUp: 'up-icon', ChevronDown: 'down-icon', pendingFriendRequests: [],
+    X: 'close-icon', ChevronUp: 'up-icon', ChevronDown: 'down-icon', pendingFriendRequests: [{ id: 1 }, { id: 2 }],
     mobileFooterOpen: false, setMobileFooterOpen: updater => calls.push(updater(false)),
     handleTopLeftButtonClick: value => calls.push(value), onClose: () => calls.push('close'),
   });
@@ -149,6 +149,7 @@ test('More stacks matching Friends, social toggle and Close rows while preservin
   assert.deepEqual(calls, ['friends', true, 'close']);
   assert.equal(output[0].props.disabled, false);
   assert.equal(render(null)[0].props.disabled, true);
+  assert.deepEqual(output[0].props.children[0].props.children[1].props.children, [2]);
   assert.equal(output[2].props.children[1].type, 'close-icon');
   const css = await readFile(new URL('../../includes/uhub/src/index.css', import.meta.url), 'utf8');
   assert.match(css, /\.uhub-mobile-friends-row \{\s*order: -3;/);
@@ -247,6 +248,10 @@ test('MemeBox side rails reuse existing handlers in the requested order, includi
   buttons.forEach(button => button.props.onClick());
   buttons[7].props.onDoubleClick();
   assert.deepEqual(actions, handlers);
+  const css = await readFile(new URL('../../includes/uhub/src/index.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(css, /\.meme-mobile-rail button\[aria-label="(?:Upvote meme|Meme comments|Downvote meme|Meme favorites)"\][^{]*\{[^}]*transform:/);
+  assert.match(css, /\.meme-mobile-rail-spacer \{\s*display: none;/);
+  assert.match(css, /\.meme-mobile-rail button \{[\s\S]*?height: 40px;/);
   const empty = render(null);
   for (const rail of [empty.props.children[0], empty.props.children[2]]) {
     const controls = rail.props.children.filter(child => child.type === 'button');
