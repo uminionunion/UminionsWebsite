@@ -20,7 +20,7 @@ import ProductQueuedImage from '../../components/ProductQueuedImage';
 import { IMAGE_LOAD_PRIORITY, retainQueuedImages } from '../../lib/image-load-queue';
 import { useQueuedImageSlot } from '../../lib/carousel-rotation-queue';
 import { useSiteWideMute } from '../../lib/media-sound';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, MoreHorizontal, Radio } from 'lucide-react';
 import { enqueueProductImageBatch, setProductImageQueueActive } from '../../lib/product-image-cache';
 import ProductSearchDropdown from './ProductSearchDropdown';
 import MainUhubFeatureV001ForEditProductModal from './MainUhubFeatureV001ForEditProductModal';
@@ -45,6 +45,20 @@ interface MainUhubFeatureV001ForMyProfileModalProps {
   onClose: () => void;
   onOpenAuthModal: (mode: 'login' | 'signup') => void;
   onBadgeZoom?: (badge: { url: string; name: string }) => void;
+  mobileWorldFeedDraft: string;
+  onMobileWorldFeedDraftChange: (value: string) => void;
+}
+
+function useMobileViewport() {
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)');
+    const update = () => setIsMobile(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+  return isMobile;
 }
 
 const ALL_STORES = [
@@ -855,14 +869,17 @@ const FooterPosterCarousel = () => <ManagedProductCarousel slot="right" />;
 const defaultCoverImageUrl = '/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg';
 
 // Saved images feed one cover placeholder; the shared queue replaces its image.
-const CoverImageRotator = ({ userCoverUrl, opacity }: { userCoverUrl: string | null; opacity: number }) => {
+const CoverImageRotator = ({ userCoverUrl, opacity, fallbackToDefault = false }: { userCoverUrl: string | null; opacity: number; fallbackToDefault?: boolean }) => {
   if (userCoverUrl) return <img src={userCoverUrl} alt="Your cover" className="absolute inset-0 h-full w-full object-contain" style={{ opacity }} />;
-  return <ManagedCoverImageSlot opacity={opacity} />;
+  return <ManagedCoverImageSlot opacity={opacity} fallbackToDefault={fallbackToDefault} />;
 };
 
-const ManagedCoverImageSlot = ({ opacity }: { opacity: number }) => {
+const ManagedCoverImageSlot = ({ opacity, fallbackToDefault }: { opacity: number; fallbackToDefault: boolean }) => {
   const { items } = useManagedCarouselItems('cover');
-  const urls = useMemo(() => items.map(item => item.image_url).filter(Boolean), [items]);
+  const urls = useMemo(() => {
+    const savedUrls = items.map(item => item.image_url).filter(Boolean);
+    return savedUrls.length || !fallbackToDefault ? savedUrls : [defaultCoverImageUrl];
+  }, [items, fallbackToDefault]);
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [urls]);
   const imageVisible = useQueuedImageSlot({ carouselId: 'cover', urls, index, setIndex });
@@ -938,7 +955,7 @@ const GroupIcon = ({ withChat = false }: { withChat?: boolean }) => (
 
 const escapeHtml = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-const SitePageModal = ({ pageKey, isAdmin, onClose, onChanged, defaultContent = '' }: { pageKey: SitePageKey; isAdmin: boolean; onClose: () => void; onChanged: () => void; defaultContent?: string }) => {
+const SitePageModal = ({ pageKey, isAdmin, onClose, onChanged, defaultContent = '', introduction }: { pageKey: SitePageKey; isAdmin: boolean; onClose: () => void; onChanged: () => void; defaultContent?: string; introduction?: React.ReactNode }) => {
   const config = sitePageConfig[pageKey];
   const { page, setPage, loaded } = useSitePage(pageKey);
   const shownContent = page.content || (defaultContent ? escapeHtml(defaultContent) : '');
@@ -998,7 +1015,7 @@ const SitePageModal = ({ pageKey, isAdmin, onClose, onChanged, defaultContent = 
 
   return (
     <div className="fixed inset-0 z-[2147483647] flex items-center justify-center bg-black/75 p-4">
-      <div className="relative z-[2147483647] flex max-h-[90vh] w-full max-w-[640px] flex-col rounded-2xl border border-white/10 bg-[#0b0b0f] p-4 shadow-2xl shadow-orange-400/30">
+      <div role="dialog" aria-modal="true" aria-label={config.title} className={`${introduction ? 'uhub-mobile-about-modal ' : ''}relative z-[2147483647] flex max-h-[90vh] w-full max-w-[640px] flex-col rounded-2xl border border-white/10 bg-[#0b0b0f] p-4 shadow-2xl shadow-orange-400/30`}>
         <button type="button" onClick={onClose} className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black text-xl font-bold text-white ring-1 ring-white/20 transition hover:bg-gray-800" aria-label={`Close ${config.title}`}>
           <X className="h-4 w-4" />
         </button>
@@ -1041,6 +1058,7 @@ const SitePageModal = ({ pageKey, isAdmin, onClose, onChanged, defaultContent = 
           <div ref={editorRef} contentEditable suppressContentEditableWarning className="min-h-[240px] flex-1 overflow-y-auto rounded-xl border border-orange-400/40 bg-[#111827] p-3 text-sm text-gray-100 outline-none [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-bold [&_img]:max-w-full" />
         ) : (
           <div className="min-h-[240px] flex-1 overflow-y-auto rounded-xl border border-white/10 bg-[#111827] p-3 text-sm text-gray-100 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:text-xl [&_h2]:font-bold [&_h3]:text-lg [&_h3]:font-bold [&_img]:max-w-full [&_a]:text-orange-400 [&_a]:underline">
+            {introduction}
             {!loaded ? <p className="text-gray-400">Loading...</p> : shownContent ? <div dangerouslySetInnerHTML={{ __html: sanitizeSitePageHtml(shownContent) }} /> : <p className="text-gray-400">Nothing has been written here yet.</p>}
           </div>
         )}
@@ -1196,8 +1214,10 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
 
 
 // World Feed (everyone can read) + My Posts (only logged-in users can post), shown on the front page of uHub.
-const FrontPageSocial = ({ user, stacked = false }: { user: any; stacked?: boolean }) => {
-  const [content, setContent] = useState('');
+const FrontPageSocial = ({ user, stacked = false, compact = false, draft }: { user: any; stacked?: boolean; compact?: boolean; draft?: { content: string; onChange: (value: string) => void } }) => {
+  const [localContent, setLocalContent] = useState('');
+  const content = draft?.content ?? localContent;
+  const setContent = draft?.onChange ?? setLocalContent;
   const [isPosting, setIsPosting] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const createPost = async () => {
@@ -1217,7 +1237,7 @@ const FrontPageSocial = ({ user, stacked = false }: { user: any; stacked?: boole
     } finally { setIsPosting(false); }
   };
   return (
-    <div className="mt-4 flex shrink-0 flex-col gap-2" data-stacked={stacked}>
+    <div className={`mt-4 flex shrink-0 flex-col gap-2${compact ? ' uhub-compact-world-feed' : ''}`} data-stacked={stacked}>
       <div className="flex h-72 flex-col"><WorldFeed refreshKey={refreshKey} /></div>
       <div className="flex flex-col gap-1 rounded-lg border p-2">
         <textarea className="w-full resize-none rounded border bg-gray-800 p-2 text-xs text-white placeholder-gray-500" style={{ color: '#ffffff', height: '2.5rem' }} aria-label="My Posts" placeholder={user ? 'Write a post...' : 'Log in to post to the World Feed'} maxLength={1000} value={content} onChange={(event) => setContent(event.target.value)} disabled={!user} />
@@ -1228,6 +1248,34 @@ const FrontPageSocial = ({ user, stacked = false }: { user: any; stacked?: boole
       </div>
     </div>
   );
+};
+
+const MobileWorldFeed = ({ user, draft, onDraftChange, expanded, onExpandedChange }: {
+  user: any;
+  draft: string;
+  onDraftChange: (value: string) => void;
+  expanded: boolean;
+  onExpandedChange: (value: boolean) => void;
+}) => {
+  const feedRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!expanded) return;
+    const collapseOutside = (event: Event) => {
+      if (event.target instanceof Node && !feedRef.current?.contains(event.target)) onExpandedChange(false);
+    };
+    document.addEventListener('pointerdown', collapseOutside, true);
+    document.addEventListener('focusin', collapseOutside);
+    return () => {
+      document.removeEventListener('pointerdown', collapseOutside, true);
+      document.removeEventListener('focusin', collapseOutside);
+    };
+  }, [expanded, onExpandedChange]);
+  return <div ref={feedRef} className="uhub-mobile-world-feed" data-expanded={expanded} onClickCapture={() => onExpandedChange(true)} onInputCapture={() => onExpandedChange(true)} onFocusCapture={event => {
+    if (event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLInputElement || event.target.matches(':focus-visible')) onExpandedChange(true);
+  }}>
+    <button type="button" className="uhub-mobile-world-feed-title" aria-expanded={expanded} onClick={() => onExpandedChange(true)}>World Feed</button>
+    <FrontPageSocial user={user} compact draft={{ content: draft, onChange: onDraftChange }} />
+  </div>;
 };
 
 const BroadcastView = ({ 
@@ -1251,13 +1299,12 @@ const BroadcastView = ({
   setIsBroadcastLeftCollapsed,
   isBroadcastCarouselCollapsed,
   setIsBroadcastCarouselCollapsed,
+  mobileWorldFeedDraft,
+  setMobileWorldFeedDraft,
+  bottomNavigation,
 }) => {
-  if (broadcastView === 'UnionRadio#15') return <UnionRadioPlayer />;
-  if (broadcastView === 'Find-a-Pantry#13') return <PantryFinderBroadcastView />;
-  if (broadcastView === 'Beta-Button-10,011') return <BetaButtonView />;
-  if (broadcastView === 'UmiMatch#22') return <UmiMatchView onExit={onExitUmiMatch} />;
-  if (broadcastView === 'Million-Pixel#23') return <MillionPixelView />;
-  if (broadcastView === 'Million-Pixel#23') return <MillionPixelView />;
+  const isMobile = useMobileViewport();
+  const [mobileWorldFeedExpanded, setMobileWorldFeedExpanded] = useState(false);
 
   const handleReorderLeft = async (imageId: number) => {
     try {
@@ -1320,7 +1367,7 @@ const BroadcastView = ({
   };
 
   useEffect(() => {
-  if (!broadcastDividerDragging) return;
+  if (!broadcastDividerDragging || isMobile || broadcastView !== 'UnionNews#14') return;
 
   const handleMove = (clientX: number) => {
     const container = document.querySelector('[data-broadcast-container]');
@@ -1383,7 +1430,7 @@ const BroadcastView = ({
     document.removeEventListener('touchmove', handleTouchMove);
     document.removeEventListener('touchend', handleEnd);
   };
-}, [broadcastDividerDragging]);
+}, [broadcastDividerDragging, isMobile, broadcastView]);
 
   const resetToDefaultPosition = () => {
     setBroadcastLeftWidth(33);
@@ -1398,6 +1445,12 @@ const BroadcastView = ({
     setIsBroadcastLeftCollapsed(false);
     setIsBroadcastCarouselCollapsed(false);
   };
+
+  if (broadcastView === 'UnionRadio#15') return <UnionRadioPlayer />;
+  if (broadcastView === 'Find-a-Pantry#13') return <PantryFinderBroadcastView />;
+  if (broadcastView === 'Beta-Button-10,011') return <BetaButtonView />;
+  if (broadcastView === 'UmiMatch#22') return <UmiMatchView onExit={onExitUmiMatch} />;
+  if (broadcastView === 'Million-Pixel#23') return <MillionPixelView />;
 
   if (broadcastView !== 'UnionNews#14') {
     // For non-UnionNews#14 broadcasts, use original layout
@@ -1443,8 +1496,8 @@ const BroadcastView = ({
                   <AnchorRotator />
                 </div>
                 <div className="w-2/3 min-w-0">
-                  <BroadcastCarousel 
-                    items={broadcast.extraImages || []} 
+                  <BroadcastCarousel
+                    items={broadcast.extraImages || []}
                     visibleItemCount={Math.min(broadcastCarouselImageCount, 6)}
                     isAdmin={user?.is_high_high_high_admin === 1}
                     onImageZoom={handleCarouselImageZoom}
@@ -1459,22 +1512,14 @@ const BroadcastView = ({
   }
 
   // UnionNews#14 layout with mobile-responsive stacking
-  const isMobile = window.innerWidth < 768;
-
-    
 if (isMobile) {
   // MOBILE LAYOUT: Vertical stack with proper scrolling
   return (
-    <div className="flex flex-col h-full w-full overflow-y-auto">      
+    <div className="uhub-mobile-broadcast flex flex-col w-full">
             {/* TOP: Broadcast Carousel */}
       {!isBroadcastCarouselCollapsed && (
         <div className="flex-shrink-0 flex flex-col w-[100%] mx-auto py-4">
           <div className="flex items-center gap-2 mb-2">
-            <SiteWideMuteButton small />
-                    <WelcomeDescription fallback={broadcast.description} className="text-xs text-muted-foreground flex-grow text-center" />
-          </div>
-          <div className="flex items-center gap-2 mb-2">
-            <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-xs">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
             {user?.is_high_high_high_admin === 1 && (
               <>
               <Button 
@@ -1495,11 +1540,9 @@ if (isMobile) {
 
                         {/* CAROUSEL CONTENT - NO overflow-hidden */}
           <div className="flex-shrink-0">
-            <div className="flex w-full gap-2">
-              <div className="flex h-48 w-1/3 min-w-0 items-center justify-center overflow-hidden rounded-md bg-transparent p-2">
-                <AnchorRotator />
-              </div>
-              <div className="w-2/3 min-w-0">
+            <div className="uhub-mobile-feed-carousel-row" data-feed-expanded={mobileWorldFeedExpanded}>
+              <MobileWorldFeed user={user} draft={mobileWorldFeedDraft} onDraftChange={setMobileWorldFeedDraft} expanded={mobileWorldFeedExpanded} onExpandedChange={setMobileWorldFeedExpanded} />
+              <div className="uhub-mobile-broadcast-carousel">
                 <div
   className="flex w-full overflow-hidden"
   style={{
@@ -1523,7 +1566,6 @@ if (isMobile) {
               </div>
             </div>
           </div>
-          <FrontPageSocial user={user} stacked />
         </div>
       )}
 
@@ -1542,21 +1584,24 @@ if (isMobile) {
 
       {/* MIDDLE: Memebox */}
       {!isBroadcastLeftCollapsed && (
-        <div className="flex-shrink-0 flex flex-col w-full px-4 py-4">
-          <h4 className="font-semibold whitespace-pre-line text-center text-sm">{broadcast.subtitle}</h4>
+        <div className="uhub-mobile-memes flex-shrink-0 flex flex-col w-full py-4">
+          <h4 className="font-semibold whitespace-pre-line text-sm">{broadcast.subtitle}</h4>
           <div
             id="TheReactMemeImplementationConnection001"
             data-meme-box-layout={broadcastCarouselImageCount}
             className="bg-muted rounded-md my-2"
-            style={{ minHeight: '400px' }}
+            style={{ minHeight: '280px' }}
           />
+          {/* Restore this mobile attribution/navigation strip when alternate MemeBox-area content is available.
           <div className="flex justify-between items-center">
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }}><ChevronLeft className="h-4 w-4" /></Button>
             <span className="text-xs text-muted-foreground">by {broadcast.creator}</span>
             <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }}><ChevronRight className="h-4 w-4" /></Button>
           </div>
+          */}
         </div>
       )}
+      {bottomNavigation}
 
       {isBroadcastLeftCollapsed && (
         <button
@@ -1576,8 +1621,6 @@ if (isMobile) {
         </button>
       )}
 
-      {/* SPACER for bottom padding */}
-      <div className="h-8 flex-shrink-0" />
     </div>
   );
 }
@@ -1855,12 +1898,12 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[100000]">
-      <div className="bg-background border rounded-lg p-6 max-w-6xl w-[95%] max-h-[90vh] overflow-auto">
+      <div className="uhub-store-browser bg-background border rounded-lg p-6 max-w-6xl w-[95%] max-h-[90vh] overflow-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Store Quadrants (All 30 Stores)</h2>
 
 
-<div className="flex justify-between items-center mt-6">
+<div className="uhub-store-browser-navigation flex justify-between items-center mt-6">
           <Button
   variant="outline"
   onClick={() => setCurrentPage(prev => prev === 1 ? totalPages : prev - 1)}
@@ -1900,7 +1943,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
 
         {/* PAGE 1 - REDESIGNED LAYOUT */}
         {currentPage === 1 && (
-          <div className="grid grid-cols-2 gap-4 h-[70vh]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-auto md:h-[70vh]">
             
             {/* TOP LEFT: Union Store - WITH HEIGHT CONSTRAINT FOR 10 ITEMS */}
 <div className="border rounded-lg p-4 flex flex-col h-full">
@@ -1918,7 +1961,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
           }}
         >
           {p.image_url && (
-            <ProductQueuedImage 
+            <ProductQueuedImage
               src={p.image_url}
               queue="union"
               alt={p.name}
@@ -2398,7 +2441,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
 
         {/* PAGES 2-10 REMAIN THE SAME IN REPRESENTING UNION STORES 1-30 */}
        {currentPage > 1 && currentPage <= 9 && (
-  <div className="grid grid-cols-2 gap-4 h-[70vh]">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-auto md:h-[70vh]">
     <style>{`
       .store-products-scrollable::-webkit-scrollbar {
         width: 10px;
@@ -2567,7 +2610,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
 )}
 
    {currentPage > 9 && (
-  <div className="grid grid-cols-2 gap-4 h-[70vh]">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-auto md:h-[70vh]">
     <style>{`
       .user-store-scrollable::-webkit-scrollbar {
         width: 10px;
@@ -2795,7 +2838,7 @@ const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen
           </Button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 h-[70vh]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-auto md:h-[70vh]">
           <WorldFeed refreshKey={worldFeedRefreshKey} />
 
          <div className="border rounded-lg p-4 overflow-auto flex flex-col">
@@ -2918,8 +2961,16 @@ const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen
 };
 
 
-const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyProfileModalProps> = ({ isOpen, onClose, onOpenAuthModal, onBadgeZoom }) => {
+const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyProfileModalProps> = ({ isOpen, onClose, onOpenAuthModal, onBadgeZoom, mobileWorldFeedDraft, onMobileWorldFeedDraftChange: setMobileWorldFeedDraft }) => {
   const { user, logout } = useAuth();
+  const isMobile = useMobileViewport();
+  const [mobileSection, setMobileSection] = useState<'front' | 'hub' | 'stores' | 'features' | 'more'>('front');
+  const [mobileFooterOpen, setMobileFooterOpen] = useState(false);
+  const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
+  const mobileContentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isMobile && mobileContentRef.current) mobileContentRef.current.scrollTop = 0;
+  }, [isMobile, mobileSection]);
   const [isPoliticFilterOpen, setPoliticFilterOpen] = useState(false);
   const [isPoliticFilterPressed, setPoliticFilterPressed] = useState(false);
   const [managedCarouselAdminSlot, setManagedCarouselAdminSlot] = useState<ManagedCarouselAdminTarget | null>(null);
@@ -3007,14 +3058,19 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
     ...additionalHardCodedCustomButtonPages,
   };
   const customButtonPageScrollRef = useRef<HTMLDivElement>(null);
-  const customButtonPageHeight = 140;
+  const customButtonScrollDrivenRef = useRef(false);
+  const customButtonPageHeight = isMobile ? 320 : 140;
 
   useEffect(() => {
+    if (isMobile && customButtonScrollDrivenRef.current) {
+      customButtonScrollDrivenRef.current = false;
+      return;
+    }
     customButtonPageScrollRef.current?.scrollTo({
       top: (customizableButtonPage - 1) * customButtonPageHeight,
-      behavior: 'smooth',
+      behavior: isMobile ? 'auto' : 'smooth',
     });
-  }, [customizableButtonPage]);
+  }, [customizableButtonPage, customButtonPageHeight, isMobile, mobileSection]);
   const [activeChatModal, setActiveChatModal] = useState<number | null>(null);
   const [storeProducts, setStoreProducts] = useState<{ [key: number]: Product[] }>({});
   const [loadingStoreIds, setLoadingStoreIds] = useState<Set<number>>(new Set());
@@ -3095,8 +3151,8 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [isBroadcastCarouselCollapsed, setIsBroadcastCarouselCollapsed] = useState(false);
   const [broadcastDividerDragging, setBroadcastDividerDragging] = useState(false);
   // NEW: Collapse state for left (uHome-Hub) and right (UnionSAM#20) sections
- const [isLeftSectionCollapsed, setIsLeftSectionCollapsed] = useState(window.innerWidth < 768);
-  const [isRightSectionCollapsed, setIsRightSectionCollapsed] = useState(window.innerWidth < 768);
+ const [isLeftSectionCollapsed, setIsLeftSectionCollapsed] = useState(false);
+ const [isRightSectionCollapsed, setIsRightSectionCollapsed] = useState(false);
   const [leftDividerDragging, setLeftDividerDragging] = useState(false);
   const [rightDividerDragging, setRightDividerDragging] = useState(false);
   const loadStoreProducts = useCallback(async (storeId: number) => {
@@ -3585,7 +3641,7 @@ useEffect(() => {
   return () => {
     unmountTheMemeBox();
   };
-}, [isOpen, centerView, broadcastView]);
+}, [isOpen, centerView, broadcastView, isMobile]);
 
 
 
@@ -3986,7 +4042,7 @@ const resetRightSection = () => {
               }}
             >
               {p.image_url && (
-                <ProductQueuedImage 
+                <ProductQueuedImage
                   src={p.image_url}
                   queue="union"
                   alt={p.name}
@@ -4211,9 +4267,8 @@ const resetRightSection = () => {
         case 'broadcasts':
 default:
     const currentBroadcast = broadcasts[broadcastView];
-return (
-  <>
-    <div className="flex items-center justify-between mb-4">
+    const moveNavigationBelowMemeBox = isMobile && broadcastView === 'UnionNews#14';
+    const broadcastNavigation = <div className="uhub-broadcast-navigation flex items-center justify-between mb-4">
   <div className="flex items-center gap-2">
     <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => {
       const currentIndex = broadcastKeys.indexOf(broadcastView);
@@ -4235,7 +4290,7 @@ return (
   {/* Show ALL collapsed section buttons in title bar */}
   <div className="flex gap-1">
     {/* LEFT SECTION (uHome-Hub) COLLAPSE BUTTON */}
-    {isLeftSectionCollapsed && (
+    {isLeftSectionCollapsed && !isMobile && (
       <button
         onClick={() => {
           setIsLeftSectionCollapsed(false);
@@ -4258,7 +4313,7 @@ return (
     )}
     
     {/* RIGHT SECTION (UnionSAM#20) COLLAPSE BUTTON */}
-    {isRightSectionCollapsed && (
+    {isRightSectionCollapsed && !isMobile && (
       <button
         onClick={() => {
           setIsRightSectionCollapsed(false);
@@ -4323,13 +4378,10 @@ return (
       </>
     )}
   </div>
-</div>
-
-
-
-
-
-    
+</div>;
+return (
+  <>
+    {!moveNavigationBelowMemeBox && broadcastNavigation}
     {broadcastView === 'MyBroadcasts' ? 
       (user ? <CreateBroadcastView /> : <p className="text-center text-muted-foreground">You must be logged in to create a broadcast.</p>) 
       : (currentBroadcast ? <BroadcastView 
@@ -4362,6 +4414,9 @@ return (
   setIsBroadcastLeftCollapsed={setIsBroadcastLeftCollapsed}
   isBroadcastCarouselCollapsed={isBroadcastCarouselCollapsed}
   setIsBroadcastCarouselCollapsed={setIsBroadcastCarouselCollapsed}
+  mobileWorldFeedDraft={mobileWorldFeedDraft}
+  setMobileWorldFeedDraft={setMobileWorldFeedDraft}
+  bottomNavigation={moveNavigationBelowMemeBox ? broadcastNavigation : null}
 /> : <p>Broadcast not found.</p>)
     }
   </>
@@ -4525,12 +4580,14 @@ return (
       return;
     }
     setCenterView(view);
+    setMobileSection('front');
   };
 
   const handleMicrophoneButtonClick = () => {
     const nextMicrophoneState = !areFeatureIconsActive.microphone;
     setAreFeatureIconsActive(prev => ({ ...prev, heart: false, lion: false, microphone: nextMicrophoneState }));
     setCenterView('broadcasts');
+    setMobileSection('front');
     setBroadcastView(nextMicrophoneState ? 'UnionRadio#15' : 'MyBroadcasts');
   };
 
@@ -4559,8 +4616,7 @@ const handleEditProfileImageClick = (e: React.MouseEvent) => {
   setPhotoEditorPurpose('profile');
 };
 
-  const isMobile = window.innerWidth < 768;
-  const itemsPerPage = isMobile ? 1 : 6;
+  const itemsPerPage = 6;
   const socialLinkPagesLeft = Array.from({ length: Math.ceil(socialLinksLeft.length / itemsPerPage) }, (_, i) => socialLinksLeft.slice(i * itemsPerPage, (i + 1) * itemsPerPage));
   const socialLinkPagesRight = Array.from({ length: Math.ceil(socialLinksRight.length / itemsPerPage) }, (_, i) => socialLinksRight.slice(i * itemsPerPage, (i + 1) * itemsPerPage));
 
@@ -4581,6 +4637,11 @@ const handleEditProfileImageClick = (e: React.MouseEvent) => {
       return newPage;
     });
   };
+
+  useEffect(() => {
+    setSocialPageLeft(0);
+    setSocialPageRight(0);
+  }, [isMobile]);
 
   // Retired 10/16/26: the 7000ms promo interval; the bottom promo now rotates through the carousel scheduler.
   const promoImageVisible = useQueuedImageSlot({
@@ -4624,14 +4685,60 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
   return (
     <>
-      <div className={areProfileSurfacesOpaque ? 'uhub-profile-surfaces text-foreground w-full h-full flex flex-col relative' : 'uhub-profile-surfaces uhub-transparent-mode text-foreground w-full h-full flex flex-col relative'} style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+      <div data-mobile-section={mobileSection} data-mobile-trial="branchExpansion001" className={`uhub-dashboard ${areProfileSurfacesOpaque ? 'uhub-profile-surfaces' : 'uhub-profile-surfaces uhub-transparent-mode'} text-foreground w-full h-full flex flex-col relative`} style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
         {unreadStatusError && <p role="alert" className="border-b border-red-700 bg-black px-4 py-2 pr-14 text-sm text-red-400">{unreadStatusError} Message indicators may be out of date.</p>}
-        <Button variant="ghost" size="icon" className="absolute top-4 right-4 z-50 h-8 w-8 p-1 text-white hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff', border: '0', boxShadow: 'none' }} onClick={onClose}>
+        <Button variant="ghost" size="icon" className="hidden md:flex absolute top-4 right-4 z-50 h-8 w-8 p-1 text-white hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff', border: '0', boxShadow: 'none' }} onClick={onClose}>
           <X className="h-5 w-5" />
           <span className="sr-only">Close</span>
         </Button>
+        {isMobile && (
+          <header className="uhub-mobile-identity">
+            <div className="uhub-mobile-account-row">
+              <button type="button" onClick={handleProfileImageClick} aria-label={user ? 'Open my profile' : 'Log in to your account'} className="uhub-mobile-avatar-button">
+                <Avatar className="h-12 w-12 border-2 border-orange-400">
+                  <AvatarImage src={user?.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt="" className="object-contain" queuePriority={IMAGE_LOAD_PRIORITY.critical} />
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+              </button>
+              <div className="min-w-0 flex-1">
+                <button type="button" className="uhub-mobile-brand" aria-label="Uminion Union - About Us" onClick={() => setMobileAboutOpen(true)}>Uminion Union</button>
+                {user ? <div className="truncate text-xs text-gray-200">{user.username}</div> : <div className="uhub-mobile-inline-auth">
+                  <Button type="button" size="sm" onClick={() => onOpenAuthModal('login')}>Log In</Button>
+                  <Button type="button" size="sm" className="bg-orange-400 text-black hover:bg-orange-500" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button>
+                </div>}
+              </div>
+              <SiteWideMuteButton />
+            </div>
+            {user && <div className="uhub-mobile-account-actions">
+              {user ? <>
+                <Button type="button" variant="outline" size="sm" onClick={() => setPhotoEditorPurpose('profile')}>Edit picture</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => setPhotoEditorPurpose('cover')}>Change cover</Button>
+                <Button type="button" variant="ghost" size="sm" onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }}>{showLogout ? 'Log Out?' : '● Logged In'}</Button>
+              </> : null}
+            </div>}
+            <nav className="uhub-mobile-primary-actions" aria-label="Mobile shortcuts">
+              <Button type="button" variant="outline" disabled={!user} onClick={() => setIsHomeModalOpen(true)}><Home /><span>Profile</span></Button>
+              <Button type="button" variant="outline" aria-current={mobileSection === 'hub' ? 'page' : undefined} onClick={() => setMobileSection('hub')}><MessageSquare /><span>uHome-Hub</span>{unreadChatrooms.size > 0 && <span className="uhub-mobile-unread" aria-label="Unread chats" />}</Button>
+              <Button type="button" variant="outline" onClick={handleMicrophoneButtonClick}><Radio /><span>UnionRadio</span></Button>
+              <Button id="uhub-mobile-coming-soon-top" type="button" variant="outline" disabled><Anvil /><span>Coming Soon</span></Button>
+              <Button type="button" variant="outline" aria-current={mobileSection === 'features' ? 'page' : undefined} onClick={() => setMobileSection('features')}><img src="/uhub/dist/mobile-custom-buttons-logo.png" alt="" className="uhub-custom-buttons-logo exclude-zoom" /><span>10,000</span></Button>
+            </nav>
+            <div className="uhub-mobile-cover">
+              <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={1} fallbackToDefault />
+            </div>
+          </header>
+        )}
          {/* Top Section */}
-         <div className="md:flex md:flex-row hidden md:p-4 md:border-b md:gap-2" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+         <div className="uhub-dashboard-header md:flex md:flex-row hidden md:p-4 md:border-b md:gap-2" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+           <div className="uhub-mobile-more-intro md:hidden">
+             <h2 className="text-xl font-bold">Your 10,000 Customizable-Buttons:</h2>
+             <a href={broadcasts['UnionNews#14'].website} target="_blank" rel="noopener noreferrer" className="text-sm text-orange-400 underline">Learn how to code (in less than 5min) for Free—over at our GitHub here</a>
+             <div className="uhub-mobile-page-controls">
+               <Button type="button" variant="outline" size="icon" aria-label="Previous feature page" disabled={customizableButtonPage === 1} onClick={() => setCustomizableButtonPage(page => Math.max(1, page - 1))}><ChevronLeft className="h-5 w-5" /></Button>
+               <label>Page <input aria-label="Feature page" type="number" inputMode="numeric" min={1} max={715} value={customizableButtonPage} onChange={event => { const page = Number(event.target.value); if (Number.isInteger(page) && page >= 1 && page <= 715) setCustomizableButtonPage(page); }} /> of 715</label>
+               <Button type="button" variant="outline" size="icon" aria-label="Next feature page" disabled={customizableButtonPage === 715} onClick={() => setCustomizableButtonPage(page => Math.min(715, page + 1))}><ChevronRight className="h-5 w-5" /></Button>
+             </div>
+           </div>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopLeftSection" className="md:w-1/5 grid grid-cols-4 md:grid-cols-2 grid-rows-1 md:grid-rows-2 gap-2 md:pr-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
              <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Broadcast" onClick={() => setCenterView('broadcasts')}><Megaphone className="h-4 w-4 mb-1" /> Broadcast</Button>
              <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="HikingToAllStores" onClick={() => setIsQuadrantsModalOpen(true)}>
@@ -4650,22 +4757,23 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
              }} disabled={!user}><Home className="h-4 w-4 mb-1" /> Home</Button>
            </div>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative overflow-hidden" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: 'none' }}>
-             <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={areProfileSurfacesOpaque ? 1 : 0.5} />
+             {!isMobile && <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={areProfileSurfacesOpaque ? 1 : 0.5} />}
              {user && <Button className="absolute bottom-2 right-2" size="sm" onClick={() => setPhotoEditorPurpose('cover')}>Change Cover</Button>}
            </div>
 
             {/* 8-Button Grid - SMALLER BUTTONS - HIDDEN ON MOBILE */}
-<div className="hidden md:flex md:w-1/4 justify-center items-center md:pl-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+<div className="uhub-feature-pages hidden md:flex md:w-1/4 justify-center items-center md:pl-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
   <div
     ref={customButtonPageScrollRef}
     onScroll={(event) => {
       const scrollPage = Math.round(event.currentTarget.scrollTop / customButtonPageHeight) + 1;
+      if (isMobile && scrollPage !== customizableButtonPage) customButtonScrollDrivenRef.current = true;
       setCustomizableButtonPage(Math.max(1, Math.min(715, scrollPage)));
     }}
     className="w-fit overflow-y-auto overflow-x-hidden"
     style={{
       maxHeight: `${customButtonPageHeight}px`,
-      scrollSnapType: 'y mandatory',
+      scrollSnapType: isMobile ? 'none' : 'y mandatory',
       scrollbarColor: '#6b7280 transparent',
       scrollbarWidth: 'auto',
     }}
@@ -4886,6 +4994,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
           // Microphone toggle: 1st click opens Broadcasts-UnionRadio#15, 2nd click opens MyBroadcasts.
           if (customizableButtonPage === 1 && buttonNumber === 3) {
+            setMobileSection('front');
             const nextHeartState = !areFeatureIconsActive.heart;
             setAreFeatureIconsActive(prev => ({ ...prev, heart: nextHeartState, palm: false, lion: false, microphone: false }));
             setCenterView('broadcasts');
@@ -4896,6 +5005,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
           if (customizableButtonPage === 1 && buttonNumber === 4) {
             // Million-Pixel#23 is disabled for everyone except user ID 1 until Stripe/WooCommerce is finished.
             if (user?.id !== 1) return;
+            setMobileSection('front');
             const nextPalmState = !areFeatureIconsActive.palm;
             setAreFeatureIconsActive(prev => ({ ...prev, heart: false, palm: nextPalmState, lion: false, microphone: false }));
             setCenterView('broadcasts');
@@ -4904,6 +5014,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
           }
 
           if (customizableButtonPage === 1 && buttonNumber === 5) {
+            setMobileSection('front');
             const nextLionState = !areFeatureIconsActive.lion;
             setAreFeatureIconsActive(prev => ({ ...prev, heart: false, palm: false, lion: nextLionState, microphone: false }));
             setCenterView('broadcasts');
@@ -4912,6 +5023,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
           }
 
           if (customizableButtonPage === 715 && buttonNumber === 10011 && (user?.id === 1 || user?.id === 2)) {
+            setMobileSection('front');
             setCenterView('broadcasts');
             setBroadcastView(current => current === 'Beta-Button-10,011' ? 'UnionNews#14' : 'Beta-Button-10,011');
             return;
@@ -5038,90 +5150,26 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
          </div>
 
         
-  {/* Mobile Top Row */}
-  <div className="md:hidden flex flex-col p-2 border-b gap-2">
-    <div className="flex gap-2 items-center">
-
-      {/* Button Row (UPDATE: now full-width since avatar is gone) */}
-      <div className="flex gap-1 flex-1">
-
-        <Button
-          variant="outline"
-          className="flex-1 flex flex-col h-10 items-center justify-center text-xs p-1"
-          title="Friends"
-          onClick={() => handleTopLeftButtonClick('friends')}
-          disabled={!user}
-        >
-          {pendingFriendRequests.length > 0 && (
-            <div className="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full"></div>
-          )}
-          <Users className="h-3 w-3" />
-          <span className="text-xxs">Friends</span>
-        </Button>
-
-        <Button
-          variant="outline"
-          className="flex-1 flex flex-col h-10 items-center justify-center text-xs p-1"
-          title="Broadcast"
-          onClick={() => setCenterView('broadcasts')}
-        >
-          <Megaphone className="h-3 w-3" />
-          <span className="text-xxs">Front Page & Memes</span>
-        </Button>
-
-        <Button
-          variant="outline"
-          className="flex-1 flex flex-col h-10 items-center justify-center text-xs p-1"
-          title="Mountain"
-          onClick={() => setIsQuadrantsModalOpen(true)}
-        >
-          <Mountain className="h-3 w-3" />
-          <span className="text-xxs">Your Store</span>
-        </Button>
-
-        <Button
-          variant="outline"
-          className="flex-1 flex flex-col h-10 items-center justify-center text-xs p-1"
-          title="Home"
-          onClick={() => {
-            if (!user) {
-              alert("You must be logged in to use this feature.");
-              return;
-            }
-            setIsHomeModalOpen(true);
-          }}
-          disabled={!user}
-        >
-          <Home className="h-3 w-3" />
-          <span className="text-xxs">Home</span>
-        </Button>
-
-        {/* NEW CART BUTTON -TEMPORARILY BEING REPLACED BY ANVIL WITH A COMING SOON SIGN— same style, far right */}
-        <Button
-          variant="outline"
-          className="flex-1 flex flex-col h-10 items-center justify-center text-xs p-1"
-          title="Cart"
-          onClick={() => {}}
-          disabled
-        >
-          <Anvil className="h-3 w-3" />
-          <span className="text-xxs">Coming Soon</span>
-        </Button>
-
-      </div>
-    </div>
-
-    {/* Banner removed safely */}
-  </div>
+  {isMobile && (
+    <nav className="uhub-mobile-navigation" aria-label="Mobile sections">
+      <button type="button" aria-current={mobileSection === 'front' ? 'page' : undefined} onClick={() => { setMobileSection('front'); setCenterView('broadcasts'); setBroadcastView('UnionNews#14'); }}><Megaphone /><span>Front Page</span></button>
+      <button type="button" aria-current={mobileSection === 'stores' ? 'page' : undefined} onClick={() => setMobileSection('stores')}><ShoppingCart /><span>Stores</span></button>
+      <button id="uhub-mobile-coming-soon-footer" type="button" disabled><Anvil /><span>Coming Soon</span></button>
+      <button type="button" aria-current={mobileSection === 'more' ? 'page' : undefined} onClick={() => setMobileSection('more')}><MoreHorizontal /><span>More</span></button>
+    </nav>
+  )}
 
 
 
         {/* Center Section */}
-  <div className="flex-grow flex overflow-hidden" data-profile-main-container style={{ flexDirection: window.innerWidth < 768 ? 'column' : 'row', backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+  <div ref={mobileContentRef} className="uhub-dashboard-main flex-grow flex overflow-hidden" data-profile-main-container style={{ display: isMobile && mobileSection === 'features' ? 'none' : 'flex', flexDirection: isMobile ? 'column' : 'row', backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+  {isMobile && mobileSection === 'more' && <div className="uhub-mobile-more-menu">
+    <h2 className="text-xl font-bold">More</h2>
+  </div>}
   {/* LEFT SECTION - ONLY SHOW IF NOT COLLAPSED */}
-  {!isLeftSectionCollapsed && (
+  {(isMobile ? mobileSection === 'hub' : !isLeftSectionCollapsed) && (
     <>
-      <div id="MainUhubFeatureV001ForMyProfileSettingsCenterLeftSection" className="md:border-r overflow-y-auto p-2 md:p-4 text-white" style={{ width: window.innerWidth < 768 ? '100%' : `${leftWidthDesktop}%`, height: window.innerWidth < 768 ? 'auto' : 'auto', backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+      <div id="MainUhubFeatureV001ForMyProfileSettingsCenterLeftSection" className="md:border-r overflow-y-auto p-2 md:p-4 text-white" style={{ width: isMobile ? '100%' : `${leftWidthDesktop}%`, backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
         <RotatingUnionEventCard />
         <h3 className="text-center font-bold mb-2 md:mb-4 text-xs md:text-base">uHome-Hub:</h3>
         <div className="grid grid-cols-2 gap-1 md:gap-2">
@@ -5151,11 +5199,11 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             );
           })}
         </div>
-        <div className="mt-4"><HeaderProductCarousel /></div>
+        {!isMobile && <div className="mt-4"><HeaderProductCarousel /></div>}
       </div>
       
       {/* LEFT DIVIDER - ONLY SHOW IF LEFT NOT COLLAPSED (DESKTOP ONLY) */}
-{window.innerWidth >= 768 && (
+{!isMobile && (
   <div
     className="w-1 bg-gray-500 hover:bg-orange-400 cursor-col-resize transition-colors active:bg-orange-400"
     onMouseDown={() => setLeftDividerDragging(true)}
@@ -5167,9 +5215,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 
   {/* CENTER SECTION is it this one? */}
   <div id="MainUhubFeatureV001ForMyProfileSettingsCenterSection" className="p-2 md:p-4 overflow-y-auto text-white" style={{ 
-    width: window.innerWidth < 768 ? '100%' : `${centerWidthDesktop}%`,
-       height: window.innerWidth < 768 ? 'auto' : 'auto', 
-    display: 'flex',
+    width: isMobile ? '100%' : `${centerWidthDesktop}%`,
+    display: isMobile && mobileSection !== 'front' ? 'none' : 'flex',
     flexDirection: 'column',
     backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent'
   }}>
@@ -5177,7 +5224,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
   </div>
 
   {/* RIGHT DIVIDER - ONLY SHOW IF RIGHT NOT COLLAPSED */}
-{!isRightSectionCollapsed && window.innerWidth >= 768 && (
+{!isRightSectionCollapsed && !isMobile && (
   <div
     className="w-1 bg-gray-500 hover:bg-orange-400 cursor-col-resize transition-colors active:bg-orange-400"
     onMouseDown={() => setRightDividerDragging(true)}
@@ -5186,13 +5233,17 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 )}
 
   {/* RIGHT SECTION - ONLY SHOW IF NOT COLLAPSED */}
-  {!isRightSectionCollapsed && (
+  {(isMobile ? mobileSection === 'stores' : !isRightSectionCollapsed) && (
     <div id="MainUhubFeatureV001ForMyProfileSettingsCenterRightSection" className="md:border-l overflow-y-auto p-2 md:p-4 text-white" style={{ 
-      width: window.innerWidth < 768 ? '100%' : `${rightWidthDesktop}%`,
-      height: window.innerWidth < 768 ? 'auto' : 'auto',
-      borderTop: window.innerWidth < 768 ? '1px solid #374151' : 'none',
+      width: isMobile ? '100%' : `${rightWidthDesktop}%`,
+      borderTop: isMobile ? '1px solid #374151' : 'none',
       backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent'
     }}>
+      {isMobile && <div className="uhub-mobile-store-actions">
+        <h2 className="text-xl font-bold">Stores</h2>
+        <Button type="button" variant="outline" onClick={() => setIsQuadrantsModalOpen(true)}><Mountain className="mr-2 h-4 w-4" />Browse All Stores</Button>
+      </div>}
+      {isMobile && <div className="uhub-mobile-stores-carousel mb-4"><HeaderProductCarousel /></div>}
       <div className="flex items-center justify-center mb-2 md:mb-4 bg-black uhub-right-store-header">
         <Button variant="ghost" size="icon" className="h-7 w-7 md:h-8 md:w-8 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => navigateCenterRight('left')}><ChevronLeft className="h-4 w-4" /></Button>
         <h3 className="text-center font-bold mx-1 md:mx-2 text-xs md:text-base text-white">{centerRightView.displayName}</h3>
@@ -5207,7 +5258,15 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 </div>
 
           {/* Bottom Section */}
-          <div className="flex border-t md:h-auto h-12">
+          <div role={isMobile ? 'navigation' : undefined} aria-label={isMobile ? 'More options' : undefined} data-mobile-expanded={mobileFooterOpen} className="uhub-dashboard-footer flex border-t md:h-auto h-12">
+            {isMobile && <button type="button" className="uhub-mobile-footer-toggle uhub-mobile-friends-row" disabled={!user} onClick={() => handleTopLeftButtonClick('friends')}>
+              <span>Friends{pendingFriendRequests.length > 0 && <span className="ml-2 text-orange-400">{pendingFriendRequests.length}</span>}</span>
+              <ChevronUp className="h-4 w-4" />
+            </button>}
+            {isMobile && <button type="button" className="uhub-mobile-footer-toggle" aria-expanded={mobileFooterOpen} onClick={() => setMobileFooterOpen(open => !open)}>
+              Social links & promotions
+              {mobileFooterOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </button>}
             <div id="MainUhubFeatureV001ForMyProfileSettingsBottomLeftSection" className="w-[20%] p-1 md:p-2 border-r flex items-center">
               <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => handleSocialNavLeft('left')}><ChevronLeft className="h-4 w-4" /></Button>
               <div className="flex-grow hidden md:grid grid-cols-3 gap-0.5 md:gap-2 place-items-center">
@@ -5218,7 +5277,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                 ))}
               </div>
               <div className="flex-grow md:hidden flex justify-center items-center">
-                {socialLinkPagesLeft[socialPageLeft].slice(0, 1).map(link => (
+                {socialLinkPagesLeft[socialPageLeft].map(link => (
                   <div key={link.id} className="text-2xl">
                     <MainUhubFeatureV001ForSocialIcon href={link.href}>{link.icon}</MainUhubFeatureV001ForSocialIcon>
                   </div>
@@ -5271,7 +5330,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                 ))}
               </div>
               <div className="flex-grow md:hidden flex justify-center items-center">
-                {socialLinkPagesRight[socialPageRight].slice(0, 1).map(link => (
+                {socialLinkPagesRight[socialPageRight].map(link => (
                   <div key={link.id} className="text-2xl">
                     <MainUhubFeatureV001ForSocialIcon href={link.href}>{link.icon}</MainUhubFeatureV001ForSocialIcon>
                   </div>
@@ -5279,10 +5338,18 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               </div>
               <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 p-1 text-white bg-transparent hover:bg-gray-700 hover:text-white" style={{ backgroundColor: 'transparent', color: '#ffffff' }} onClick={() => handleSocialNavRight('right')}><ChevronRight className="h-4 w-4" /></Button>
             </div>
+            {isMobile && <button type="button" className="uhub-mobile-footer-toggle uhub-mobile-close-row" onClick={onClose}>
+              Close uHub
+              <X className="h-4 w-4" />
+            </button>}
           </div>
         </div>
 
       
+        {isMobile && mobileAboutOpen && <SitePageModal pageKey="about" isAdmin={user?.is_high_high_high_admin === 1} onClose={() => setMobileAboutOpen(false)} onChanged={() => aboutPage.reload()} introduction={<div className="uhub-mobile-about-introduction">
+          <WelcomeDescription fallback={broadcasts['UnionNews#14'].description} className="text-sm text-white" />
+          <a href={broadcasts['UnionNews#14'].website} target="_blank" rel="noopener noreferrer" className="text-orange-400 underline">Learn how to code (in less than 5min) for Free—over at our GitHub here</a>
+        </div>} />}
         {openSitePage && (
           <SitePageModal
             pageKey={openSitePage}

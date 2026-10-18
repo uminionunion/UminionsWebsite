@@ -119,7 +119,7 @@ export default function ProfilePhotoEditor({ userId, purpose, currentImageUrl, o
 
   return <div className="fixed inset-0 z-[1000005] flex items-center justify-center bg-black/75 p-4" onClick={event => event.stopPropagation()}>
     <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={error ? errorId : undefined} aria-busy={saving}
-      className="w-full max-w-3xl rounded-lg border border-gray-600 bg-black p-5 text-white shadow-xl"
+      className="uhub-profile-photo-editor w-full max-w-3xl rounded-lg border border-gray-600 bg-black p-5 text-white shadow-xl"
       onKeyDown={event => {
         if (event.key === 'Escape') { event.stopPropagation(); if (!savingRef.current) onClose(); }
         if (event.key === 'Tab') {

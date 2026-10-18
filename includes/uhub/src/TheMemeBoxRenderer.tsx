@@ -50,7 +50,7 @@ export function renderTheMemeBox(data: any) {
     <React.StrictMode>
       <div className="uhub-meme-box-stack">
         <TheMemeBoxImplementation001 data={data} postSource="all" embedded showExternalUploadButton hideFooter />
-        <AdditionalMemeBoxes data={data} />
+        <div className="uhub-additional-memes"><AdditionalMemeBoxes data={data} /></div>
       </div>
     </React.StrictMode>
   );
