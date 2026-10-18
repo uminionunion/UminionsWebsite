@@ -5,10 +5,11 @@ import path from 'path';
 import { promises as fs } from 'fs';
 
 const router = Router();
+const dataDirectory = process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data');
 
 // Ensure upload directory exists
 const ensureUploadDir = async () => {
-  const uploadDir = path.join(process.cwd(), 'data', 'uploads');
+  const uploadDir = path.join(dataDirectory, 'uploads');
   try {
     await fs.mkdir(uploadDir, { recursive: true });
   } catch (error) {
@@ -62,7 +63,7 @@ router.post('/', authenticate, async (req, res) => {
     if ((req as any).files && (req as any).files.image) {
       await ensureUploadDir();
       const uploadedFile = (req as any).files.image;
-      const uploadDir = path.join(process.cwd(), 'data', 'uploads');
+      const uploadDir = path.join(dataDirectory, 'uploads');
       const filename = `${Date.now()}-${uploadedFile.name}`;
       const filepath = path.join(uploadDir, filename);
 
@@ -186,7 +187,7 @@ router.patch('/:productId', authenticate, async (req, res) => {
     if ((req as any).files && (req as any).files.image) {
       await ensureUploadDir();
       const uploadedFile = (req as any).files.image;
-      const uploadDir = path.join(process.cwd(), 'data', 'uploads');
+      const uploadDir = path.join(dataDirectory, 'uploads');
       const filename = `${Date.now()}-${uploadedFile.name}`;
       const filepath = path.join(uploadDir, filename);
 
@@ -1235,7 +1236,7 @@ router.post('/user/:userId/stores', authenticate, async (req, res) => {
     if ((req as any).files && (req as any).files.badgeImage) {
       await ensureUploadDir();
       const uploadedFile = (req as any).files.badgeImage;
-      const uploadsDir = path.join(process.cwd(), 'data', 'uploads', 'store-images');
+      const uploadsDir = path.join(dataDirectory, 'uploads', 'store-images');
       await fs.mkdir(uploadsDir, { recursive: true });
       
       const ext = uploadedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
@@ -1252,7 +1253,7 @@ router.post('/user/:userId/stores', authenticate, async (req, res) => {
     if ((req as any).files && (req as any).files.bannerImage) {
       await ensureUploadDir();
       const uploadedFile = (req as any).files.bannerImage;
-      const uploadsDir = path.join(process.cwd(), 'data', 'uploads', 'store-images');
+      const uploadsDir = path.join(dataDirectory, 'uploads', 'store-images');
       await fs.mkdir(uploadsDir, { recursive: true });
       
       const ext = uploadedFile.name.split('.').pop()?.toLowerCase() || 'jpg';
@@ -1516,7 +1517,7 @@ router.put('/user-stores/:userStoreId/:imageType', authenticate, async (req, res
     }
 
     // Create uploads directory
-    const uploadsDir = path.join(process.cwd(), 'data', 'uploads', 'store-images');
+    const uploadsDir = path.join(dataDirectory, 'uploads', 'store-images');
     await fs.mkdir(uploadsDir, { recursive: true });
 
     // Generate filename

@@ -15,8 +15,14 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            set -eu
             cd /docker/uminionclassicv001
             git pull
-            docker compose down
-            docker compose build --no-cache
-            docker compose up -d
+            if [ -f .env.migration ]; then
+              docker compose --env-file .env.migration -f docker-compose.yml -f docker-compose.migration.yml build --no-cache
+              docker compose --env-file .env.migration -f docker-compose.yml -f docker-compose.migration.yml up -d
+            else
+              docker compose down
+              docker compose build --no-cache
+              docker compose up -d
+            fi
