@@ -1,6 +1,32 @@
 # Uminion Website: Architecture and Maintenance Guide
 
-Last updated: 2026-10-16. Start here before changing the website. Keep this README updated alongside changes to navigation, features, APIs, database structure, loading behavior, or deployment. This guide covers the public application and ordinary development workflow.
+Last updated: 2026-10-18. Start here before changing the website. Keep this README updated alongside changes to navigation, features, APIs, database structure, loading behavior, or deployment. This guide covers the public application and ordinary development workflow.
+
+This is the single maintained project guide. [README-ARCHIVE.md](README-ARCHIVE.md) combines the superseded setup and lag guides and is marked OUTDATED throughout its historical sections. Dependency/vendor READMEs are not project instructions and must not be consolidated or deleted. Privileged account tiers, restricted-tool procedures and credentials are deliberately outside both guides.
+
+## Table of contents
+
+- [1. System overview](#1-system-overview)
+- [2. Active entry points](#2-start-with-the-active-entry-points)
+- [3. The 10,000 buttons](#3-the-10000-buttons-where-and-how-to-modify-them)
+- [4. Feature-to-file map](#4-feature-to-file-map)
+  - [Mobile dashboard and More rows](#approved-mobile-dashboard-branchexpansion001)
+- [5. API and persistent storage](#5-api-and-persistent-storage)
+- [6. Pantry Finder and SQL data](#6-pantry-finder-and-its-sql-data)
+- [7. Loading and performance](#7-loading-and-performance-preserve-these-boundaries)
+  - [Chat loading indicators](#chat-loading-indicators)
+- [8. Build, deployment and validation](#8-build-deployment-and-validation)
+  - [Meme uploads and sound](#meme-uploads-and-independent-sound)
+  - [Profile, cover and Photo Library](#profile-cover-and-photo-library-lifecycle)
+  - [Input protection and sanitation](#input-protection-and-upload-sanitization)
+  - [HTTP 500s and schema compatibility](#reported-http-500-errors-and-schema-compatibility)
+- [9. Maintenance rules](#9-maintenance-rules-for-future-changes)
+  - [Dialog integration](#dialog-integration-and-documentation-baseline-2026-10-16)
+  - [Saved image collections and startup refresh](#saved-image-collections-and-startup-refresh)
+- [10. Navigation and route tracing](#10-navigation-and-route-tracing)
+- [11. Patching, rebuilding and safe delivery](#11-patching-rebuilding-and-safe-delivery)
+- [12. Troubleshooting and acceptance checklist](#12-troubleshooting-and-acceptance-checklist)
+- [Outdated archive](README-ARCHIVE.md)
 
 ## 1. System overview
 
@@ -66,6 +92,29 @@ For a button change:
 - Rebuild uHub and update this section if the navigation architecture changes.
 
 ## 4. Feature-to-file map
+
+### Approved mobile dashboard: branchExpansion001
+
+The approved Testing000 mobile dashboard has been ported to Testing002. The reactive breakpoint is 767px and below; desktop keeps its existing layout and features. Layout and navigation are in [MainUhubFeatureV001ForMyProfileModal.tsx](includes/uhub/src/features/profile/MainUhubFeatureV001ForMyProfileModal.tsx), with mobile rules in [index.css](includes/uhub/src/index.css).
+
+- The Uminion Union title opens mobile About Us, including the welcome/rally description, coding link, and saved About Us content with applicable administrator editing controls. Login/signup remain beneath the title; the site sound control occupies the top right. The separate welcome/exclamation row and mobile header X are removed. Close uHub is under More.
+- Above the cover, shortcuts are Profile (the existing login-gated Home/profile surface), uHome-Hub, UnionRadio, a disabled Coming Soon anvil, and 10,000. The supplied [10,000-button logo](includes/uhub/public/mobile-custom-buttons-logo.png) replaces its former ellipsis. Footer order is Front Page, Stores, a second disabled Coming Soon anvil, and More. The two placeholder anvils have separate IDs and no click actions; the footer placeholder is visibly dimmed.
+- The top 10,000 shortcut is the only mobile entry to the customizable-button page. It uses the existing shared page/slot map, actions, permissions, scrolling and page controls (1-715), not a duplicate grid or modal. Its heading is "Your 10,000 Customizable-Buttons:" with only the orange coding link centered underneath. More has three matching full-width rows immediately above the bottom navigation: Friends, Social links & promotions, then Close uHub. Friends retains its existing center-view action, pending-request count and logged-out disabled state, with an upward chevron at the right. Social links & promotions retains its expand/collapse behavior and inserts its contents between that row and Close uHub. Close uHub has an X at the right and uses the original close callback. These rows share background, padding, typography and touch-target sizing; the former outlined buttons below the More heading are removed.
+- On the front page, World Feed and the post composer replace the anchor image in the carousel row's left third. The adjacent carousel uses the other two thirds. The collapsed feed is 192px high; clicking, typing or keyboard interaction expands it to two thirds of the row width and 384px high, while the adjacent carousel uses the remaining third. Clicking or focusing outside collapses the feed. Both surfaces remain within their own columns; the old lower feed is not duplicated.
+- Unsent mobile post text lives only in page-layout React state in [App.tsx](includes/uhub/src/App.tsx), passed into the main hub. Collapsing the feed, changing mobile sections, switching broadcasts, closing/reopening uHub, or opening About Us does not submit or discard it. Refresh/page teardown, account logout/change, or a successful submission clears it; failed submissions keep the draft and show an error. There is no draft database route or browser-storage persistence.
+- The mobile MemeBox has Previous/Upload at the upper left, Upvote/Comments at the lower left, Next/User Posts at the upper right, and Downvote/Favorites at the lower right. Existing media rendering, counts, zoom, favorite actions and independent sound behavior are reused. Additional MemeBoxes and the shared credit are hidden only on mobile. The separate creator/alternate-content strip is commented out with a restoration note; desktop keeps its original strip.
+- On mobile UnionNews#14 (Front Page) only, the broadcast title and its previous/next arrows appear below the MemeBox instead of above the feed/carousel. Other broadcasts and desktop retain navigation at the top. Broadcast hooks execute before alternate-view returns to avoid hook-order errors when changing broadcasts.
+- Stores keeps Browse All Stores with its mountain icon. The left managed product carousel moves from the bottom of mobile uHome-Hub to below the Stores heading/browse controls and above the selected regional store (initially UnionSAM#20). It uses the same saved left-carousel collection and scheduler; desktop placement is unchanged. The numbered uHome-Hub/chat section and unread indicators are available through the top shortcut.
+- Mobile profile dialogs, the photo editor, Home/profile and store-browser grids have responsive sizing, scrolling and overflow rules. Existing explicit-save photo behavior, Photo Library ownership/lazy loading and resource cleanup remain intact.
+- The prior focused World Feed SQL-injection review found no vulnerability in the submission/read path. The identical Testing002 [social-posts.ts](uhub-api/server/social-posts.ts) inserts post text through Kysely `.values(...)` and applies feed cursors through query-builder comparisons, not SQL string concatenation. Type/length validation supplements parameterization; SQL-looking punctuation remains ordinary post data. This is not a whole-application security audit.
+
+Build with `npm.cmd run build` in `includes/uhub`. The public logo is copied into the build alongside JS/CSS and must be deployed too. [Dockerfile](Dockerfile) copies the complete uHub build directory. A disk build alone does not refresh a running WordPress container; publishing/rebuilding a live environment remains a separate deployment step. This frontend port does not require API/schema changes, database migrations, or copying Testing000 data, uploads, dependencies, credentials or preview configuration.
+
+Regression coverage is in [mobile-dashboard.test.mjs](uhub-api/tests/mobile-dashboard.test.mjs) alongside the existing media/profile tests. Check 320/390/430px mobile layouts and 1440px desktop, visitor/member navigation, both disabled placeholders, feature pagination/actions, exact feed dimensions, draft retention/reset rules, carousel placement, photo editing and library cleanup. Validate against Testing002's own type-check baseline; do not assume its existing unrelated errors are fixed by this mobile port.
+
+Testing002 mobile verification (2026-10-18): all 20 targeted mobile/media/profile/lifecycle tests passed, and the frontend production build passed. Browser checks loaded Testing002's built assets into the existing local preview page with fixture accounts and intercepted mutations; 320/390/430px mobile, 1440px desktop, navigation, feature scrolling, exact feed geometry, draft lifecycle, Stores placement, profile/editor overflow and runtime-error checks passed without real account/post writes. The full frontend compiler reported the same 40 pre-existing diagnostics before and after the initial port (no new messages, ignoring shifted line positions). Initial source/test/logo parity and unchanged non-port files were checked; Testing002's subsequent More-row refinement is an intentional difference from Testing000. No production deployment, API restart or replacement of the Testing000 preview assets was performed.
+
+The subsequent More-row refinement passed the same 20 targeted tests and production build. Browser checks additionally verified identical row background/padding/type sizing and full-width alignment, 44px-or-larger touch targets, row order at all three mobile widths, social expansion/collapse, the member Friends view, visitor disabling and Close uHub. The compiler still reports only the same 40 baseline diagnostics. Both consolidated guides' local links and contents anchors resolve; only the two project README files remain outside vendor dependencies.
 
 Paths below are under [includes/uhub/src](includes/uhub/src), unless a backend is named.
 
@@ -241,3 +290,107 @@ This README is the maintained architecture reference. Update it whenever impleme
 Display and editing use the same `/api/carousels/:slot/items` records. Locations start empty until their SQL-backed response arrives, without flashing outdated hard-coded entries. A successful empty response stays empty instead of restoring deleted content. Limits include all entries: 10 per collection, or 49 for the center. While the original default-cover entry exists, a member's own cover is substituted for that entry; deleting or replacing it removes that substitution. Collection saves delete removed rows before inserting new rows so new uploads survive the replacement transaction. Static source assets are not deleted from disk when their entries are removed.
 
 [main.tsx](includes/uhub/src/main.tsx) schedules one full-page reload after 6000 ms on the first application load per tab session. It writes `uhub:first-load-refresh:v1` to `sessionStorage` before scheduling, preventing a loop or another automatic reload on manual refresh. The timer does not wait for login or image loading. If session storage is unavailable, it logs an error and does not schedule an unsafe repeating refresh. No visible countdown is added.
+
+## 10. Navigation and route tracing
+
+Use these search terms within the [main hub](includes/uhub/src/features/profile/MainUhubFeatureV001ForMyProfileModal.tsx) rather than relying on line numbers:
+
+| Surface / state | Search terms and behavior |
+|---|---|
+| Selected center feature | `centerView`, `broadcastView`, `renderCenterContent`, `BroadcastView` |
+| Front page / radio / uploads | `UnionNews#14`, `UnionRadio#15`, `MyBroadcasts`, `UnionRadioPlayer` |
+| Embedded tools | `PantryFinderBroadcastView`, `UmiMatchView`, `MillionPixelView` |
+| Right store selection | `ALL_STORES`, `centerRightView`; UnionSAM#20 is the union/users-store surface, UnionPolitic#19 includes filtering |
+| Desktop layout widths | `leftWidthDesktop`, `centerWidthDesktop`, `rightWidthDesktop` and divider handlers |
+| Mobile routing | `useMobileViewport`, `mobileSection`, `mobileContentRef`, `mobileFooterOpen`; breakpoint changes must not violate hook ordering |
+| Saved image displays | `RotatingUnionEventCard`, `ManagedProductCarousel`, `HeaderProductCarousel`, `FooterPosterCarousel`, `CoverImageRotator`, `AnchorRotator` |
+| Informational content | `SitePageModal`, `useSitePage`, `WelcomeDescription`; public requests use `/api/site-pages/about`, `/api/site-pages/terms`, `/api/site-pages/welcome` |
+| Footer links | `socialLinksLeft`, `socialLinksRight`, `socialLinkPagesLeft`, `socialLinkPagesRight` |
+
+The named center states and numbered buttons are not interchangeable: trace a click through state updates into rendering, then trace the rendered component's fetch URL into its route. Avoid copying a new action into several unrelated layouts when a shared handler already owns the behavior.
+
+### Backend route map
+
+Paths are interpreted relative to route mounts in [server/index.ts](uhub-api/server/index.ts); do not add `/api` twice.
+
+| Module | Responsibility |
+|---|---|
+| [auth.ts](uhub-api/server/auth.ts) | Signup/login/logout, current account and account lookup; current photo uploads belong to the photo routes |
+| [friends.ts](uhub-api/server/friends.ts) | Requests, acceptance/rejection, block/report behavior |
+| [products.ts](uhub-api/server/products.ts) | Stores/products, user stores, cart/looking-for, trash/restore |
+| [memes.ts](uhub-api/server/memes.ts) | MemeBox posts, media, comments, votes and favorites |
+| [user-photos.ts](uhub-api/server/user-photos.ts) | Library metadata, thumbnails, photo upload, captions, deletion and current selections |
+| [social-posts.ts](uhub-api/server/social-posts.ts) | Post creation, privacy, world/friends/union feeds |
+| [broadcasts.ts](uhub-api/server/broadcasts.ts) | Broadcasts, episodes, schedule/calendar, media, archives, managed carousels and site pages |
+| [chat.ts](uhub-api/server/chat.ts) | Socket.IO rooms, messages, archives and unread state |
+| [umimatch.ts](uhub-api/server/umimatch.ts), [million-pixel.ts](uhub-api/server/million-pixel.ts) | Their respective application features |
+| [server/index.ts](uhub-api/server/index.ts) | Remaining upload/gallery/account helpers and service wiring |
+
+Use [db-types.ts](uhub-api/server/db-types.ts) and each dedicated database module for actual column/table names; older docs used conceptual names and are not SQL migration specifications. Existing public reads worth tracing include `/api/carousels/:slot/items`, `/api/episodes/scheduled`, `/api/episodes/calendar`, `/api/feed/world`, `/api/feed/friends` and `/api/feed/union-announcements`.
+
+## 11. Patching, rebuilding and safe delivery
+
+### Before editing
+
+1. Establish the intended workspace and inspect its existing diff. Testing002 and Testing000 are independent workspaces: do not copy an entire folder to port a feature.
+2. Identify active imports, shared components, routes, database ownership and generated assets using the maps above. Read surrounding code and existing tests before changing it.
+3. Capture relevant validation baselines. If a migration is involved, arrange a consistent backup of all affected SQLite files and uploaded media before startup; do not run real startup scripts simply to test a frontend change.
+4. Preserve environment files, secrets, dependency lockfiles unless intentionally changing dependencies, local data, production uploads, private mounts, external networks and database ownership. Do not print or duplicate credential values into documentation.
+
+### Local validation commands
+
+Run these from the project root in PowerShell. They build/test local files, not running services:
+
+```powershell
+Set-Location .\includes\uhub
+npm.cmd run build
+node ..\..\uhub-api\node_modules\typescript\bin\tsc --noEmit --pretty false
+Set-Location ..\..\uhub-api
+node .\node_modules\typescript\bin\tsc --project tsconfig.server.json --noEmit --pretty false
+node --experimental-vm-modules --test tests\mobile-dashboard.test.mjs tests\meme-media.test.mjs tests\profile-editor.test.mjs tests\photo-library-lifecycle.test.mjs
+```
+
+For backend/storage/media changes, run `npm.cmd test` in [uhub-api](uhub-api), not just the mobile selectors. Use `npm.cmd run build` there to emit server output, while separately requiring an unmasked compiler check. For standalone pantry changes, build [includes/pantry-finder](includes/pantry-finder); shared pantry components also require rebuilding uHub. For pantry backend changes, build [pantry-api](pantry-api). Install/restore dependencies only when required, with the package's existing manifest and lockfile; do not copy another workspace's dependency directory.
+
+The mobile selectors currently cover 20 tests; counts will change as tests are added. A passing Vite build does not erase the known full-frontend TypeScript baseline. Compare diagnostics by file/code/message, allowing line shifts, and fix any newly introduced failures. `git diff --check` checks patch whitespace. Validate README local paths and table-of-contents anchors after documentation edits.
+
+### Generated assets and deployment boundaries
+
+- Build the source; do not manually edit [includes/uhub/dist](includes/uhub/dist). Include generated JS, CSS and public assets in delivery together, including the mobile custom-button logo. Check the generated output actually changed where intended.
+- [Dockerfile](Dockerfile) copies existing frontend build output; it does not run the frontend Vite build. Rebuilding only WordPress with stale local output ships stale UI.
+- [uhub-api/Dockerfile](uhub-api/Dockerfile) compiles the API and installs FFmpeg. A profile/media backend upgrade needs that rebuilt API image, not simply a frontend refresh. The normal service start runs schema initialization before the server.
+- [docker-compose.yml](docker-compose.yml) expects an external network, external WordPress MySQL and host-specific private bind mounts. It is not a portable clean-machine development launcher. Inspect the intended host's configuration before any Compose operation.
+- [deploy.yml](.github/workflows/deploy.yml) runs on pushes to `main`, pulls the VPS repository, brings Compose down, rebuilds without cache and starts it again. This path involves downtime; plan it rather than treating a push as harmless storage. Its current `down` command does not remove volumes; never add volume deletion to routine delivery.
+- [AutoDeployWebsite.yml](.github/workflows/AutoDeployWebsite.yml) is a separate FTP workflow on `main` and manual dispatch. It uploads selected PHP/includes, existing uHub dist output and the child theme; it is not an API image rebuild. Inspect both workflows before pushing, since both can trigger from the same branch.
+- Rebuilding disk assets alone does not update an existing container volume or a browser already running old code. Verify the intended environment's served asset bytes and browser behavior after an authorized deployment. Do not overwrite Testing000's local preview just to inspect Testing002; asset interception with fixture accounts can validate a Testing002 build without deploying it.
+
+### Data-aware rollback
+
+Keep the previous application build and a consistent pre-migration backup. A frontend-only rollback can restore its prior source/build pair without replacing databases. A backend/schema rollback needs a reviewed compatibility plan and matching data/media backup; do not restore only the main database while leaving dedicated photo/MemeBox databases out of sync. Never use archive prose as an automatic rollback script.
+
+## 12. Troubleshooting and acceptance checklist
+
+| Symptom | Check before changing code |
+|---|---|
+| UI still looks old after a build | Correct workspace, build success, generated timestamps/content, deployed destination/volume, served JS/CSS/logo, browser cache and open-page reload |
+| `/api/auth/me` returns 401 | Expected visitor state versus expired login; distinguish it from 500/database failures |
+| Store/gallery/unread request returns 500 | Exact request URL, API logs, deployed server build, `DATA_DIRECTORY`, normal initialization and schema repair; do not hide failure behind empty success |
+| New profile picture is delayed or reverts | Successful explicit Save, auth response URLs, photo-change event subscription, current selections in photo DB and compatibility URLs; do not reintroduce forced reloads |
+| Empty library or persistent spinner | Metadata/thumbnail HTTP status, ownership, mount lifecycle, abort cleanup and failed requests; do not fetch all users' libraries at startup |
+| MP4 upload fails | Content validation, FFmpeg availability/path, API image version, supported container/codecs, disk space and proxy/body/inactivity limits |
+| Images stall or transitions hitch | General versus product queue, retained cache exceptions, scheduler timeout and request/decode/render costs; measure before changing concurrency |
+| Pantry map is empty or unstyled | Selected feature, three-second fetch delay, filter/batch state, API response, Leaflet styles and shared Tailwind scanning |
+| Switching radio/front page crashes | Hooks must run before alternate-view returns; check browser page errors and resize transitions |
+| Draft disappears unexpectedly | Account-change reset, refresh/session teardown, successful submission versus a failed request; never persist a draft to SQL just to preserve collapse state |
+
+Acceptance after a mobile change:
+
+1. Check 320/390/430px, portrait scrolling, 1440px desktop and crossing the 767/768px breakpoint in both directions. Desktop should retain its intended layout/actions.
+2. Test visitor and fixture-member paths; both Coming Soon placeholders stay disabled. Confirm feature pagination/scroll/actions and About/title navigation.
+3. In More, verify the matching Friends / Social links & promotions / Close uHub stack above navigation, pending-count/visitor gating, expanded social contents, Friends view and original close action. No duplicated controls should remain under the heading.
+4. Check exact feed widths/heights, outside-click/focus collapse and unsent draft retention across view changes/close/reopen; failed submission keeps text, success clears it, and refresh/logout clears it.
+5. Check MemeBox rails, broadcast navigation placement, Stores carousel order, profile/editor overflow, explicit-save and lazy-library request/object-URL cleanup.
+6. Intercept writes or use disposable fixtures for browser automation; never change real accounts/posts as a side effect of acceptance testing. Inspect console/network and record runtime errors.
+7. Record build/test/type-check results and remaining limits. Real production transfers of 25/50 GiB, deployment and production acceptance are separate work; small/metadata boundary fixtures are not equivalent evidence.
+
+Keep this guide current after changes. Only [README-ARCHIVE.md](README-ARCHIVE.md) owns outdated setup/experiment history; do not create competing current guides.

@@ -1675,14 +1675,14 @@ const renderNavbar = () => {
 
     if (!displayPost) {
       return (
-        <div style={styles.postViewerContainer}>
+        <div className="meme-post-viewer" style={styles.postViewerContainer}>
           <div style={styles.emptyState}>No posts available</div>
         </div>
       );
     }
 
     return (
-      <div style={styles.postViewerContainer} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div className="meme-post-viewer" style={styles.postViewerContainer} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {/* ✅ NEW: Stacked images */}
         <div style={styles.imagesStack}>
           {displayPost.images.map((image, idx) => (
@@ -1745,7 +1745,7 @@ const renderNavbar = () => {
   )}
 </div>
 
-<div style={styles.voteSection}>
+<div className="meme-desktop-votes" style={styles.voteSection}>
   <div className="meme-vote-item" style={{ ...styles.voteCount, cursor: "pointer" }} onClick={(event) => { event.stopPropagation(); handleUpvote(); }} role="button" tabIndex={0}>
     <div style={{ ...styles.voteNumber, pointerEvents: "none" }}>{EMOJIS.UPVOTE_INITIAL} {displayPost.upvotes}</div>
     <div className="meme-vote-label-fit" style={styles.voteLabel}>Upvotes</div>
@@ -1756,7 +1756,7 @@ const renderNavbar = () => {
   </div>
 </div>
 
-<div style={styles.voteSection}>
+<div className="meme-desktop-votes" style={styles.voteSection}>
   {isMultiColumnLayout ? (
     <>
       <div
@@ -2502,6 +2502,7 @@ const renderUserProfileModal = () => {
 
   return (
     <div
+      className={embedded ? "meme-embedded" : undefined}
       style={styles.container}
       onMouseEnter={() => setIsMemeBoxHovered(true)}
       onMouseLeave={() => setIsMemeBoxHovered(false)}
@@ -2557,8 +2558,24 @@ const renderUserProfileModal = () => {
           </button>
         </div>
       )}
-      {renderNavbar()}
-      {renderPostViewer()}
+      <div className="meme-desktop-navbar">{renderNavbar()}</div>
+      <div className="meme-mobile-shell">
+        {embedded && <div className="meme-mobile-rail meme-mobile-rail-left">
+          <button type="button" aria-label="Previous meme" onClick={showPreviousPost}><img src="/EmojisForUminionWebsite/GreenEmoji013ArrowPreviousPagePost.png" alt="" /><span>Prev</span></button>
+          <button type="button" aria-label="Upload meme" onClick={openUploadDialog}><img src="/EmojisForUminionWebsite/GreenEmoji010UploadIcon.png" alt="" /><span>Upload</span></button>
+          <div className="meme-mobile-rail-spacer" />
+          <button type="button" aria-label="Upvote meme" disabled={!displayPost} onClick={handleUpvote}><span>{EMOJIS.UPVOTE_INITIAL}</span><span>Upvote {displayPost?.upvotes ?? 0}</span></button>
+          <button type="button" aria-label="Meme comments" disabled={!displayPost} onClick={openViewCommentsDialog}><span>{EMOJIS.COMMENT_INITIAL}</span><span>Comment {displayPost?.comments.length ?? 0}</span></button>
+        </div>}
+        {renderPostViewer()}
+        {embedded && <div className="meme-mobile-rail meme-mobile-rail-right">
+          <button type="button" aria-label="Next meme" onClick={showNextPost}><img src="/EmojisForUminionWebsite/GreenEmoji012ArrowNextPagePost.png" alt="" /><span>Next</span></button>
+          <button type="button" aria-label="Meme user posts" onClick={handlePageNavigation}><img src="/EmojisForUminionWebsite/GreenEmoji007UserPost.png" alt="" /><span>{getPageTitle()}</span></button>
+          <div className="meme-mobile-rail-spacer" />
+          <button type="button" aria-label="Downvote meme" disabled={!displayPost} onClick={handleDownvote}><span>{EMOJIS.DOWNVOTE_INITIAL}</span><span>Downvote {displayPost?.downvotes ?? 0}</span></button>
+          <button type="button" aria-label="Meme favorites" aria-pressed={!!displayPost?.isFavorited} disabled={!displayPost} onClick={handleFavoriteButtonClick} onDoubleClick={handleFavoriteButtonDoubleClick}><img src="/EmojisForUminionWebsite/GreenEmoji001ThumbsUpFavorites.png" alt="" /><span>Favorites</span></button>
+        </div>}
+      </div>
       {renderZoomModal()}
       {!hideFooter && renderFooter()}
       {renderUploadDialog()}

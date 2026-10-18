@@ -1,8 +1,17 @@
-> **OUTDATED - reviewed 2026-10-16:** This earlier guide contains superseded deployment and loading descriptions. In particular, the carousel cache has retention exceptions, the scheduler advances even after its four-second wait expires, and FTP and SSH are separate deployment paths. Use [README.md](README.md) as the maintained architecture reference. Keep this file for historical context.
+> **OUTDATED - ARCHIVE ONLY. Consolidated 2026-10-18.** All material below is historical, not current instructions. Use [README.md](README.md) for current architecture, patching, validation and deployment. Do not restore old behavior merely because it appears here. Privileged-tool details and credentials are intentionally excluded.
 
-# How Everything Is Set Up (Developer and AI Guide)
+# Outdated Documentation Archive
 
-Keep this file updated as the site grows. It explains what each part of the site is, where its code lives, and how to change it. Line numbers are approximate and drift, so search for the named function or constant instead.
+## Archive contents
+
+- [OUTDATED: How Everything Is Set Up](#outdated-how-everything-is-set-up)
+- [OUTDATED: How We Have Been Tackling Lag](#outdated-how-we-have-been-tackling-lag)
+
+The former separate guides have been merged here, not discarded. Their old filename references are historical labels. Corrections to current behavior belong in the maintained guide, not in these archived experiment notes.
+
+## OUTDATED: How Everything Is Set Up
+
+Original source: `HowEverythingIsSetUp.md`, reviewed 2026-10-16. This earlier guide contains superseded deployment and loading descriptions. In particular, the carousel cache has retention exceptions, the scheduler advances even after its four-second wait expires, and FTP and SSH are separate deployment paths. The historical maintenance instructions below are not instructions to keep this archived section current.
 
 Scope: this guide covers the public and logged-in member experience. Admin-level tools are deliberately not documented here.
 
@@ -162,7 +171,7 @@ Users, Friends, BlockedUsers, Reports, Messages, UserChatrooms, ChatroomUnreadSt
 - "Running for Office?" and the candidate/politician checkboxes are disabled and commented out (look for the retirement note). Politicians and candidates are not requested while they are off.
 - The Leaflet stylesheet and the Tailwind scan setting (`tailwind.config.js`) must stay in place or the map will not render.
 
-## 10. Lag control (summary; see `HowWeveBeenTacklingOnLag.md` for the full story)
+## 10. Lag control (OUTDATED summary; see the lag archive below)
 
 - **Image queue** (`lib/image-load-queue.ts`): at most 4 images load at once. Priorities: critical (avatar, watermark, cover), carousel, normal. A bounded cache keeps decoded images (40 images / 48 MB). `QueuedImage` shows the previous image while the next loads.
 - **Carousel scheduler** (`lib/carousel-rotation-queue.ts`): carousels have no timers of their own. One scheduler, on a 5-second clock, visits them one at a time, loads a random next image into the cache, rotates the carousel to it, then moves on. Every carousel image is retained in the cache up front. Do not remove the carousel caches; doing so brought lag back.
@@ -193,3 +202,102 @@ These API calls currently return 500 and are handled separately: `/api/broadcast
 - When several layouts repeat similar lines, include extra surrounding context so edits hit the right one.
 - Commented-out code is kept on purpose, with a date and a short reason, so it can be brought back.
 - Add new routes in the matching router file and a table type in `db-types.ts`; the SQLite file is created from `scripts/init-data.cjs` and the seeds.
+
+## OUTDATED: How We Have Been Tackling Lag
+
+Original source: `HowWeveBeenTacklingOnLag.md`, written 2026-10-16. **OUTDATED IN PART:** Preserve this experiment history, but use [README.md](README.md) for current implementation details. The latest experiment replaces auto-changing carousel displays with single-image placeholders: `useQueuedImageSlot` removes the old image before the shared queue fills that location, preserving random choice, caches and five-second spacing. Earlier claims below are not guarantees: retained images may exceed cache targets; the scheduler advances the selected entry on timeout/failure rather than skipping the slow image; store slices allow in-flight loads to finish; and user observations do not establish a measured root cause.
+
+### Historical introduction
+
+This explained the lag observed, suspected causes, changes tried, failed experiments and the then-current restoration state. Day-to-day sources: uHub (`includes/uhub`), plus the `uhub-api` backend.
+
+### 1. What the lag was (historical claims)
+
+Visitors saw the page freeze or stutter, mostly right after it opened and again whenever images changed. The causes, in the order reported:
+
+1. **Startup request flood.** When the uHub modal opened, it fetched products for stores 1-30 one after another, plus `/api/products/everything/all`, whether or not anyone opened those stores.
+2. **Everything loaded at once.** Dozens of images (carousels, covers, avatar, store images) started downloading together and fought for the network and the main thread.
+3. **Six MemeBoxes mounted at once.** Only MemeBox 1 is needed at start.
+4. **Polling.** UnionRadio asked the server every 15 seconds if an episode was due, the calendar refreshed every 30 seconds, and an old WordPress video loop re-checked a schedule over and over.
+5. **Retry loops.** Union Store and Users' Stores kept retrying failed image and product loads, which kept the page busy.
+6. **Carousels all changing at once.** Several carousels each ran their own timer (3 to 6 seconds), so images changed together and on slow connections the page stuttered each time.
+
+### 2. What we did, in order (OUTDATED experiment history)
+
+#### Round 1-3: stop the startup flood (Testing000 first, then ported)
+
+- Commented out the startup fetch of stores 1-30 and Everything. Products now load only when a store is opened (the old code is kept commented so it can be turned back on for diagnosis).
+- Added a shared image queue (`includes/uhub/src/lib/image-load-queue.ts`) plus the `QueuedImage` component. Images are loaded a few at a time, in priority order: **critical** (avatar, watermark, cover) first, **carousel** next, **normal** last. Product and MemeBox images stay outside this queue.
+- Decoded images are kept in an LRU cache (max 40 images / 48 MB) so rotating images do not blank out or reload.
+- MemeBox 1 stays mounted; MemeBoxes 2-6 mount only when the dropdown is clicked and unmount when hidden.
+- Union Store and Users' Stores got their own cache and queue (`includes/uhub/src/lib/product-image-cache.ts`), with spinners instead of retry or "Load Everything" buttons. If no new images arrive, they stop retrying and the spinner stays on.
+- The 401 from `/api/auth/me` is logged as "This Means No User is Logged In" (normal for visitors, not an error).
+
+#### Round 4-7: stop the polling
+
+- UnionRadio fetches the next scheduled episode once and sets one timer for its `scheduled_at` time (`next_scheduled_at` field). It refetches only on the `uhub:episodes-changed` event (when MyBroadcasts saves, edits or deletes) and when the browser tab regains focus.
+- The old 15-second and 30-second pollers and the WordPress video loop are commented out with retirement dates.
+
+#### Round 8: the cache removal that FAILED
+
+We removed the caches for the top-left, bottom-left and right carousels because they seemed slow. The lag came straight back in production. The original report attributed the improvement to caching and restored it exactly as before. This observation is not a measured browser performance profile.
+
+#### Queue tuning that did not help
+
+- Raised `MAX_CONCURRENT_IMAGE_LOADS` from 3 to 7: did not work. The chosen setting was **4**.
+- Raising the carousel images to `critical` priority to make them "faster": caused more lag. Reverted. Carousels use `carousel` priority again. (Critical remains for the center anchor, bottom-left promo logo, avatar and cover banner.)
+- Preloading the next carousel image before showing it: caused lag. Removed.
+
+#### Carousel rotation queue (historical implementation, superseded details)
+
+File: `includes/uhub/src/lib/carousel-rotation-queue.ts`. Carousels no longer had their own timers. One scheduler ran on a single 5-second clock:
+
+- It visited one carousel at a time in a loop: top-left, bottom-left, right, center, cover(s), bottom promo.
+- Each visit picked a **random** other image from that carousel, loaded it into the cache first, then rotated the carousel to it.
+- It waited 5 seconds, then moved to the next carousel.
+- Every carousel's images were retained in the cache up front (`retainQueuedImages`).
+- A hovered carousel was skipped. The old guide claimed an image slower than 4 seconds was skipped; this was inaccurate: the selected entry advances on timeout/failure.
+- Each carousel instance got its own ID (the top and bottom covers share a name).
+- The old per-carousel timers were commented out with 10/16/26 notes. The bottom promo's 7-second timer was retired too.
+
+#### Union Store and Users' Stores queue (historical description)
+
+In `product-image-cache.ts`:
+
+- One store at a time, 2-second turns: Union Store first, then Users' Stores, alternating.
+- An unfinished store goes to the back of the queue and keeps taking turns until all of its images are in.
+- Each store may have at most 2 entries in the queue at once (extra images join an existing entry).
+- Before a return turn, if the last turn put up no new images, it stops retrying and the spinner stays on.
+
+### 3. The then-current restoration state (OUTDATED reference, not rollback instructions)
+
+| Setting | Value | Historical file |
+|---|---|---|
+| `MAX_CONCURRENT_IMAGE_LOADS` | 4 | `lib/image-load-queue.ts` |
+| Decoded image cache | 40 images / 48 MB | `lib/image-load-queue.ts` |
+| Carousel scheduler step | 5000 ms, load timeout 4000 ms | `lib/carousel-rotation-queue.ts` |
+| Store turn length | 2000 ms, max 2 entries per store | `lib/product-image-cache.ts` |
+| Product concurrent loads | 3 | `lib/product-image-cache.ts` |
+| Carousel image priority | `carousel` (not `critical`) | `MainUhubFeatureV001ForMyProfileModal.tsx` |
+| Startup store fan-out | commented out | `MainUhubFeatureV001ForMyProfileModal.tsx` |
+
+The old guide described `retainQueuedImages` and `QueuedImage` with `keepPreviousWhileLoading`, driven by `useQueuedCarouselRotation`. That display description has been superseded by the single-placeholder behavior in the current guide.
+
+The original rebuild reminder was `npm run build` in `includes/uhub` after frontend changes and in `uhub-api` after API changes, including generated frontend assets in delivery. Current validation and deployment requirements are in [README.md](README.md).
+
+### 4. Known remaining lag (historical suggestions, not approved changes)
+
+A small hitch could still happen at the moment an image or carousel transitioned. Suggested experiments, one at a time:
+
+1. Change the scheduler step (5 seconds) or the load timeout (4 seconds).
+2. Change the image queue limit (4, try 5).
+3. Cap how many images each carousel retains instead of all of them.
+4. Skip the visit when a carousel is offscreen.
+
+### 5. Things to avoid (historical lessons)
+
+- Do not remove the carousel caches without a separately measured and reviewed replacement.
+- Do not raise carousel images to `critical` priority.
+- Do not preload the next carousel image before the scheduler's turn.
+- Do not bring back the startup fetch of stores 1-30 / Everything, or the 15-second / 30-second pollers.
+- The then-known 500s (`union-news-14/images`, `products/store/0`, `products/everything/all`, `chat/unread-status`, `products/user/1/stores`) were handled separately from lag work. Subsequent startup-schema repairs and validation are documented in the current guide; this historical list is not a statement that they still fail.

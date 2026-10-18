@@ -237,7 +237,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
   return (
     
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0">
+      <DialogContent className="uhub-mobile-profile-dialog max-w-7xl h-[90vh] flex flex-col p-0">
        <DialogHeader className="flex items-center justify-between pr-4">
   <div className="flex items-center gap-2">
     <DialogTitle>{user.username}'s Profile</DialogTitle>
@@ -246,7 +246,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
   <ShareProfileButton userId={user.id} username={user.username} />
 </DialogHeader>
         <div className="flex-grow flex flex-col overflow-hidden">
-          <div className="flex p-4 border-b">
+          <div className="uhub-profile-summary flex p-4 border-b">
             {/* AFTER - Add Edit button only for own profile */}
 <div className="w-1/5 pr-4 space-y-2">
               <Button variant="outline" className="w-full justify-start" onClick={toggleFriendsList} aria-expanded={isFriendsListOpen}>
@@ -320,7 +320,7 @@ const MainUhubFeatureV001ForUserProfileModal: React.FC<MainUhubFeatureV001ForUse
 </div>
           </div>
 
-          <div className="flex-grow min-h-0 flex overflow-hidden">
+          <div className="uhub-profile-columns flex-grow min-h-0 flex overflow-hidden">
             <div className="w-[33%] p-4 border-r overflow-y-auto">
               <h3 className="font-bold mb-4">Products for Sale</h3>
               {isLoadingStores ? (

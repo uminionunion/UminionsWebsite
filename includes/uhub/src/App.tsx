@@ -30,6 +30,7 @@ const MainUhubFeatureV001Layout = () => {
   const dismissLauncherPhotoSuccess = useCallback(() => setLauncherPhotoSuccessOpen(false), []);
   const [footerLauncher, setFooterLauncher] = useState<HTMLElement | null>(null);
   const [bodyAvatar, setBodyAvatar] = useState<HTMLElement | null>(null);
+  const [mobileWorldFeedDraft, setMobileWorldFeedDraft] = useState('');
 
   useEffect(() => {
     const onPhotosChanged = (event: Event) => {
@@ -48,6 +49,7 @@ const MainUhubFeatureV001Layout = () => {
   useEffect(() => {
     setLauncherImageUploadOpen(false);
     setLauncherPhotoSuccessOpen(false);
+    setMobileWorldFeedDraft('');
   }, [user?.id]);
 
   // Handler for badge zoom that works in ANY modal context
@@ -220,6 +222,8 @@ useEffect(() => {
               onClose={() => setProfileModalOpen(false)}
               onOpenAuthModal={handleOpenAuthModal}
               onBadgeZoom={handleBadgeZoom}
+              mobileWorldFeedDraft={mobileWorldFeedDraft}
+              onMobileWorldFeedDraftChange={setMobileWorldFeedDraft}
             />
           )}
         </div>
