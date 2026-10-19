@@ -253,7 +253,17 @@ Run from the relevant package directory (PowerShell on Windows can use `npm.cmd`
 | uHub API | In `uhub-api`: `npm.cmd run build` -> `dist`; use `npx.cmd tsc --project tsconfig.server.json --noEmit` for an unmasked type check |
 | Pantry API | In `pantry-api`: `npm.cmd run build` -> `dist` |
 
-The uHub API build script currently ends with `|| true`; a successful exit code alone does not prove compilation succeeded. Read compiler output and verify emitted files. Frontend Vite builds do not substitute for full TypeScript checks.
+The uHub API build runs TypeScript without masking errors; compilation failures stop the build. Frontend Vite builds do not substitute for full TypeScript checks.
+
+### Linux Docker build isolation and production retesting
+
+The uHub service builds with `uhub-api` as its Docker context, so the repository-root `.dockerignore` does not apply to it. Its own [.dockerignore](uhub-api/.dockerignore) excludes host `node_modules`, local runtime data, precompiled output, environment files and logs, while retaining `seed`, source, scripts and the lockfile. This prevents `COPY . .` from overwriting Linux-installed dependencies with tracked Windows launchers/native modules, which caused `sh: tsc: Permission denied` (exit 126).
+
+[uhub-api/Dockerfile](uhub-api/Dockerfile) installs the locked dependencies with `npm ci --include=dev` in the builder and `npm ci --omit=dev` in the runtime. Do not fix this by adding `chmod` to the copied host dependencies or restoring `|| true`; both hide rather than solve the context problem. Commit the new context-local ignore file along with the Dockerfile changes.
+
+After pulling these changes, first run `docker compose build --no-cache uhub-api` on the deployment host without bringing down the existing stack. Start/recreate services only after the build succeeds. For the Testing01 takeover, use the completed migration directory and migration Compose commands in [MIGRATION.md](MIGRATION.md), not an unconfigured base Compose invocation. Retain the private `.env.migration` and both Compose files for subsequent builds/starts. This build fix does not itself migrate production data or change volumes, credentials or URLs.
+
+Validation on 2026-10-19: no-cache Linux uHub image builds passed for both Testing002 (through Compose) and Testing000. Disposable, network-isolated runtime checks with synthetic account data passed the chat health endpoint, main-store products and photo-library API; native SQLite, sharp image encoding and system FFmpeg worked, and the runtime excluded TypeScript. No existing containers or data volumes were replaced. npm also reported four dependency advisories (one moderate, two high, one critical); these are unresolved dependency-audit findings, not fixed by build isolation. Passing these checks makes the reported build blocker ready for production retesting, not a claim that every production feature or dependency is cleared for launch.
 
 For this upgrade, run `npm.cmd test` in `uhub-api` after an unmasked `npx.cmd tsc --project tsconfig.server.json`. The suite covers database migration/restart behavior, ownership, sanitized real images/GIF/MP4, upload and caption limits, deletion/default reset, explicit-save behavior, auth synchronization, lazy-library cleanup and all six reported API routes against schema-only fixtures. No live user records are copied into those fixtures. Boundary checks use metadata/small fixtures, not actual 25/50 GiB uploads. Full frontend type-checking still reports pre-existing errors in legacy/other components; the production frontend build and focused new-code checks must be distinguished from that unresolved baseline.
 
