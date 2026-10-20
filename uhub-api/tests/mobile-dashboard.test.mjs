@@ -144,6 +144,7 @@ test('More stacks matching Friends, social toggle and Close rows while preservin
   });
   const output = render({ id: 1 });
   assert.equal(output.length, 3);
+  assert.equal(output[1].props.children[0], 'Social Links & Promotions');
   output.forEach(button => assert.ok(button.props.className.includes('uhub-mobile-footer-toggle')));
   output.forEach(button => button.props.onClick());
   assert.deepEqual(calls, ['friends', true, 'close']);
