@@ -3,8 +3,6 @@ name: Deploy to VPS
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -22,7 +20,7 @@ jobs:
       - run: node --test uhub-api/tests/deploy-vps.test.mjs
 
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: github.ref == 'refs/heads/main'
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 45
