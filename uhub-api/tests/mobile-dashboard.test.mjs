@@ -7,6 +7,21 @@ import ts from 'typescript';
 const source = await readFile(new URL('../../includes/uhub/src/features/profile/MainUhubFeatureV001ForMyProfileModal.tsx', import.meta.url), 'utf8');
 const tree = ts.createSourceFile('hub.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 
+test('UnionNews and MemeBox credits spell GGEMMMS with two leading Gs', async () => {
+  assert.ok(source.includes("title: 'UnionNews#14 & GGEMMMS#25', creator: 'GGEMMMS#25'"));
+  assert.ok(source.includes('by {broadcast.creator}'));
+  const footerSources = await Promise.all([
+    '../../includes/uhub/src/TheMemeBoxRenderer.tsx',
+    '../../includes/uhub/src/features/profile/TheMemeBoxImplementation001.jsx',
+  ].map(path => readFile(new URL(path, import.meta.url), 'utf8')));
+  for (const footerSource of footerSources) {
+    assert.ok(footerSource.includes('A GGEMMMS#25 Creation: "The MemeBox"'));
+  }
+  for (const creditSource of [source, ...footerSources]) {
+    assert.doesNotMatch(creditSource, /(?<!G)GEMMMS#25/);
+  }
+});
+
 function findNode(predicate) {
   let result;
   const visit = node => {
