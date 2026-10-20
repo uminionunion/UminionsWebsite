@@ -8,12 +8,9 @@
 
 #>>>>>>>>>>>>>>>>>>The code below this, is the .yml file to 'autodeploy from github to hostinger using a 'github action.' -Salem (if you're gonna copy paste, and tell an ai to do 'something like this but more for yourself with diff file names and folder locations;' copy whats in between:>>>>>>>>>>>>>>>>>>> & <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< (and remove my lil notes in folder 1 and 2))
 
-name: Deploy to Hostinger via FTP
+name: Legacy FTP deployment (manual only)
 
 on:
-  push:
-    branches:
-      - main    # change if you deploy from a different branch
   workflow_dispatch: {}  # lets you run manually from the Actions tab
 
 jobs:
