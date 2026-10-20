@@ -5264,7 +5264,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               <ChevronUp className="h-4 w-4" />
             </button>}
             {isMobile && <button type="button" className="uhub-mobile-footer-toggle" aria-expanded={mobileFooterOpen} onClick={() => setMobileFooterOpen(open => !open)}>
-              Social links & promotions
+              Social Links & Promotions
               {mobileFooterOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </button>}
             <div id="MainUhubFeatureV001ForMyProfileSettingsBottomLeftSection" className="w-[20%] p-1 md:p-2 border-r flex items-center">
