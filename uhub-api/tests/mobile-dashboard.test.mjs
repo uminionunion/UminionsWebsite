@@ -46,10 +46,10 @@ test('broadcast carousel shows the launch message only when it has no images', a
   });
   const text = node => typeof node === 'string' ? node : (node?.props?.children ?? []).flat(Infinity).map(text).join('');
   for (const props of [{}, { items: [] }]) {
-    assert.equal(text(render(props)).trim(), 'Coming Soon This Week!');
+    assert.equal(text(render(props)).trim(), 'Coming Soon This Week!!!');
   }
   const populated = render({ items: [{ id: 1, title: 'Existing image', imageUrl: '/data/image.png', clickUrl: '' }] });
-  assert.ok(!text(populated).includes('Coming Soon This Week!'));
+  assert.ok(!text(populated).includes('Coming Soon This Week!!!'));
   assert.ok(JSON.stringify(populated).includes('/data/image.png'));
 });
 

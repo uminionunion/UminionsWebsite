@@ -196,6 +196,14 @@ with only the base Compose configuration after cutover: that would select a
 different uHub data source. The separate FTP frontend workflow does not migrate
 databases or rebuild the API.
 
+Later automatic deployments preserve nonconflicting tracked VPS edits using a
+stash, fast-forward to the merged commit, restore those edits and validate/build
+before replacing containers, without `compose down` or volume deletion. A stash
+conflict stops deployment and retains the stash rather than guessing which
+configuration to keep. See the [automatic deployment guide](README.md#automatic-vps-deployment-after-merging)
+for checks and exceptional-failure handling. Private `.env.migration` is not
+stashed or replaced.
+
 For the final takeover, stop old writes, import the final stable snapshot, start
 version 3 on the completed directory, and switch the site's existing traffic
 routing to version 3. The old source remains unchanged; do not delete its volume

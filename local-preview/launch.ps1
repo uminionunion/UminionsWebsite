@@ -27,7 +27,7 @@ try {
     $response = Invoke-WebRequest -Uri 'http://localhost:4002/' -UseBasicParsing -TimeoutSec 30
     if ($response.StatusCode -ne 200) { throw 'Local preview did not respond successfully.' }
     $bundle = Invoke-WebRequest -Uri 'http://localhost:4002/uhub/dist/uhub.js' -UseBasicParsing -TimeoutSec 30
-    if ($bundle.StatusCode -ne 200 -or -not $bundle.Content.Contains('Coming Soon This Week!')) {
+    if ($bundle.StatusCode -ne 200 -or -not $bundle.Content.Contains('Coming Soon This Week!!!')) {
         throw 'Local preview is not serving the expected Testing002 frontend bundle.'
     }
     Write-Output 'Testing002 live preview is ready: http://localhost:4002/ (refresh the shared browser).'

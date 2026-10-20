@@ -8,13 +8,16 @@ RUN a2enconf pantry-proxy
 COPY ./apache-uhub-proxy.conf /etc/apache2/conf-available/uhub-proxy.conf
 RUN a2enconf uhub-proxy
 
-# Copy the Astra child theme from the local project directory (kept up to date by git pull)
-COPY ./wp-content/themes/astra-child /var/www/html/wp-content/themes/astra-child
+COPY ./wp-content/themes/astra-child /opt/uminion-assets/wp-content/themes/astra-child
 
-COPY ./includes/pantry-finder/dist /var/www/html/pantry-finder/dist
+COPY ./includes/pantry-finder/dist /opt/uminion-assets/pantry-finder/dist
 
-COPY ./includes/uhub/dist /var/www/html/uhub/dist
+COPY ./includes/uhub/dist /opt/uminion-assets/uhub/dist
 
-COPY ./includes/uhub/public/EmojisForUminionWebsite /var/www/html/EmojisForUminionWebsite
-COPY ./includes/uhub/public/defaultUminionUassets /var/www/html/defaultUminionUassets
-
+COPY ./includes/uhub/public/EmojisForUminionWebsite /opt/uminion-assets/EmojisForUminionWebsite
+COPY ./includes/uhub/public/defaultUminionUassets /opt/uminion-assets/defaultUminionUassets
+COPY ./scripts/start-wordpress.sh /usr/local/bin/start-uminion-wordpress
+RUN sed -i 's/\r$//' /usr/local/bin/start-uminion-wordpress \
+    && chmod +x /usr/local/bin/start-uminion-wordpress
+ENTRYPOINT ["start-uminion-wordpress"]
+CMD ["apache2-foreground"]
