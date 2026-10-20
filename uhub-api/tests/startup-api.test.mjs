@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, writeFile, readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -34,7 +34,15 @@ test('startup migrations and the six reported failing API routes work against th
     const migrated = new Database(path.join(directory, 'database.sqlite'));
     assert.equal(migrated.prepare('SELECT count(*) AS n FROM MainHubUpgradeV001ForProducts').get().n, 1);
     assert.equal(migrated.prepare('SELECT store_id FROM MainHubUpgradeV001ForProducts').get().store_id, 0);
+    migrated.prepare('UPDATE users SET is_high_high_high_admin=1 WHERE id=4').run();
+    const insertImage = migrated.prepare(`INSERT INTO MainHubUpgradeV001ForBroadcasts
+      (id, user_id, name, image_url, display_order) VALUES (?, 4, ?, '/data/broadcast-images/archive-fixture.png', ?)`);
+    migrated.transaction(() => {
+      for (let id = 1; id <= 368; id++) insertImage.run(id, `Archive fixture ${id}`, id);
+    })();
     migrated.close();
+    await mkdir(path.join(directory, 'broadcast-images'));
+    await writeFile(path.join(directory, 'broadcast-images', 'archive-fixture.png'), 'archived-media-fixture');
     const probe = net.createServer();
     await new Promise(resolve => probe.listen(0, '127.0.0.1', resolve));
     const port = probe.address().port;
@@ -74,6 +82,25 @@ test('startup migrations and the six reported failing API routes work against th
       }
     }
     assert.deepEqual(failures, [], `${failures.join('\n')}\n${errors}`);
+    const base = `http://127.0.0.1:${port}`;
+    const gallery = await (await fetch(`${base}/api/broadcasts/union-news-14/images`)).json();
+    assert.equal(gallery.length, 366);
+    assert.deepEqual(gallery.slice(0, 2).map(image => image.id), [368, 367]);
+    assert.deepEqual(gallery.slice(-2).map(image => image.id), [4, 3]);
+    const stored = new Database(path.join(directory, 'database.sqlite'), { readonly: true });
+    try {
+      assert.deepEqual(stored.prepare('SELECT image_id FROM ArchiveImagesForUnionNews14 ORDER BY image_id').all(), [{ image_id: 1 }, { image_id: 2 }]);
+      assert.equal(stored.prepare('SELECT COUNT(*) AS count FROM MainHubUpgradeV001ForBroadcasts').get().count, 368);
+    } finally { stored.close(); }
+    const archivedMove = await fetch(`${base}/api/broadcasts/union-news-14/images/1/move-left`, {
+      method: 'POST', headers: { Cookie: `token=${token}` },
+    });
+    assert.equal(archivedMove.status, 404);
+    const lastMove = await fetch(`${base}/api/broadcasts/union-news-14/images/3/move-right`, {
+      method: 'POST', headers: { Cookie: `token=${token}` },
+    });
+    assert.equal(lastMove.status, 400, 'Last active image cannot swap into the archive');
+    assert.equal(await readFile(path.join(directory, 'broadcast-images', 'archive-fixture.png'), 'utf8'), 'archived-media-fixture');
   } finally {
     if (child && child.exitCode === null) {
       child.kill();

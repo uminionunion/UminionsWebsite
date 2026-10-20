@@ -206,7 +206,13 @@ stashed or replaced.
 
 For the final takeover, stop old writes, import the final stable snapshot, start
 version 3 on the completed directory, and switch the site's existing traffic
-routing to version 3. The old source remains unchanged; do not delete its volume
+routing to version 3. UnionNews#14 now retains at most 366 active carousel images
+(183 two-image pages). On API startup, any excess imported images are recorded
+in `ArchiveImagesForUnionNews14` and excluded from the active gallery. Original
+image records, IDs, media files and legacy episode references are preserved;
+this is archival, not loss during migration. The future admin archive viewer is
+tracked in the [carousel guide](README.md#unionnews14-image-pairs-and-zoom).
+The old source remains unchanged; do not delete its volume
 or use volume-removal commands as part of this change. If rollback is needed
 after accepting new version-3 writes, preserve that destination too: reverting
 traffic to the old snapshot alone would omit those new writes.

@@ -14,50 +14,41 @@ interface BroadcastItem {
 interface BroadcastCarouselProps {
   items?: BroadcastItem[];
   visibleItemCount?: number;
+  maxPages?: number;
   isAdmin?: boolean;
   onReorderLeft?: (itemId: number) => Promise<void>;
   onReorderRight?: (itemId: number) => Promise<void>;
   onImageZoom?: (imageUrl: string, title: string, items: BroadcastItem[], currentIndex: number) => void;
 }
 
-export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({ 
-  items = [], 
-  visibleItemCount = 9,
+export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({
+  items = [],
+  visibleItemCount = 2,
+  maxPages,
   isAdmin = false,
   onReorderLeft,
   onReorderRight,
-  onImageZoom
+  onImageZoom,
 }) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [isReordering, setIsReordering] = useState(false);
-  const itemsPerPage = visibleItemCount;
-  const gridColumns = 2;
-  const totalPages = Math.ceil(items.length / itemsPerPage);
+  const itemsPerPage = Math.max(1, Math.floor(visibleItemCount));
+  const totalPages = Math.min(Math.ceil(items.length / itemsPerPage), maxPages ?? Infinity);
+  const firstItemId = items[0]?.id;
 
+  React.useEffect(() => {
+    setCurrentPage(0);
+  }, [firstItemId]);
   React.useEffect(() => {
     setCurrentPage(page => Math.min(page, Math.max(0, totalPages - 1)));
   }, [totalPages]);
 
-  const getCurrentItems = () => {
-    const start = currentPage * itemsPerPage;
-    return items.slice(start, start + itemsPerPage);
-  };
-
-  const handlePrevious = () => {
-    setCurrentPage(prev => (prev === 0 ? totalPages - 1 : prev - 1));
-  };
-
-  const handleNext = () => {
-    setCurrentPage(prev => (prev === totalPages - 1 ? 0 : prev + 1));
-  };
-
-  const handleReorderLeft = async (item: BroadcastItem, index: number) => {
-    if (!onReorderLeft || isReordering) return;
-    
+  const handleReorder = async (itemId: number, direction: 'left' | 'right') => {
+    const reorder = direction === 'left' ? onReorderLeft : onReorderRight;
+    if (!reorder || isReordering) return;
     setIsReordering(true);
     try {
-      await onReorderLeft(item.id);
-      console.log('[CAROUSEL] Reordered left:', item.id);
+      await reorder(itemId);
     } catch (error) {
       console.error('[CAROUSEL] Error reordering:', error);
       alert('Failed to reorder image');
@@ -66,193 +57,81 @@ export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({
     }
   };
 
-  const handleReorderRight = async (item: BroadcastItem, index: number) => {
-    if (!onReorderRight || isReordering) return;
-    
-    setIsReordering(true);
-    try {
-      await onReorderRight(item.id);
-      console.log('[CAROUSEL] Reordered right:', item.id);
-    } catch (error) {
-      console.error('[CAROUSEL] Error reordering:', error);
-      alert('Failed to reorder image');
-    } finally {
-      setIsReordering(false);
-    }
-  };
-
-  // NEW: Handle image click for zoom (UPGRADED: pass all items and index)
-  const handleImageClick = (e: React.MouseEvent, item: BroadcastItem) => {
-    // If image has a clickUrl, allow navigation
-    if (item.clickUrl) {
-      return; // Let the link handle it
-    }
-    
-    // Otherwise, show zoom overlay
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (onImageZoom) {
-      const currentIndex = items.findIndex(i => i.id === item.id);
-      console.log('[CAROUSEL] Image clicked for zoom:', item.title, 'Index:', currentIndex);
-      onImageZoom(item.imageUrl, item.title, items, currentIndex);
-    }
-  };
-
-  const currentItems = getCurrentItems();
-
-  // If no items, show empty state
   if (items.length === 0) {
     return (
-      <div className="flex items-center justify-center gap-4 p-4 bg-muted rounded-lg h-48">
-        <div className="text-center text-muted-foreground">
-          Coming Soon This Week!!!
-        </div>
+      <div className="flex w-full items-center justify-center bg-muted rounded-lg h-48">
+        <div className="text-center text-muted-foreground">Coming Soon This Week!!!</div>
       </div>
     );
   }
 
   return (
-  <div
-    className="flex items-center justify-between gap-4 p-4 bg-muted rounded-lg"
-    style={{ position: "relative" }}
-  >
-
-
-
-    
-      {/* Left Arrow */}
-<Button
-  variant="outline"
-  size="icon"
-  onClick={handlePrevious}
-  className="h-8 w-8"
-  style={{
-    // DEFAULT (desktop)
-    position: "static",
-
-    // MOBILE OVERRIDE
-    ...(window.innerWidth <= 768 && {
-      position: "absolute",
-      left: 0,
-      top: "50%",
-      transform: "translateY(-50%)",
-      zIndex: 20,
-    }),
-  }}
->
-  <ChevronLeft className="h-4 w-4" />
-</Button>
-
-
-
-    
-
-      {/* Images with Admin Controls */}
-      <div
-        className="grid gap-2 flex-1 justify-center"
-        style={{ gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))` }}
-      >
-        {currentItems.map((item, index) => (
-          <div
-            key={item.id}
-            className="cursor-pointer hover:opacity-80 transition-opacity relative group"
-            title={item.title}
-          >
-            {/* NEW: Wrapper div instead of <a> tag for better control */}
-            <div className="aspect-square w-full rounded-md overflow-hidden bg-background border relative">
-              <QueuedImage
-                src={item.imageUrl}
-                alt={item.title}
-                className="h-full w-full object-cover cursor-pointer"
-                fallbackSrc="https://via.placeholder.com/128?text=Image"
-                onClick={(e) => handleImageClick(e, item)}
-                onQueueError={() => {
-                  // TURN ON WHEN YOU NEED TO DEBUG: report carousel images that fail along with their fallback.
-                  // console.error('[CAROUSEL] Image and fallback failed:', item.imageUrl);
-                }}
-              />
-              
-              {/* Admin Overlay Controls - Only visible to admins */}
+    <section aria-label="Broadcast image carousel" className="relative w-full h-48 bg-muted rounded-lg overflow-hidden">
+      <div className="grid grid-cols-2 gap-0 w-full h-full" style={{ gridAutoRows: 'minmax(0, 1fr)' }}>
+        {items.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage).map((item, index) => {
+          const itemIndex = currentPage * itemsPerPage + index;
+          return (
+            <div key={item.id} className="relative min-w-0 min-h-0 group">
+              <button
+                type="button"
+                className="block w-full h-full p-0 border-0 bg-transparent overflow-hidden cursor-zoom-in"
+                aria-label={`Enlarge ${item.title || 'broadcast image'}`}
+                onClick={() => onImageZoom?.(item.imageUrl, item.title, items, itemIndex)}
+              >
+                <QueuedImage
+                  src={item.imageUrl}
+                  alt={item.title || 'Broadcast image'}
+                  className="block h-full w-full object-cover"
+                  onQueueError={error => console.error('[CAROUSEL] Image failed to load:', item.id, error)}
+                />
+              </button>
+              {item.clickUrl && (
+                <a href={item.clickUrl} target="_blank" rel="noopener noreferrer" className="absolute bottom-1 left-1 bg-black/80 text-white text-xs rounded px-2 py-1">
+                  Open link
+                </a>
+              )}
               {isAdmin && (
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-between px-2 opacity-0 group-hover:opacity-100">
-                  {/* Left Arrow */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleReorderLeft(item, index);
-                    }}
-                    disabled={isReordering}
-                    className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white rounded-full p-1.5 transition"
-                    title="Move left"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-
-                  {/* Right Arrow */}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleReorderRight(item, index);
-                    }}
-                    disabled={isReordering}
-                    className="bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white rounded-full p-1.5 transition"
-                    title="Move right"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
+                <div className="absolute top-1 left-1 right-1 flex justify-between pointer-events-none">
+                  {onReorderLeft && (
+                    <Button type="button" size="icon" aria-label={`Move ${item.title || 'image'} left`} disabled={isReordering || itemIndex === 0} onClick={() => void handleReorder(item.id, 'left')} className="pointer-events-auto h-7 w-7 bg-blue-600 text-white">
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onReorderRight && (
+                    <Button type="button" size="icon" aria-label={`Move ${item.title || 'image'} right`} disabled={isReordering || itemIndex === items.length - 1} onClick={() => void handleReorder(item.id, 'right')} className="pointer-events-auto ml-auto h-7 w-7 bg-green-600 text-white">
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
-
-            {/* NEW: External link handler if URL exists */}
-            {item.clickUrl && (
-              <a
-                href={item.clickUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="absolute inset-0 rounded-md"
-                title="Open external link"
-              />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
-
-
-
-
-{/* Right Arrow */}
-<Button
-  variant="outline"
-  size="icon"
-  onClick={handleNext}
-  className="h-8 w-8"
-  style={{
-    // DEFAULT (desktop)
-    position: "static",
-
-    // MOBILE OVERRIDE
-    ...(window.innerWidth <= 768 && {
-      position: "absolute",
-      right: 0,
-      top: "50%",
-      transform: "translateY(-50%)",
-      zIndex: 20,
-    }),
-  }}
->
-  <ChevronRight className="h-4 w-4" />
-</Button>
-
-
-
-
-
-    
-    </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label="Previous carousel page"
+        disabled={totalPages <= 1}
+        onClick={() => setCurrentPage(page => (page === 0 ? totalPages - 1 : page - 1))}
+        className="absolute left-1 top-1/2 -translate-y-1/2 z-10 h-8 w-8 bg-black/70 text-white"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label="Next carousel page"
+        disabled={totalPages <= 1}
+        onClick={() => setCurrentPage(page => (page + 1) % totalPages)}
+        className="absolute right-1 top-1/2 -translate-y-1/2 z-10 h-8 w-8 bg-black/70 text-white"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+      <span className="sr-only" aria-live="polite">Page {currentPage + 1} of {totalPages}</span>
+    </section>
   );
 };
 

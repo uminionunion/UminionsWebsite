@@ -1283,6 +1283,7 @@ const BroadcastView = ({
   user, 
   broadcastView, 
   unionNews14Images, 
+  setUnionNews14Images,
   onOpenUnionNews14Modal, 
   onOpenManagedCarouselAdmin,
   onExitUmiMatch,
@@ -1317,8 +1318,10 @@ const BroadcastView = ({
         throw new Error(error.error || 'Failed to move image');
       }
       const refreshRes = await fetch('/api/broadcasts/union-news-14/images');
+      if (!refreshRes.ok) throw new Error('Failed to refresh carousel images');
       const freshData = await refreshRes.json();
-      setUnionNews14Images(Array.isArray(freshData) ? freshData : []);
+      if (!Array.isArray(freshData)) throw new Error('Invalid carousel image response');
+      setUnionNews14Images(freshData);
       console.log('[BROADCAST VIEW] ✅ Image moved left, refreshed carousel');
     } catch (error) {
       console.error('[BROADCAST VIEW] Error moving image left:', error);
@@ -1337,8 +1340,10 @@ const BroadcastView = ({
         throw new Error(error.error || 'Failed to move image');
       }
       const refreshRes = await fetch('/api/broadcasts/union-news-14/images');
+      if (!refreshRes.ok) throw new Error('Failed to refresh carousel images');
       const freshData = await refreshRes.json();
-      setUnionNews14Images(Array.isArray(freshData) ? freshData : []);
+      if (!Array.isArray(freshData)) throw new Error('Invalid carousel image response');
+      setUnionNews14Images(freshData);
       console.log('[BROADCAST VIEW] ✅ Image moved right, refreshed carousel');
     } catch (error) {
       console.error('[BROADCAST VIEW] Error moving image right:', error);
@@ -1556,7 +1561,8 @@ if (isMobile) {
 >
   <BroadcastCarousel 
     items={broadcastView === 'UnionNews#14' ? unionNews14Images : (broadcast.extraImages || [])}
-    visibleItemCount={Math.min(broadcastCarouselImageCount, 6)}
+    visibleItemCount={broadcastView === 'UnionNews#14' ? 2 : Math.min(broadcastCarouselImageCount, 6)}
+    maxPages={broadcastView === 'UnionNews#14' ? 183 : undefined}
     isAdmin={broadcastView === 'UnionNews#14' && user?.is_high_high_high_admin === 1}
     onReorderLeft={broadcastView === 'UnionNews#14' ? handleReorderLeft : undefined}
     onReorderRight={broadcastView === 'UnionNews#14' ? handleReorderRight : undefined}
@@ -1707,7 +1713,8 @@ if (isMobile) {
                 <div className="w-2/3 min-w-0">
                   <BroadcastCarousel
                     items={unionNews14Images}
-                    visibleItemCount={Math.min(broadcastCarouselImageCount, 6)}
+                    visibleItemCount={2}
+                    maxPages={183}
                     isAdmin={user?.is_high_high_high_admin === 1}
                     onReorderLeft={handleReorderLeft}
                     onReorderRight={handleReorderRight}
@@ -3295,15 +3302,7 @@ useEffect(() => {
     console.log('[PROFILE MODAL] ✅ Fetched images:', data);
     
     if (Array.isArray(data) && data.length > 0) {
-      // FIXED: Sort by created_at descending to ensure newest images appear first
-      // The backend already does this, but we re-sort to be safe
-      const sortedData = data.sort((a, b) => {
-        const timeA = new Date(a.created_at || 0).getTime();
-        const timeB = new Date(b.created_at || 0).getTime();
-        return timeB - timeA; // Newest first
-      });
-      setUnionNews14Images(sortedData);
-      console.log(`[PROFILE MODAL] ✅ Set ${sortedData.length} images to state (sorted by newest first)`);
+      setUnionNews14Images(data);
     } else {
       console.warn('[PROFILE MODAL] No images returned from API');
       setUnionNews14Images([]);
@@ -4389,6 +4388,7 @@ return (
   user={user}
   broadcastView={broadcastView}
   unionNews14Images={unionNews14Images}
+  setUnionNews14Images={setUnionNews14Images}
   onOpenUnionNews14Modal={() => setIsUnionNews14ModalOpen(true)}
   onOpenManagedCarouselAdmin={setManagedCarouselAdminSlot}
   onExitUmiMatch={() => { setAreFeatureIconsActive(prev => ({ ...prev, heart: false })); setBroadcastView('UnionNews#14'); }}
@@ -5686,23 +5686,19 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
           if (res.ok) {
             const data = await res.json();
             if (Array.isArray(data)) {
-              // Sort by created_at descending to ensure newest first
-              const sortedData = data.sort((a, b) => {
-                const timeA = new Date(a.created_at || 0).getTime();
-                const timeB = new Date(b.created_at || 0).getTime();
-                return timeB - timeA; // Newest first
-              });
-              setUnionNews14Images(sortedData);
-              console.log('[PROFILE MODAL] ✅ Re-fetched and sorted', sortedData.length, 'images from database');
+              setUnionNews14Images(data);
+            } else {
+              throw new Error('Invalid carousel image response');
             }
+          } else {
+            throw new Error('Failed to refresh carousel images after upload');
           }
         } catch (error) {
           console.error('[PROFILE MODAL] Error re-fetching images:', error);
         }
       };
       
-      // Delay slightly to allow backend to finish writing to database
-      setTimeout(fetchUpdatedImages, 500);
+      void fetchUpdatedImages();
     }}
   />
 )}
@@ -5721,12 +5717,10 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
  {/* Broadcast Carousel Zoom Modal - ONLY for carousel images */}
       {broadcastZoomState.isOpen && (
         <BroadcastCarouselZoomModal
+          key={broadcastZoomState.imageUrl}
           imageUrl={broadcastZoomState.imageUrl}
           title={broadcastZoomState.title}
-          items={broadcastZoomState.items}
-          currentIndex={broadcastZoomState.currentIndex}
           onClose={() => setBroadcastZoomState(prev => ({ ...prev, isOpen: false }))}
-          currentUser={user}
         />
       )}
 

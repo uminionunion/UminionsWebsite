@@ -8,7 +8,7 @@ import fileUpload from 'express-fileupload';
 import path from 'path';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
-import { db } from './db.js';
+import { db, insertUnionNewsImage } from './db.js';
 import memesRouter from './memes.js';
 import socialPostsRouter from './social-posts.js';
 import broadcastsRouter from './broadcasts.js';
@@ -290,32 +290,18 @@ app.post('/api/broadcasts/union-news-14/images/add', authMiddleware, async (req:
     // Build the full URL path for serving
     const imageUrl = `/data/broadcast-images/${fileName}`;
 
-  // Insert into database
-// Get the max display_order to insert new image at the beginning
-const maxOrder = await db
-  .selectFrom('MainHubUpgradeV001ForBroadcasts')
-  .select(db.fn.max('display_order').as('maxOrder'))
-  .executeTakeFirst();
+    const imageId = insertUnionNewsImage({
+      userId: req.user.userId,
+      title: title || `Image ${Date.now()}`,
+      imageUrl,
+      clickUrl,
+      description,
+    });
 
-const nextOrder = (maxOrder?.maxOrder || 0) + 1;
-
-const newImage = await db
-  .insertInto('MainHubUpgradeV001ForBroadcasts')
-  .values({
-    user_id: req.user.userId,
-    name: title || `Image ${Date.now()}`,
-    image_url: imageUrl,
-    click_url: clickUrl || null,
-    description: description || null,
-    display_order: nextOrder,
-  })
-  .returning('id')
-  .executeTakeFirst();
-
-    console.log(`[BROADCASTS] Image record created with ID: ${newImage?.id}, URL: ${imageUrl}`);
+    console.log(`[BROADCASTS] Image record created with ID: ${imageId}, URL: ${imageUrl}`);
 
     res.status(200).json({
-      id: newImage?.id,
+      id: imageId,
       title: title || undefined,
       imageUrl: imageUrl,
       clickUrl: clickUrl || undefined,
@@ -336,7 +322,9 @@ app.get('/api/broadcasts/union-news-14/images', async (req: Request, res: Respon
     const images = await db
       .selectFrom('MainHubUpgradeV001ForBroadcasts')
       .select(['id', 'name', 'image_url', 'click_url', 'description', 'created_at', 'display_order'])
+      .where('id', 'not in', db.selectFrom('ArchiveImagesForUnionNews14').select('image_id'))
       .orderBy('display_order', 'desc')  // Changed: order by display_order DESC (newest first)
+      .orderBy('id', 'desc')
       .execute();
 
     console.log(`[BROADCASTS] Fetched ${images.length} UnionNews14 images from database`);
@@ -389,6 +377,7 @@ app.post('/api/broadcasts/union-news-14/images/:id/move-left', authMiddleware, a
       .selectFrom('MainHubUpgradeV001ForBroadcasts')
       .select(['id', 'display_order'])
       .where('id', '=', imageId)
+      .where('id', 'not in', db.selectFrom('ArchiveImagesForUnionNews14').select('image_id'))
       .executeTakeFirst();
 
     if (!currentImage) {
@@ -401,6 +390,7 @@ app.post('/api/broadcasts/union-news-14/images/:id/move-left', authMiddleware, a
       .selectFrom('MainHubUpgradeV001ForBroadcasts')
       .select(['id', 'display_order'])
       .where('display_order', '>', currentImage.display_order)  // ✅ FIXED: Look for HIGHER order
+      .where('id', 'not in', db.selectFrom('ArchiveImagesForUnionNews14').select('image_id'))
       .orderBy('display_order', 'asc')
       .limit(1)
       .executeTakeFirst();
@@ -470,6 +460,7 @@ app.post('/api/broadcasts/union-news-14/images/:id/move-right', authMiddleware, 
       .selectFrom('MainHubUpgradeV001ForBroadcasts')
       .select(['id', 'display_order'])
       .where('id', '=', imageId)
+      .where('id', 'not in', db.selectFrom('ArchiveImagesForUnionNews14').select('image_id'))
       .executeTakeFirst();
 
     if (!currentImage) {
@@ -482,6 +473,7 @@ app.post('/api/broadcasts/union-news-14/images/:id/move-right', authMiddleware, 
       .selectFrom('MainHubUpgradeV001ForBroadcasts')
       .select(['id', 'display_order'])
       .where('display_order', '<', currentImage.display_order)  // ✅ FIXED: Look for LOWER order
+      .where('id', 'not in', db.selectFrom('ArchiveImagesForUnionNews14').select('image_id'))
       .orderBy('display_order', 'desc')
       .limit(1)
       .executeTakeFirst();
