@@ -106,7 +106,7 @@ export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({
     return (
       <div className="flex items-center justify-center gap-4 p-4 bg-muted rounded-lg h-48">
         <div className="text-center text-muted-foreground">
-          No images yet. Add images to get started!
+          Coming Soon This Week!
         </div>
       </div>
     );

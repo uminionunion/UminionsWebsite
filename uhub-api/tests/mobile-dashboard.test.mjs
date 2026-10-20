@@ -27,6 +27,32 @@ function compile(sourceText, globals) {
   return vm.runInNewContext(compiled.outputText, globals);
 }
 
+test('broadcast carousel shows the launch message only when it has no images', async () => {
+  const carouselSource = await readFile(new URL('../../includes/uhub/src/features/profile/BroadcastCarousel.tsx', import.meta.url), 'utf8');
+  const carouselTree = ts.createSourceFile('carousel.tsx', carouselSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const declaration = carouselTree.statements
+    .filter(ts.isVariableStatement)
+    .flatMap(statement => [...statement.declarationList.declarations])
+    .find(node => node.name.getText(carouselTree) === 'BroadcastCarousel');
+  assert.ok(declaration);
+  const render = compile(`const ${declaration.getText(carouselTree)}; BroadcastCarousel`, {
+    React: {
+      createElement: (type, props, ...children) => ({ type, props: { ...props, children } }),
+      useEffect() {},
+    },
+    useState: initial => [initial, () => {}],
+    Button: 'button', QueuedImage: 'image', ChevronLeft: 'left', ChevronRight: 'right',
+    window: { innerWidth: 400 },
+  });
+  const text = node => typeof node === 'string' ? node : (node?.props?.children ?? []).flat(Infinity).map(text).join('');
+  for (const props of [{}, { items: [] }]) {
+    assert.equal(text(render(props)).trim(), 'Coming Soon This Week!');
+  }
+  const populated = render({ items: [{ id: 1, title: 'Existing image', imageUrl: '/data/image.png', clickUrl: '' }] });
+  assert.ok(!text(populated).includes('Coming Soon This Week!'));
+  assert.ok(JSON.stringify(populated).includes('/data/image.png'));
+});
+
 test('mobile viewport follows breakpoint changes and removes its listener on unmount', () => {
   const hook = findNode(node => ts.isFunctionDeclaration(node) && node.name?.text === 'useMobileViewport');
   let state;
