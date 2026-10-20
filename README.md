@@ -143,6 +143,8 @@ Frontend state chooses what is visible; backend records provide persistent conte
 
 ### UnionNews#14 image pairs and zoom
 
+The broadcast heading is **UnionNews#14 & GGEMMMS#25**, its creator attribution is **by GGEMMMS#25**, and both shared/standalone MemeBox credits read **A GGEMMMS#25 Creation: "The MemeBox"** (two leading Gs).
+
 The green Add button retains its existing high-high-high-admin upload permission. The UnionNews#14 carousel now shows exactly **two images per page** on desktop and mobile. The API's descending `display_order` remains authoritative: new uploads occupy the left slot and shift older images right, then onto subsequent pages. Five uploads appear as `[5, 4]`, `[3, 2]`, `[1, empty]`. A new first image resets the carousel to page one; removing images clamps the active page. Existing manual reorder actions are preserved, and refreshes no longer re-sort by unavailable `created_at` fields.
 
 **Maximum: 183 pages / 366 active images.** Pages are populated as images are uploaded, not shown as 183 empty pages. There is no page 184: once full, a new upload enters page 1 and the last image leaving page 183 is permanently removed from the active carousel and recorded in **ArchiveImagesForUnionNews14**. Page navigation wraps between page 183 and page 1 when full. Other carousels are not subject to this cap.

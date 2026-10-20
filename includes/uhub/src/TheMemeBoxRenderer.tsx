@@ -29,7 +29,7 @@ const AdditionalMemeBoxes: React.FC<{ data: any }> = ({ data }) => {
           <TheMemeBoxImplementation001 data={data} postSource="user-submitted" embedded hideFooter />
         </>
       )}
-      <div className="uhub-meme-box-shared-footer">A GEMMMS#25 Creation: "The MemeBox"</div>
+      <div className="uhub-meme-box-shared-footer">A GGEMMMS#25 Creation: "The MemeBox"</div>
     </>
   );
 };
