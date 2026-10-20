@@ -1,0 +1,83 @@
+name: uminion-preview
+
+services:
+  preview-db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_DATABASE: wordpress
+      MARIADB_USER: preview
+      MARIADB_PASSWORD: local-preview-only
+      MARIADB_ROOT_PASSWORD: local-preview-root-only
+    volumes:
+      - preview_db:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  wordpress:
+    build:
+      context: .
+      dockerfile: Dockerfile.preview
+    depends_on:
+      preview-db:
+        condition: service_healthy
+      uhub-api:
+        condition: service_healthy
+      pantry-api:
+        condition: service_healthy
+    environment: &wordpress-environment
+      WORDPRESS_DB_HOST: preview-db:3306
+      WORDPRESS_DB_USER: preview
+      WORDPRESS_DB_PASSWORD: local-preview-only
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_HOME', 'http://localhost:4002');
+        define('WP_SITEURL', 'http://localhost:4002');
+    ports:
+      - "127.0.0.1:4002:80"
+    volumes: &wordpress-volumes
+      - preview_wordpress_files:/var/www/html
+
+  wp-cli:
+    image: wordpress:cli
+    profiles: ["setup"]
+    user: "33:33"
+    environment: *wordpress-environment
+    volumes: *wordpress-volumes
+
+  uhub-api:
+    build: ./uhub-api
+    environment:
+      NODE_ENV: production
+      PORT: 4001
+      DATA_DIRECTORY: /app/data
+      JWT_SECRET: local-preview-only-not-for-production
+    volumes:
+      - preview_uhub_data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4001/api/chat/rooms-with-messages"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  pantry-api:
+    build: ./pantry-api
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATA_DIRECTORY: /app/data
+    volumes:
+      - preview_pantry_data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:4000/api/pantries"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  preview_db:
+  preview_wordpress_files:
+  preview_uhub_data:
+  preview_pantry_data:

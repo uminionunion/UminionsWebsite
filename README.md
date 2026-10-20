@@ -16,6 +16,7 @@ This is the single maintained project guide. [README-ARCHIVE.md](README-ARCHIVE.
 - [7. Loading and performance](#7-loading-and-performance-preserve-these-boundaries)
   - [Chat loading indicators](#chat-loading-indicators)
 - [8. Build, deployment and validation](#8-build-deployment-and-validation)
+  - [Launch the live browser / local preview](#launch-the-live-browser--local-preview)
   - [Meme uploads and sound](#meme-uploads-and-independent-sound)
   - [Profile, cover and Photo Library](#profile-cover-and-photo-library-lifecycle)
   - [Input protection and sanitation](#input-protection-and-upload-sanitization)
@@ -254,6 +255,36 @@ Run from the relevant package directory (PowerShell on Windows can use `npm.cmd`
 | Pantry API | In `pantry-api`: `npm.cmd run build` -> `dist` |
 
 The uHub API build runs TypeScript without masking errors; compilation failures stop the build. Frontend Vite builds do not substitute for full TypeScript checks.
+
+### Launch the live browser / local preview
+
+When the user asks an AI to **"launch the live browser"**, **"open the live view"** or **"start the local preview"**, use this Testing002 repository, run the launcher below, and open **http://localhost:4002/**. This replaces the former Testing000 preview at the same address; do not launch Testing000 alongside it. This is local development, not a production deployment or a Testing01 data migration.
+
+Prerequisites: Docker Desktop running Linux containers, Windows PowerShell, Node/npm, and installed frontend dependencies. If dependencies are missing, run `npm.cmd ci` in the affected frontend package before retrying. The first launch needs internet access to pull Docker images and install the Astra parent theme.
+
+From the repository root:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\local-preview\launch.ps1
+```
+
+[launch.ps1](local-preview/launch.ps1) builds both frontends, builds/starts [docker-compose.preview.yml](docker-compose.preview.yml), initializes local WordPress when needed, installs Astra if missing, activates the child theme and checks the home page responds successfully. Wait for its ready message before opening the browser. If startup fails, inspect `docker compose -f docker-compose.preview.yml logs --tail 100`; do not use the production Compose configuration as a fallback.
+
+The preview uses project name `uminion-preview`, reusing the existing local WordPress/MariaDB volumes from the former Testing000 preview without deleting them. It runs its own uHub and Pantry APIs with separate local SQLite/media volumes and its own Docker network; Testing000's API containers are no longer required. It does **not** attach production databases, migration directories, private deployment mounts or the external production network. WordPress alone is published, on loopback port 4002. The local PHP connector deliberately disables legacy external account-database access, so this preview is not validation of those production-only integrations.
+
+For a newly initialized preview only, WordPress administration at `http://localhost:4002/wp-admin/` uses `preview-admin` / `local-preview-only`; existing local administrator accounts are left unchanged. Preview database/JWT values are deliberately local-only, not production credentials. Never deploy this preview configuration publicly.
+
+The preview image contains this repository's child theme, rebuilt frontend bundles, emojis and default assets. Its [startup script](local-preview/start-wordpress.sh) refreshes only those application assets in the WordPress volume each time the container starts, preserving WordPress configuration and uploads. This avoids stale files in the persistent volume and does not require Windows drive sharing or manual `docker cp`. After frontend, backend, theme or Docker edits, rerun the launcher and refresh the browser (hard refresh if cached); this is a built preview, not hot-module reloading. The launcher also verifies the served frontend contains the updated message. The shared broadcast carousel now displays **"Coming Soon This Week!"** when empty; existing uploaded images still render normally. Mobile More uses **"Social Links & Promotions"**.
+
+Validation: the complete Windows launcher passed; the served home page, frontend bundle, main-store products, chat health and Pantry endpoints returned HTTP 200. The served bundle contains both updated labels. All 10 focused mobile-dashboard tests passed, including empty/default carousel messaging and preservation of populated images. These are local build, component and HTTP checks, not a production deployment or a visual browser walkthrough.
+
+To stop without deleting preview data:
+
+```powershell
+docker compose -f docker-compose.preview.yml stop
+```
+
+Never use `down -v` unless explicitly intending to erase these local databases/uploads. Do not change production Compose or run migration commands to start this preview. Production takeover remains documented separately in [MIGRATION.md](MIGRATION.md).
 
 ### Linux Docker build isolation and production retesting
 
