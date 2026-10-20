@@ -1563,6 +1563,7 @@ if (isMobile) {
     items={broadcastView === 'UnionNews#14' ? unionNews14Images : (broadcast.extraImages || [])}
     visibleItemCount={broadcastView === 'UnionNews#14' ? 2 : Math.min(broadcastCarouselImageCount, 6)}
     maxPages={broadcastView === 'UnionNews#14' ? 183 : undefined}
+    backgroundClassName={broadcastView === 'UnionNews#14' ? 'bg-black' : undefined}
     isAdmin={broadcastView === 'UnionNews#14' && user?.is_high_high_high_admin === 1}
     onReorderLeft={broadcastView === 'UnionNews#14' ? handleReorderLeft : undefined}
     onReorderRight={broadcastView === 'UnionNews#14' ? handleReorderRight : undefined}
@@ -1715,6 +1716,7 @@ if (isMobile) {
                     items={unionNews14Images}
                     visibleItemCount={2}
                     maxPages={183}
+                    backgroundClassName="bg-black"
                     isAdmin={user?.is_high_high_high_admin === 1}
                     onReorderLeft={handleReorderLeft}
                     onReorderRight={handleReorderRight}

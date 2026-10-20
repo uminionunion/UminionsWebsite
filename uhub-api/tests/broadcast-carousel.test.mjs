@@ -141,6 +141,18 @@ test('images fill both halves without arrow columns, padding, gaps or full-image
   assert.equal(button(one, 'Next carousel page').props.disabled, true);
 });
 
+test('UnionNews uses black behind empty, single and paired images without changing other carousels', () => {
+  const render = harness(source, 'BroadcastCarousel');
+  for (const items of [[], [item(1)], [item(2), item(1)]]) {
+    const tree = render({ items, backgroundClassName: 'bg-black' });
+    assert.match(tree.props.className, /\bbg-black\b/);
+    assert.ok(!tree.props.className.includes('bg-muted'));
+    assert.match(render({ items }).props.className, /\bbg-muted\b/);
+  }
+  assert.match(mainSource, /backgroundClassName=\{broadcastView === 'UnionNews#14' \? 'bg-black' : undefined\}/);
+  assert.match(mainSource, /maxPages=\{183\}\s+backgroundClassName="bg-black"/);
+});
+
 test('admin and non-admin images open zoom even when linked; links remain separate and reorder buttons still work', async () => {
   for (const isAdmin of [true, false]) {
     const render = harness(source, 'BroadcastCarousel');
@@ -169,26 +181,18 @@ test('admin and non-admin images open zoom even when linked; links remain separa
   }
 });
 
-test('simple zoom fits initially, magnifies to 300%, scrolls, resets and closes through the shared dialog', () => {
+test('image viewer fits the complete image with no magnification controls and closes through the shared dialog', () => {
   const render = harness(zoomSource, 'BroadcastCarouselZoomModal');
   let closed = false;
   const props = { imageUrl: '/data/1.jpg', title: 'Image 1', onClose: () => { closed = true; } };
   let tree = render(props);
   assert.equal(tree.type, 'dialog');
-  assert.equal(button(tree, 'Zoom out').props.disabled, true);
   const img = all(tree, node => node.type === 'img')[0];
-  assert.match(img.props.className, /w-full h-full object-contain/);
+  assert.match(img.props.className, /w-full max-h-\[72vh\] object-contain/);
   assert.equal(img.props.src, props.imageUrl);
-  for (let count = 0; count < 4; count++) {
-    button(tree, 'Zoom in').props.onClick();
-    tree = render(props);
-  }
-  assert.equal(button(tree, 'Zoom in').props.disabled, true);
-  assert.equal(all(tree, node => node.props?.style?.width === '300%').length, 1);
-  assert.match(button(tree, 'Enlarged image; scroll to explore when zoomed').props.className, /overflow-auto/);
-  button(tree, 'Reset zoom to fit').props.onClick();
-  tree = render(props);
-  assert.equal(all(tree, node => node.props?.style?.width === '100%').length, 1);
+  assert.equal(all(tree, node => node.type === 'button').length, 0);
+  assert.ok(!zoomSource.includes('setZoom'));
+  assert.ok(!zoomSource.includes('300'));
   img.props.onError();
   tree = render(props);
   assert.equal(all(tree, node => node.props?.role === 'alert').length, 1);
