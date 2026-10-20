@@ -1676,7 +1676,7 @@ const renderNavbar = () => {
     if (!displayPost) {
       return (
         <div className="meme-post-viewer" style={styles.postViewerContainer}>
-          <div style={styles.emptyState}>No posts available</div>
+          <div className="meme-empty-state" style={styles.emptyState}>No posts available</div>
         </div>
       );
     }
@@ -1684,7 +1684,7 @@ const renderNavbar = () => {
     return (
       <div className="meme-post-viewer" style={styles.postViewerContainer} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {/* ✅ NEW: Stacked images */}
-        <div style={styles.imagesStack}>
+        <div className="meme-images-stack" style={styles.imagesStack}>
           {displayPost.images.map((image, idx) => (
   // Key on the post+media identity (not just array index) so React remounts the <video> element on rotation
   // instead of reusing the old DOM node with a stale <source>, which would otherwise leave the previous clip frozen.
@@ -1716,7 +1716,7 @@ const renderNavbar = () => {
 ))}
         </div>
 
-        <div style={styles.postInfo}>
+        <div className="meme-post-info" style={styles.postInfo}>
   <h2 style={styles.postTitle}>{displayPost.title}</h2>
   <p style={styles.postDescription}>{displayPost.description}</p>
   {displayPost.username && (
