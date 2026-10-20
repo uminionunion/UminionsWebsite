@@ -15,6 +15,7 @@ interface BroadcastCarouselProps {
   items?: BroadcastItem[];
   visibleItemCount?: number;
   maxPages?: number;
+  backgroundClassName?: string;
   isAdmin?: boolean;
   onReorderLeft?: (itemId: number) => Promise<void>;
   onReorderRight?: (itemId: number) => Promise<void>;
@@ -25,6 +26,7 @@ export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({
   items = [],
   visibleItemCount = 2,
   maxPages,
+  backgroundClassName = 'bg-muted',
   isAdmin = false,
   onReorderLeft,
   onReorderRight,
@@ -59,14 +61,14 @@ export const BroadcastCarousel: React.FC<BroadcastCarouselProps> = ({
 
   if (items.length === 0) {
     return (
-      <div className="flex w-full items-center justify-center bg-muted rounded-lg h-48">
+      <div className={`flex w-full items-center justify-center rounded-lg h-48 ${backgroundClassName}`}>
         <div className="text-center text-muted-foreground">Coming Soon This Week!!!</div>
       </div>
     );
   }
 
   return (
-    <section aria-label="Broadcast image carousel" className="relative w-full h-48 bg-muted rounded-lg overflow-hidden">
+    <section aria-label="Broadcast image carousel" className={`relative w-full h-48 rounded-lg overflow-hidden ${backgroundClassName}`}>
       <div className="grid grid-cols-2 gap-0 w-full h-full" style={{ gridAutoRows: 'minmax(0, 1fr)' }}>
         {items.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage).map((item, index) => {
           const itemIndex = currentPage * itemsPerPage + index;
