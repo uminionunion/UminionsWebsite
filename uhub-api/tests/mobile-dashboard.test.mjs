@@ -277,7 +277,10 @@ test('MemeBox side rails reuse existing handlers in the requested order, includi
   assert.deepEqual(actions, handlers);
   const css = await readFile(new URL('../../includes/uhub/src/index.css', import.meta.url), 'utf8');
   assert.doesNotMatch(css, /\.meme-mobile-rail button\[aria-label="(?:Upvote meme|Meme comments|Downvote meme|Meme favorites)"\][^{]*\{[^}]*transform:/);
-  assert.match(css, /\.meme-mobile-rail-spacer \{\s*display: none;/);
+  assert.match(css, /\.meme-mobile-rail-spacer \{\s*display: block;\s*flex: 1;/);
+  assert.match(css, /\.meme-embedded \.meme-images-stack \{\s*grid-column: 2;\s*grid-row: 1;/);
+  assert.match(css, /\.meme-embedded \.meme-post-info \{\s*grid-column: 2;\s*grid-row: 2;/);
+  assert.match(css, /\.meme-mobile-rail \{[^}]*grid-row: 1;/);
   assert.match(css, /\.meme-mobile-rail button \{[\s\S]*?height: 40px;/);
   const empty = render(null);
   for (const rail of [empty.props.children[0], empty.props.children[2]]) {

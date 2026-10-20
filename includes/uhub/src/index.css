@@ -1288,9 +1288,28 @@
   }
 
   .uhub-root .meme-embedded .meme-post-viewer {
+    display: contents !important;
     min-width: 0;
     padding: 0 !important;
     overflow: visible !important;
+  }
+
+  .uhub-root .meme-embedded .meme-images-stack {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    margin: 0 !important;
+  }
+
+  .uhub-root .meme-embedded .meme-post-info {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: 16px;
+  }
+
+  .uhub-root .meme-embedded .meme-empty-state {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .uhub-root .meme-post-viewer h2 {
@@ -1302,11 +1321,24 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    min-height: 280px;
+    grid-row: 1;
+    min-height: 172px;
+    min-width: 0;
+    align-self: stretch;
+  }
+
+  .uhub-root .meme-mobile-rail-left {
+    grid-column: 1;
+  }
+
+  .uhub-root .meme-mobile-rail-right {
+    grid-column: 3;
   }
 
   .uhub-root .meme-mobile-rail-spacer {
-    display: none;
+    display: block;
+    flex: 1;
+    min-height: 0;
   }
 
   .uhub-root .meme-mobile-rail button {
@@ -1318,6 +1350,7 @@
     width: 46px;
     height: 40px;
     min-height: 40px;
+    flex-shrink: 0;
     padding: 2px 1px;
     border: 1px solid #374151;
     border-radius: 6px;
