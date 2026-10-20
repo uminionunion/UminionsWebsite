@@ -486,6 +486,10 @@ export interface MemeImplementation001Favorites {
 
 // ✅ Now the DB interface can reference ChatroomUnreadStatus
 export interface DB {
+  ArchiveImagesForUnionNews14: {
+    image_id: number;
+    archived_at: Generated<string>;
+  };
   anonymous_counter: AnonymousCounter;
   blocked_users: BlockedUsers;
   friends: Friends;
