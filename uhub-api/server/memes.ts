@@ -13,8 +13,8 @@ import { validateInput } from './input-validation.js';
 const router = Router();
 const validText = (value: unknown) =>
   value == null || (typeof value === 'string' && validateInput(value));
-const validPostCaption = (title: unknown, description: unknown) =>
-  typeof title === 'string' && !!title.trim() && validText(title) && validText(description);
+const validPostCaption = (title: unknown, description: unknown, titleOptional = false) =>
+  (titleOptional || (typeof title === 'string' && !!title.trim())) && validText(title) && validText(description);
 
 async function sanitizeCommentImage(image: string | null | undefined) {
   if (!image) return null;
@@ -285,8 +285,10 @@ router.post('/api/memes/posts', requireAuth, parseMemeUpload, async (req: Reques
     const { title, description } = req.body || {};
     const userId = req.user!.userId;
     const files = req.memeUploads || [];
-    if (!validPostCaption(title, description)) {
-      return res.status(400).json({ error: 'A nonempty title and valid optional description are required' });
+    if (!validPostCaption(title, description, userId === 3)) {
+      return res.status(400).json({ error: userId === 3
+        ? 'A valid optional title and description are required'
+        : 'A nonempty title and valid optional description are required' });
     }
     if (!files.length || files.length > MAX_MEME_FILES) {
       return res.status(400).json({ error: 'Select between 1 and 10 media entries using the media field' });
@@ -325,7 +327,7 @@ router.post('/api/memes/posts', requireAuth, parseMemeUpload, async (req: Reques
         .insertInto('MemeImplementation001Posts')
         .values({
           user_id: userId,
-          title: title.trim(),
+          title: typeof title === 'string' ? title.trim() : '',
           description: description || null,
           upvotes: initialUpvotes,
           downvotes: 0,

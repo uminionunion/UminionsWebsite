@@ -20,7 +20,7 @@ import ProductQueuedImage from '../../components/ProductQueuedImage';
 import { IMAGE_LOAD_PRIORITY, retainQueuedImages } from '../../lib/image-load-queue';
 import { useQueuedImageSlot } from '../../lib/carousel-rotation-queue';
 import { useSiteWideMute } from '../../lib/media-sound';
-import { Volume2, VolumeX, MoreHorizontal, Radio } from 'lucide-react';
+import { Volume2, VolumeX, MoreHorizontal, Radio, BookOpen, TreePalm, Skull, ShipWheel, Ship, Star, KeyRound, Wrench, Projector, Image as ImageIcon, SkipForward, SkipBack, Heart } from 'lucide-react';
 import { enqueueProductImageBatch, setProductImageQueueActive } from '../../lib/product-image-cache';
 import ProductSearchDropdown from './ProductSearchDropdown';
 import MainUhubFeatureV001ForEditProductModal from './MainUhubFeatureV001ForEditProductModal';
@@ -297,6 +297,12 @@ const ProductBox = ({ product, onMagnify, onAddToCart }) => {
         </div>
     );
 };
+
+const AccountStatusButton = ({ showLogout, onClick }: { showLogout: boolean; onClick: () => void }) => (
+  <button type="button" className={showLogout ? 'rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700' : 'uhub-login-status flex items-center gap-1 rounded bg-transparent px-2 py-1 text-xs text-gray-400 hover:text-gray-200'} style={{ border: 0, boxShadow: 'none', outline: 'none' }} onClick={onClick}>
+    {showLogout ? 'Log Out?' : <><span className="h-2 w-2 rounded-full bg-green-500" /> Logged In</>}
+  </button>
+);
 
 const SiteWideMuteButton = ({ small = false }: { small?: boolean }) => {
   const { muted, toggle } = useSiteWideMute();
@@ -4702,20 +4708,18 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                   <AvatarFallback>U</AvatarFallback>
                 </Avatar>
               </button>
-              <div className="min-w-0 flex-1">
-                <button type="button" className="uhub-mobile-brand" aria-label="Uminion Union - About Us" onClick={() => setMobileAboutOpen(true)}>Uminion Union</button>
-                {user ? <div className="truncate text-xs text-gray-200">{user.username}</div> : <div className="uhub-mobile-inline-auth">
+              <button type="button" className="uhub-mobile-brand" aria-label="Uminion Union - About Us" onClick={() => setMobileAboutOpen(true)}>Uminion Union</button>
+              {user ? <div className="uhub-mobile-username truncate text-xs text-gray-200">{user.username}</div> : <div className="uhub-mobile-inline-auth">
                   <Button type="button" size="sm" onClick={() => onOpenAuthModal('login')}>Log In</Button>
                   <Button type="button" size="sm" className="bg-orange-400 text-black hover:bg-orange-500" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button>
                 </div>}
-              </div>
               <SiteWideMuteButton />
+              {user && <div className="uhub-mobile-login-status"><AccountStatusButton showLogout={showLogout} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }} /></div>}
             </div>
             {user && <div className="uhub-mobile-account-actions">
               {user ? <>
                 <Button type="button" variant="outline" size="sm" onClick={() => setPhotoEditorPurpose('profile')}>Edit picture</Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setPhotoEditorPurpose('cover')}>Change cover</Button>
-                <Button type="button" variant="ghost" size="sm" onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }}>{showLogout ? 'Log Out?' : '● Logged In'}</Button>
               </> : null}
             </div>}
             <nav className="uhub-mobile-primary-actions" aria-label="Mobile shortcuts">
@@ -5081,35 +5085,35 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       >
         <span className={customizableButtonPage === 1 && [3, 4, 5, 6, 7, 8, 15, 16].includes(buttonNumber) ? 'text-[1.5625rem] leading-none' : 'text-xl leading-none'}>
           {buttonNumber === 18 ? (isButton18Active ? '𓆗' : '𓆙') :
-            customizableButtonPage === 1 && buttonNumber === 3 ? (areFeatureIconsActive.heart ? '♥︎' : '♡') :
-            customizableButtonPage === 1 && buttonNumber === 4 ? (areFeatureIconsActive.palm ? '☠' : '🏝') :
+            customizableButtonPage === 1 && buttonNumber === 3 ? <Heart fill={areFeatureIconsActive.heart ? 'currentColor' : 'none'} /> :
+            customizableButtonPage === 1 && buttonNumber === 4 ? (areFeatureIconsActive.palm ? <Skull /> : <TreePalm />) :
             customizableButtonPage === 1 && buttonNumber === 5 ? (areFeatureIconsActive.lion ? '𓃮' : '𓃭') :
-            customizableButtonPage === 1 && buttonNumber === 6 ? '☸' :
-            customizableButtonPage === 1 && buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? '⛴' : '☸') :
-            customizableButtonPage === 1 && buttonNumber === 8 ? (areProfileSurfacesOpaque ? '✩' : '★') :
-            customizableButtonPage === 1 && buttonNumber === 9 ? '🕮' :
+            customizableButtonPage === 1 && buttonNumber === 6 ? <ShipWheel /> :
+            customizableButtonPage === 1 && buttonNumber === 7 ? (areFeatureIconsActive.steeringWheel ? <Ship /> : <ShipWheel />) :
+            customizableButtonPage === 1 && buttonNumber === 8 ? <Star fill={areProfileSurfacesOpaque ? 'none' : 'currentColor'} /> :
+            customizableButtonPage === 1 && buttonNumber === 9 ? <BookOpen /> :
             customizableButtonPage === 1 && buttonNumber === 10 ? '🐃' :
             customizableButtonPage === 1 && buttonNumber === 11 ? '🦬' :
             customizableButtonPage === 1 && buttonNumber === 12 ? '🦣' :
-            customizableButtonPage === 1 && buttonNumber === 13 ? '🗝' :
-            customizableButtonPage === 1 && buttonNumber === 14 ? '🛠' :
-            customizableButtonPage === 1 && buttonNumber === 15 ? (areFeatureIconsActive.movie ? '🖼' : '📽') :
-            customizableButtonPage === 1 && buttonNumber === CustomButtonsPage001sNextPageButton ? '⏭' :
-            customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sPreviousPageButton ? '⏮' :
-            customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sNextPageButton ? '⏭' :
-            customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sPreviousPageButton ? '⏮' :
-            customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sNextPageButton ? '⏭' :
-            customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sPreviousPageButton ? '⏮' :
-            customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sNextPageButton ? '⏭' :
-            customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sPreviousPageButton ? '⏮' :
-            customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sNextPageButton ? '⏭' :
-            customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sPreviousPageButton ? '⏮' :
-            customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sNextPageButton ? '⏭' :
-            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton ? '⏮' :
-            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton ? '⏭' :
-            typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton') ? '⏮' :
-            typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton') ? '⏭' :
-            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton ? '⏭' :
+            customizableButtonPage === 1 && buttonNumber === 13 ? <KeyRound /> :
+            customizableButtonPage === 1 && buttonNumber === 14 ? <Wrench /> :
+            customizableButtonPage === 1 && buttonNumber === 15 ? (areFeatureIconsActive.movie ? <ImageIcon /> : <Projector />) :
+            customizableButtonPage === 1 && buttonNumber === CustomButtonsPage001sNextPageButton ? <SkipForward /> :
+            customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sPreviousPageButton ? <SkipBack /> :
+            customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sNextPageButton ? <SkipForward /> :
+            customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sPreviousPageButton ? <SkipBack /> :
+            customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sNextPageButton ? <SkipForward /> :
+            customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sPreviousPageButton ? <SkipBack /> :
+            customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sNextPageButton ? <SkipForward /> :
+            customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sPreviousPageButton ? <SkipBack /> :
+            customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sNextPageButton ? <SkipForward /> :
+            customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sPreviousPageButton ? <SkipBack /> :
+            customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sNextPageButton ? <SkipForward /> :
+            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton ? <SkipBack /> :
+            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton ? <SkipForward /> :
+            typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton') ? <SkipBack /> :
+            typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton') ? <SkipForward /> :
+            customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton ? <SkipForward /> :
             customizableButtonPage === 715 && buttonNumber === 9998 ? <GroupIcon /> :
             customizableButtonPage === 715 && buttonNumber === 9999 ? <GroupIcon withChat /> :
             customizableButtonPage === 715 && buttonNumber === 10000 ? '🐾' : buttonNumber}
@@ -5146,7 +5150,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     )}
   </div>
     <div className="absolute bottom-0 right-0 flex items-center gap-2">
-      {user ? <button type="button" className={showLogout ? 'rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700' : 'uhub-login-status flex items-center gap-1 rounded bg-transparent px-2 py-1 text-xs text-gray-400 hover:text-gray-200'} style={{ border: 0, boxShadow: 'none', outline: 'none' }} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }}>{showLogout ? 'Log Out?' : <><span className="h-2 w-2 rounded-full bg-green-500" /> Logged In</>}</button> : <div className="flex gap-1"><Button size="sm" className="h-7 text-xs" onClick={() => onOpenAuthModal('login')}>Log In</Button><Button size="sm" className="h-7 text-xs bg-orange-400 hover:bg-orange-500 text-black" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button></div>}
+      {user ? <AccountStatusButton showLogout={showLogout} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }} /> : <div className="flex gap-1"><Button size="sm" className="h-7 text-xs" onClick={() => onOpenAuthModal('login')}>Log In</Button><Button size="sm" className="h-7 text-xs bg-orange-400 hover:bg-orange-500 text-black" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button></div>}
   </div>
 </div>
          </div>

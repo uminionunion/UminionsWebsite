@@ -42,6 +42,70 @@ function compile(sourceText, globals) {
   return vm.runInNewContext(compiled.outputText, globals);
 }
 
+test('mobile and desktop share login status colors, confirmation and click behavior', () => {
+  const declaration = findNode(node => ts.isVariableDeclaration(node) && node.name.getText(tree) === 'AccountStatusButton');
+  const render = compile(`const ${declaration.getText(tree)}; AccountStatusButton`, {
+    React: { createElement: (type, props, ...children) => ({ type, props: { ...props, children } }), Fragment: 'fragment' },
+  });
+  let clicks = 0;
+  for (const showLogout of [false, true]) {
+    const button = render({ showLogout, onClick: () => clicks++ });
+    assert.ok(button.props.className.includes(showLogout ? 'bg-red-600' : 'text-gray-400'));
+    assert.ok(button.props.className.includes(showLogout ? 'text-white' : 'bg-transparent'));
+    assert.ok(JSON.stringify(button).includes(showLogout ? 'Log Out?' : 'bg-green-500'));
+    button.props.onClick();
+  }
+  assert.equal(clicks, 2);
+  assert.equal((source.match(/<AccountStatusButton showLogout=/g) || []).length, 2);
+});
+
+test('circled custom buttons use shared SVG icons rather than platform emoji', () => {
+  const span = findNode(node => ts.isJsxElement(node) && node.openingElement.tagName.getText(tree) === 'span'
+    && node.getText(tree).includes('buttonNumber === 18'));
+  const icons = ['BookOpen', 'TreePalm', 'Skull', 'ShipWheel', 'Ship', 'Star', 'KeyRound', 'Wrench', 'Projector', 'ImageIcon', 'SkipForward', 'SkipBack', 'Heart'];
+  for (const icon of icons) assert.ok(span.getText(tree).includes(`<${icon}`), `Missing shared ${icon} SVG`);
+  for (const oldGlyph of ['🕮', '🏝', '☸', '🗝', '🛠', '📽', '⏭', '⏮']) assert.ok(!span.getText(tree).includes(oldGlyph));
+  const globals = {
+    React: { createElement: (type, props, ...children) => ({ type, props: { ...props, children } }) },
+    ...Object.fromEntries(icons.map(icon => [icon, icon])),
+    customizableButtonPage: 1, isButton18Active: false,
+    CustomButtonsPage001sNextPageButton: 'CustomButtonsPage001sNextPageButton',
+  };
+  const render = compile(`(buttonNumber, active) => {
+    const areFeatureIconsActive = { heart: active, palm: active, steeringWheel: active, movie: active };
+    const areProfileSurfacesOpaque = !active;
+    return (${span.getText(tree)});
+  }`, globals);
+  for (const [number, inactive, active] of [
+    [3, 'Heart', 'Heart'], [4, 'TreePalm', 'Skull'], [6, 'ShipWheel', 'ShipWheel'],
+    [7, 'ShipWheel', 'Ship'], [8, 'Star', 'Star'], [9, 'BookOpen', 'BookOpen'],
+    [13, 'KeyRound', 'KeyRound'], [14, 'Wrench', 'Wrench'], [15, 'Projector', 'ImageIcon'],
+    ['CustomButtonsPage001sNextPageButton', 'SkipForward', 'SkipForward'],
+  ]) {
+    assert.equal(render(number, false).props.children[0].type, inactive);
+    assert.equal(render(number, true).props.children[0].type, active);
+  }
+});
+
+test('mobile account rows keep status beneath mute and editing outside the identity grid', async () => {
+  const header = findNode(node => ts.isJsxElement(node) && node.openingElement.getText(tree).includes('className="uhub-mobile-identity"'));
+  const text = header.getText(tree);
+  assert.ok(text.includes('className="uhub-mobile-username truncate text-xs text-gray-200"'));
+  assert.ok(text.indexOf('uhub-mobile-login-status') < text.indexOf('uhub-mobile-account-actions'));
+  const css = await readFile(new URL('../../includes/uhub/src/index.css', import.meta.url), 'utf8');
+  for (const [selector, column, row] of [
+    ['.uhub-root .uhub-mobile-account-row .uhub-mobile-brand', '2', '1'],
+    ['.uhub-root .uhub-mobile-account-row > .uhub-play-button', '3', '1'],
+    ['.uhub-root .uhub-mobile-login-status', '3', '2'],
+  ]) {
+    const start = css.indexOf(`${selector} {`);
+    assert.ok(start >= 0);
+    const rule = css.slice(start, css.indexOf('}', start));
+    assert.ok(rule.includes(`grid-column: ${column};`));
+    assert.ok(rule.includes(`grid-row: ${row};`));
+  }
+});
+
 test('broadcast carousel shows the launch message only when it has no images', async () => {
   const carouselSource = await readFile(new URL('../../includes/uhub/src/features/profile/BroadcastCarousel.tsx', import.meta.url), 'utf8');
   const carouselTree = ts.createSourceFile('carousel.tsx', carouselSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
