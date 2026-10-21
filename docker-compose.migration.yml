@@ -17,3 +17,11 @@ services:
         target: /data
         bind:
           create_host_path: false
+
+  memebox-sqlite-web:
+    volumes:
+      - type: bind
+        source: ${UHUB_MIGRATED_DATA_DIRECTORY:?Set the absolute path of the completed migration destination}
+        target: /data
+        bind:
+          create_host_path: false
