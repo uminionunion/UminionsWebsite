@@ -170,7 +170,7 @@ const MainUhubFeatureV001ForProductDetailModal: React.FC<MainUhubFeatureV001ForP
           <div className="mt-auto pt-4 border-t border-gray-700">
             <Button 
               onClick={handleAddToCart}
-              className="w-full bg-orange-400 hover:bg-orange-500 text-white h-12 text-lg"
+              className="uhub-store-action w-full h-12 text-lg"
             >
               <ShoppingCart className="mr-2 h-5 w-5" />
               Add to Cart
