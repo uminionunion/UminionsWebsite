@@ -4,7 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
-.uhub-root button.uhub-store-action,
+.uhub-root button.uhub-store-action {
+  background-color: transparent;
+  color: #fff;
+  border: 0;
+  padding: 4px;
+  box-shadow: none;
+  line-height: 1;
+}
+
+.uhub-root button.uhub-store-action:hover {
+  background-color: transparent;
+  color: #fff;
+}
+
 .uhub-root button.uhub-product-image-retry {
   background-color: #fb923c;
   color: #000;
@@ -14,7 +27,6 @@
   line-height: 1;
 }
 
-.uhub-root button.uhub-store-action:hover,
 .uhub-root button.uhub-product-image-retry:hover {
   background-color: #f97316;
   color: #000;

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo } from 'react';
 import { Button } from '../../components/ui/button';
-import { Search, Plus, Minus, Loader2 } from 'lucide-react';
+import { Search, ShoppingCart, Loader2 } from 'lucide-react';
 import ProductQueuedImage from '../../components/ProductQueuedImage';
 
 interface Product {
@@ -12,6 +12,7 @@ interface Product {
   user_id?: number;
   store_id?: number;
   sku_id?: string;
+  payment_url?: string | null;
 }
 
 interface EverythingProductsListProps {
@@ -19,34 +20,34 @@ interface EverythingProductsListProps {
   isLoading: boolean;
   onProductView: (product: Product) => void;
   onAddToCart?: (product: Product) => void;
+  error?: string;
+  onRetry?: () => void;
 }
 
 const EverythingProductsList: React.FC<EverythingProductsListProps> = ({ 
   products = [], 
   isLoading,
   onProductView,
-  onAddToCart
+  onAddToCart,
+  error,
+  onRetry
 }) => {
-  const [inCart, setInCart] = useState<{ [key: number]: boolean }>({});
-
-  const handleCartClick = (e: React.MouseEvent, product: Product) => {
-    e.stopPropagation();
-    if (onAddToCart) {
-      onAddToCart(product);
-    }
-    setInCart(prev => ({ ...prev, [product.id]: !prev[product.id] }));
-  };
+  const shuffledProducts = useMemo(() => [...products].sort(() => Math.random() - 0.5), [products]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground" role="status" aria-label="Loading products"><Loader2 className="h-4 w-4 animate-spin" />Loading products...</div>;
   }
 
+  if (error) {
+    return <div role="alert" className="py-4 text-center text-red-400">
+      <p>Products could not be loaded: {error}</p>
+      {onRetry && <Button type="button" variant="outline" size="sm" onClick={onRetry}>Retry</Button>}
+    </div>;
+  }
+
   if (!products || products.length === 0) {
     return <div className="text-center text-muted-foreground py-4">No products available</div>;
   }
-
-  // Shuffle products randomly
-  const shuffledProducts = [...products].sort(() => Math.random() - 0.5);
 
   return (
     <div className="everything-store-scrollable" style={{ maxHeight: '500px', overflow: 'hidden', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
@@ -85,6 +86,7 @@ const EverythingProductsList: React.FC<EverythingProductsListProps> = ({
                   onProductView(product);
                 }}
                 title="View product details"
+                aria-label={`View ${product.name} details`}
               >
                 <Search className="h-4 w-4" />
               </Button>
@@ -93,10 +95,11 @@ const EverythingProductsList: React.FC<EverythingProductsListProps> = ({
                   size="icon" 
                   variant="ghost" 
                   className="uhub-store-action h-7 w-7 flex-1"
-                  onClick={(e) => handleCartClick(e, product)}
-                  title={inCart[product.id] ? "Remove from cart" : "Add to cart"}
+                  onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+                  title="Add to cart"
+                  aria-label={`Add ${product.name} to cart`}
                 >
-                  {inCart[product.id] ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                  <ShoppingCart className="h-4 w-4" />
                 </Button>
               )}
             </div>
