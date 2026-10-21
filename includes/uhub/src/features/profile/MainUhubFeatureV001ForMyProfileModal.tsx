@@ -21,7 +21,7 @@ import { IMAGE_LOAD_PRIORITY, retainQueuedImages } from '../../lib/image-load-qu
 import { useQueuedImageSlot } from '../../lib/carousel-rotation-queue';
 import { useSiteWideMute } from '../../lib/media-sound';
 import { Volume2, VolumeX, MoreHorizontal, Radio, BookOpen, TreePalm, Skull, ShipWheel, Ship, Star, KeyRound, Wrench, Projector, Image as ImageIcon, SkipForward, SkipBack, Heart } from 'lucide-react';
-import { enqueueProductImageBatch, setProductImageQueueActive } from '../../lib/product-image-cache';
+import { enqueueProductImageBatch } from '../../lib/product-image-cache';
 import ProductSearchDropdown from './ProductSearchDropdown';
 import MainUhubFeatureV001ForEditProductModal from './MainUhubFeatureV001ForEditProductModal';
 import MainUhubFeatureV001ForUserProfileModal from './MainUhubFeatureV001ForUserProfileModal';
@@ -285,7 +285,7 @@ const ProductBox = ({ product, onMagnify, onAddToCart }) => {
                 {product.location ? (
                     <span>{product.location}</span>
                 ) : (
-                    <Button variant="outline" size="icon" className="h-6 w-6" onClick={handleCartClick}>
+                    <Button variant="outline" size="icon" className="uhub-store-action h-7 w-12" aria-label={inCart ? 'Remove from cart' : 'Add to cart'} onClick={handleCartClick}>
                         {inCart ? <Minus className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                         <ShoppingCart className="h-4 w-4" />
                     </Button>
@@ -1990,7 +1990,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
         <Button
   variant="ghost"
   size="icon"
-  className="h-6 w-6 text-white hover:text-orange-400 flex-shrink-0"
+  className="uhub-store-action h-7 w-7 flex-shrink-0"
   onClick={(e) => {
     e.stopPropagation();
     onProductView(p);
@@ -2567,7 +2567,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
                       e.stopPropagation();
                       onProductView(product);
                     }}
-                    className="absolute bottom-1 right-1 z-20 bg-black bg-opacity-60 hover:bg-opacity-80 p-1 rounded transition"
+                    className="uhub-store-action absolute bottom-1 right-1 z-20 h-7 w-7 inline-flex items-center justify-center rounded transition"
                     title="View product details"
                   >
                     <Eye className="h-3 w-3 text-white" />
@@ -3187,7 +3187,8 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
       if (!Array.isArray(data)) throw new Error('The server returned an invalid product list.');
       setStoreProducts(previous => ({ ...previous, [storeId]: data as Product[] }));
       if (storeId === 0) setMainStoreProducts(data as Product[]);
-      if (storeId === 0) void enqueueProductImageBatch((data as Product[]).map(product => product.image_url || ''), 'union');
+      if (storeId === 0) void enqueueProductImageBatch((data as Product[]).map(product => product.image_url || ''), 'union')
+        .catch(error => console.error('[PRODUCT IMAGES] Union Store preload failed:', error));
       loadedStoreIds.current.add(storeId);
     } catch (error) {
       setStoreProductErrors(previous => ({
@@ -3216,7 +3217,8 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
       const data: unknown = await response.json();
       if (!Array.isArray(data)) throw new Error('The server returned an invalid product list.');
       setEverythingProducts(data as Product[]);
-      void enqueueProductImageBatch((data as Product[]).map(product => product.image_url || ''), 'users');
+      void enqueueProductImageBatch((data as Product[]).map(product => product.image_url || ''), 'users')
+        .catch(error => console.error('[PRODUCT IMAGES] Users Stores preload failed:', error));
       hasLoadedEverything.current = true;
     } catch (error) {
       setEverythingProductsError(error instanceof Error ? error.message : 'Unknown error');
@@ -3596,10 +3598,6 @@ useEffect(() => {
 //   .then(response => response.json())
 //   .then(data => console.log(`[PRODUCTS] Everything returned ${Array.isArray(data) ? data.length : 'invalid'} products`))
 //   .catch(error => console.error('[PRODUCTS] Debug request failed for Everything:', error));
-useEffect(() => {
-  setProductImageQueueActive(isOpen && (centerRightView.number === 20 || isQuadrantsModalOpen));
-}, [centerRightView.number, isOpen, isQuadrantsModalOpen]);
-
 useEffect(() => {
   if (isOpen && centerRightView.number === 20) {
     void loadStoreProducts(0);
@@ -4032,7 +4030,7 @@ const resetRightSection = () => {
       <div className="flex justify-between items-center mb-2">
         <h4 className="font-semibold text-center flex-1">Union Store</h4>
         <a href={getCartUrl(mainStoreProducts[0] || null)} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="icon" className="bg-orange-400 hover:bg-orange-500 text-white">
+          <Button variant="outline" size="icon" className="uhub-store-action bg-orange-400 hover:bg-orange-500 text-white" aria-label="Open Union Store cart">
             <ShoppingCart className="h-4 w-4" />
           </Button>
         </a>
@@ -4063,7 +4061,7 @@ const resetRightSection = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 text-white hover:text-orange-400 flex-shrink-0"
+                className="uhub-store-action h-7 w-7 flex-shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedProduct(p);
@@ -4096,7 +4094,7 @@ const resetRightSection = () => {
       <h4 className="font-semibold text-center flex-1">Users' Stores</h4>
     </div>
     <a href="https://page001.uminion.com/cart/" target="_blank" rel="noopener noreferrer">
-      <Button variant="outline" size="icon" className="bg-orange-400 hover:bg-orange-500 text-black">
+      <Button variant="outline" size="icon" className="uhub-store-action bg-orange-400 hover:bg-orange-500 text-black" aria-label="Open Users Stores cart">
         <ShoppingCart className="h-4 w-4" />
       </Button>
     </a>
@@ -4161,7 +4159,7 @@ const resetRightSection = () => {
                 setSelectedProduct(product);
                 setProductDetailModalOpen(true);
               }}
-              className="absolute bottom-1 right-1 z-20 bg-black bg-opacity-60 hover:bg-opacity-80 p-1 rounded transition"
+              className="uhub-store-action absolute bottom-1 right-1 z-20 h-7 w-7 inline-flex items-center justify-center rounded transition"
               title="View product details"
             >
               <Eye className="h-3 w-3 text-white" />
@@ -4226,7 +4224,7 @@ const resetRightSection = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 text-white hover:text-orange-400 flex-shrink-0"
+              className="uhub-store-action h-7 w-7 flex-shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedProduct(p);

@@ -79,7 +79,7 @@ const EverythingProductsList: React.FC<EverythingProductsListProps> = ({
               <Button 
                 size="icon" 
                 variant="ghost" 
-                className="h-6 w-6 text-white hover:text-orange-400 flex-1 bg-black bg-opacity-30 hover:bg-opacity-50"
+                className="uhub-store-action h-7 w-7 flex-1"
                 onClick={(e) => {
                   e.stopPropagation();
                   onProductView(product);
@@ -92,7 +92,7 @@ const EverythingProductsList: React.FC<EverythingProductsListProps> = ({
                 <Button 
                   size="icon" 
                   variant="ghost" 
-                  className="h-6 w-6 text-white hover:text-orange-400 flex-1 bg-black bg-opacity-30 hover:bg-opacity-50"
+                  className="uhub-store-action h-7 w-7 flex-1"
                   onClick={(e) => handleCartClick(e, product)}
                   title={inCart[product.id] ? "Remove from cart" : "Add to cart"}
                 >

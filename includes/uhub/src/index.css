@@ -4,6 +4,35 @@
 @tailwind components;
 @tailwind utilities;
 
+.uhub-root button.uhub-store-action,
+.uhub-root button.uhub-product-image-retry {
+  background-color: #fb923c;
+  color: #000;
+  border: 1px solid #f97316;
+  padding: 4px;
+  box-shadow: none;
+  line-height: 1;
+}
+
+.uhub-root button.uhub-store-action:hover,
+.uhub-root button.uhub-product-image-retry:hover {
+  background-color: #f97316;
+  color: #000;
+}
+
+.uhub-root button.uhub-store-action svg {
+  display: block;
+  color: inherit;
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+.uhub-root button.uhub-product-image-retry {
+  z-index: 30;
+  font-size: 10px;
+  overflow: hidden;
+}
+
 .uhub-root .uhub-pantry-finder {
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;
