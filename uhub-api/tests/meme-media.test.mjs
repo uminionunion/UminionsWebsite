@@ -119,6 +119,37 @@ test('multipart media persists URLs, enforces limits, rolls back, serves ranges 
     };
     assert.equal(await boundary(upload.MAX_MEME_FILE_SIZE), 201);
     assert.equal(await boundary(upload.MAX_MEME_FILE_SIZE + 1), 413);
+    const uploadCaption = async (userId, caption, names = ['untitled.png']) => {
+      const form = new FormData();
+      for (const [field, value] of Object.entries(caption)) form.append(field, value);
+      names.forEach(name => form.append('media', new Blob(['test-media-bytes']), name));
+      const identity = jwt.sign({ userId, username: 'caption-test' }, process.env.JWT_SECRET || 'your-super-secret-key');
+      return fetch(`${base}/api/memes/posts`, {
+        method: 'POST', body: form, headers: { Cookie: `token=${identity}` },
+      });
+    };
+    for (const userId of [1, 2, 13, 30, '3']) {
+      for (const caption of [{}, { title: '' }, { title: '   ' }, { userId: '3' }]) {
+        assert.equal((await uploadCaption(userId, caption)).status, 400, `ID ${JSON.stringify(userId)} needs a title`);
+      }
+    }
+    for (const caption of [{}, { title: '' }, { title: '   ', description: '' }]) {
+      const untitled = await uploadCaption(3, caption, ['test.mp4', 'test.gif', 'test.jpg', 'test.jpeg', 'test.png']);
+      assert.equal(untitled.status, 201);
+      const saved = await untitled.json();
+      const post = sqlite.prepare('SELECT user_id, title, description FROM MemeImplementation001Posts WHERE id = ?').get(saved.id);
+      assert.deepEqual(post, { user_id: 3, title: '', description: null });
+      assert.equal(saved.images.length, 5);
+    }
+    assert.equal((await uploadCaption(3, {}, [])).status, 400, 'ID 3 still needs media');
+    assert.equal((await uploadCaption(3, {}, ['invalid.txt'])).status, 400);
+    for (const body of [{ title: 3 }, { title: [], description: '' }, { description: {} }]) {
+      let status;
+      await save({ user: { userId: 3 }, body }, {
+        status(value) { status = value; return this; }, json(value) { return value; },
+      });
+      assert.equal(status, 400, 'Optional captions still enforce text types');
+    }
     const beforeFailure = sqlite.prepare('SELECT COUNT(*) AS n FROM MemeImplementation001Posts').get().n;
     const filesBefore = await readdir(path.join(directory, 'uploads', 'memes'));
     sqlite.exec("CREATE TRIGGER reject_image BEFORE INSERT ON MemeImplementation001Images BEGIN SELECT RAISE(ABORT, 'test failure'); END");
@@ -166,6 +197,7 @@ test('picker accepts only requested formats, 10 entries and inclusive 50 GiB wit
     setUploadedImages: value => { selected = value; },
     URL: { createObjectURL: file => `blob:${file.name}` },
   });
+
   const select = files => handle({ target: { files, value: 'selection' } });
   select(['mp4', 'gif', 'jpg', 'jpeg', 'png'].map(extension => ({ name: `test.${extension}`, size: 50 * 1024 ** 3 })));
   assert.equal(selected.length, 5);
@@ -174,6 +206,33 @@ test('picker accepts only requested formats, 10 entries and inclusive 50 GiB wit
   select(Array(6).fill({ name: 'test.png', size: 10 }));
   assert.equal(errors.length, 3);
   assert.equal(selected.length, 5);
+});
+
+test('upload form exempts only numeric user ID 3 and retains the media requirement', async () => {
+  const source = await readFile(memeSource, 'utf8');
+  const ast = ts.createSourceFile('memes.jsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX);
+  const declarations = new Map();
+  const visit = node => {
+    if (ts.isVariableDeclaration(node)) declarations.set(node.name.getText(ast), node.initializer?.getText(ast));
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  for (const id of [3, 1, 13, 30, '3', undefined]) {
+    const optional = vm.runInNewContext(declarations.get('isUploadTitleOptional'), { sharedUser: id === undefined ? null : { id } });
+    assert.equal(optional, id === 3);
+    for (const title of ['', '  ', 'A meme']) {
+      const errors = [];
+      let attempted = false;
+      const submit = vm.runInNewContext(`(${declarations.get('submitUpload')})`, {
+        isUploading: false, isUploadTitleOptional: optional, uploadTitle: title, uploadedImages: [],
+        showToast: message => errors.push(message), setIsUploading: () => { attempted = true; },
+      });
+      await submit();
+      assert.equal(attempted, false);
+      assert.deepEqual(errors, [id !== 3 && !title.trim() ? 'Please enter a title' : 'Please select at least one image or video']);
+    }
+  }
+  assert.ok(source.includes('isUploadTitleOptional ? "Meme Title (optional)" : "Meme Title *"'));
 });
 
 test('site and per-user MemeBox sound stay independent and preferences persist', async () => {

@@ -6,6 +6,7 @@ import { Volume2, VolumeX } from "lucide-react";
 
 export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, showExternalUploadButton = false, hideFooter = false }) {
   const { user: sharedUser } = useAuth();
+  const isUploadTitleOptional = sharedUser?.id === 3;
   const { muted: memeMuted, setMuted: setMemeMuted, owner: memeSoundOwner } = useMemeMute(sharedUser?.id);
   // =====================================================
   // STATE VARIABLES
@@ -893,10 +894,14 @@ const closeCommentImageZoom = () => {
 
   const submitUpload = async () => {
     if (isUploading) return;
+    if (!isUploadTitleOptional && !uploadTitle.trim()) {
+      showToast("Please enter a title");
+      return;
+    }
     if (uploadedImages.length === 0) {
-  showToast("Please enter a title and select at least one image");
-  return;
-}
+      showToast("Please select at least one image or video");
+      return;
+    }
 
     setIsUploading(true);
     try {
@@ -1884,7 +1889,7 @@ const renderNavbar = () => {
 
           <div style={styles.dialogContent}>
             <div style={styles.formGroup}>
-              <label style={styles.label}>Meme Title *</label>
+              <label style={styles.label}>{isUploadTitleOptional ? "Meme Title (optional)" : "Meme Title *"}</label>
               <input
                 style={styles.input}
                 type="text"
