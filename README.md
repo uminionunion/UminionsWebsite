@@ -332,7 +332,49 @@ For this upgrade, run `npm.cmd test` in `uhub-api` after an unmasked `npx.cmd ts
 
 [Dockerfile](Dockerfile) stages built frontends, the child theme and selected public assets outside WordPress's persistent document root. The shared [startup script](scripts/start-wordpress.sh) copies just those application files into the document root before normal WordPress startup, so a reused anonymous/named WordPress volume cannot hide the new frontend. It does not erase WordPress configuration, parent themes, plugins, uploads or private mounts. The backend Dockerfiles compile their services. Source edits without rebuilding do not update the served frontend bundles. Ensure generated assets are included in delivery; never hand-edit minified output.
 
-[docker-compose.yml](docker-compose.yml) defines WordPress, both APIs, persistent volumes and database browsers. WordPress uses the existing external MySQL/network and private bind mounts. Pantry/uHub API ports are internal; database browsers are loopback-bound on 8091/8092. Preserve these boundaries and inspect the active deployment configuration before restarting services.
+[docker-compose.yml](docker-compose.yml) defines WordPress, both APIs, persistent volumes and database browsers. WordPress uses the existing external MySQL/network and private bind mounts. Pantry/uHub API ports are internal; database browsers are loopback-bound on 8091/8092/8093. Preserve these boundaries and inspect the active deployment configuration before restarting services.
+
+### SQLite database browsers over SSH
+
+The production Compose stack provides the same `sqlite-web` interface for these databases:
+
+| VPS port | Service | Database | Contents |
+| --- | --- | --- | --- |
+| 8091 | `sqlite-web` | Pantry `database.sqlite` | Pantry data |
+| 8092 | `uhub-sqlite-web` | uHub `database.sqlite` | Accounts, UnionNews carousel and other uHub data |
+| 8093 | `memebox-sqlite-web` | uHub `memebox.sqlite` | MemeBox posts, media URLs, comments, votes and favorites |
+
+After pushing/merging this upgrade, the normal VPS deployment starts the persistent MemeBox browser automatically. It restarts with Docker/the host, waits for a healthy uHub API, and refuses to open a missing/empty database rather than creating a misleading blank one. The migration override gives it the same migrated directory as the API and accounts browser. No data import or schema change is required. This service belongs to production Compose, not the isolated local-preview stack.
+
+On your computer, open the MemeBox tunnel:
+
+```bash
+ssh -o ExitOnForwardFailure=yes -L 8093:127.0.0.1:8093 root@72.61.7.100
+```
+
+Keep that SSH session open, then visit **http://localhost:8093/** in your computer's browser. Use `MemeImplementation001Posts` for titles/descriptions/uploader IDs and `MemeImplementation001Images` for media URLs. Actual media files remain in the API data directory's `uploads/memes/`, not inside SQLite. This is separate from UnionNews carousel uploads, which remain in the main uHub database on 8092.
+
+To tunnel all three browsers in one SSH session:
+
+```bash
+ssh -o ExitOnForwardFailure=yes -L 8091:127.0.0.1:8091 -L 8092:127.0.0.1:8092 -L 8093:127.0.0.1:8093 root@72.61.7.100
+```
+
+Open `http://localhost:8091/`, `http://localhost:8092/` or `http://localhost:8093/` as needed. WordPress uses external **MySQL**, not SQLite, and is not included in these browsers. Like the existing browsers, the MemeBox interface allows database edits; inspect carefully and back up before changing anything. None of these ports should be exposed publicly or opened in the VPS firewall.
+
+If starting just the new browser manually on the VPS after updating the checkout, use the configuration that matches the running API:
+
+```bash
+# With the existing migration configuration:
+docker compose --env-file .env.migration -f docker-compose.yml -f docker-compose.migration.yml up -d --wait --wait-timeout 180 memebox-sqlite-web
+
+# Only for a deployment that does NOT use .env.migration:
+docker compose up -d --wait --wait-timeout 180 memebox-sqlite-web
+```
+
+If a temporary browser from the earlier `docker run` instructions is still using VPS port 8093, stop that specific temporary container before deployment. Do not stop the website or remove data volumes. Diagnose startup with `docker compose logs --tail=80 memebox-sqlite-web` (include the migration flags above on migrated deployments).
+
+Regression coverage: `node --test uhub-api/tests/memebox-browser.test.mjs` checks both base and migration Compose configurations, shared API/browser data sources, loopback-only ports, API readiness dependency, missing-database guard and the browser health check (requires Docker Compose). An isolated container check also verified that the real sqlite-web UI lists a synthetic MemeBox table and stored post, its health check succeeds, and a missing database fails explicitly. No production data or running website containers were used for that check.
 
 ### Automatic VPS deployment after merging
 

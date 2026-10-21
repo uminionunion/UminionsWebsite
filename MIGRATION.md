@@ -182,13 +182,19 @@ From the repository root:
 ```powershell
 docker compose --env-file .env.migration -f docker-compose.yml -f docker-compose.migration.yml config --quiet
 docker compose --env-file .env.migration -f docker-compose.yml -f docker-compose.migration.yml build uhub-api
-docker compose --env-file .env.migration -f docker-compose.yml -f docker-compose.migration.yml up -d uhub-api uhub-sqlite-web
+docker compose --env-file .env.migration -f docker-compose.yml -f docker-compose.migration.yml up -d uhub-api uhub-sqlite-web memebox-sqlite-web
 ```
 
 These are deployment instructions, **not commands executed against the public
 site during this upgrade**. The existing version-3 WordPress/Pantry stack must
 also be running for a complete website. The override intentionally leaves their
 connections, external network and private media mounts unchanged.
+
+Both uHub SQLite browsers use that same completed directory: port 8092 opens
+`database.sqlite` (accounts and other uHub data); port 8093 opens `memebox.sqlite`
+(MemeBox posts, media URLs, comments, votes and favorites). The MemeBox browser
+waits for the API to initialize its database and refuses to create a blank one.
+Both ports are loopback-only; use the [SSH tunnel instructions](README.md#sqlite-database-browsers-over-ssh).
 
 The normal SSH workflow detects `.env.migration` and uses this override for later
 full-stack builds/starts too. Do not remove that private file or start the stack
