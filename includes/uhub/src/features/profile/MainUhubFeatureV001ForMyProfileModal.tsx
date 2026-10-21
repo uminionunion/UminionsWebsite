@@ -143,6 +143,7 @@ interface Product {
   location?: string;
   store_id?: number;
   sku_id?: string;
+  payment_url?: string | null;
   user_store_id?: number;
   user_store_name?: string;
 }
@@ -1798,7 +1799,6 @@ interface QuadrantsModalProps {
   storeProducts: { [key: number]: Product[] };
   onProductView: (product: Product) => void;
   onProductDelete: (productId: number) => void;
-  allProducts?: Product[];
   setSelectedProduct: (product: Product | null) => void;
   setProductDetailModalOpen: (open: boolean) => void;
   setAddProductModalOpen?: (open: boolean) => void;
@@ -1836,7 +1836,6 @@ const QuadrantsModal: React.FC<QuadrantsModalProps> = ({
   storeProducts = {},
   onProductView,
   onProductDelete,
-  allProducts = [],
   allProductsForAdmin = [],
   setSelectedProduct,
   setAddProductModalOpen,
@@ -2437,13 +2436,16 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
   <h3 className="font-bold mb-3">Everything</h3>
   <div className="flex-1 overflow-hidden">
     <EverythingProductsList
-      products={allProducts}
+      products={everythingProducts}
   isLoading={isLoadingEverythingProducts}
   onProductView={onProductView}
       onAddToCart={(product) => {
-        // Handle add to cart for everything products
-        console.log('Added to cart:', product);
+        if (product.payment_url) window.open(product.payment_url, '_blank', 'noopener,noreferrer');
+        else if (product.sku_id) window.open(getCartUrl(product), '_blank', 'noopener,noreferrer');
+        else onProductView(product);
       }}
+      error={everythingProductsError}
+      onRetry={loadEverythingProducts}
     />
   </div>
 </div>
@@ -2756,7 +2758,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
         e.stopPropagation();
         onProductView(product);
       }}
-      className="absolute bottom-1 right-1 z-20 bg-black bg-opacity-60 hover:bg-opacity-80 p-1 rounded transition"
+      className="uhub-store-action absolute bottom-1 right-1 z-20 h-7 w-7 inline-flex items-center justify-center rounded transition"
       title="View product details"
     >
       <Eye className="h-3 w-3 text-white" />

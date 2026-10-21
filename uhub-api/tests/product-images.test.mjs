@@ -206,9 +206,125 @@ test('all store row/detail and cart controls retain handlers with explicit scope
   const main = await readFile(new URL('features/profile/MainUhubFeatureV001ForMyProfileModal.tsx', root), 'utf8');
   assert.ok(!main.includes('setProductImageQueueActive'));
   const css = await readFile(new URL('index.css', root), 'utf8');
-  assert.match(css, /\.uhub-root button\.uhub-store-action,[\s\S]*?background-color: #fb923c;[\s\S]*?color: #000;/);
+  assert.match(css, /\.uhub-root button\.uhub-store-action \{[^}]*background-color: transparent;[^}]*color: #fff;/);
+  assert.match(css, /\.uhub-root button\.uhub-store-action:hover \{[^}]*background-color: transparent;[^}]*color: #fff;/);
   const detail = await readFile(new URL('features/profile/MainUhubFeatureV001ForProductDetailModal.tsx', root), 'utf8');
-  assert.match(detail, /onClick=\{handleAddToCart\}[\s\S]*?className="uhub-store-action w-full h-12 text-lg"/);
+  assert.match(detail, /onClick=\{handleAddToCart\}[\s\S]*?className="w-full bg-orange-400 hover:bg-orange-500 text-white h-12 text-lg"/);
   assert.ok(main.includes("aria-label={inCart ? 'Remove from cart' : 'Add to cart'}"));
   assert.match(main, /className="uhub-store-action h-7 w-7 flex-shrink-0"[\s\S]*?onClick=/);
+});
+
+test('opening mountain browser loads and renders Everything from the supplied product list, including errors and purchase actions', async () => {
+  const source = await readFile(new URL('features/profile/MainUhubFeatureV001ForMyProfileModal.tsx', root), 'utf8');
+  const ast = ts.createSourceFile('hub.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let initializer;
+  const tags = new Set();
+  const visit = node => {
+    if (ts.isVariableDeclaration(node) && node.name.getText(ast) === 'QuadrantsModal') initializer = node.initializer;
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const name = node.tagName.getText(ast);
+      if (/^[A-Z]\w*$/.test(name)) tags.add(name);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(ast);
+  assert.ok(initializer);
+  const effects = [];
+  const opened = [];
+  const globals = {
+    React: { createElement: (type, props, ...children) => ({ type, props: { ...props, children } }) },
+    useState: initial => [initial, () => {}],
+    useMemo: callback => callback(),
+    useEffect: callback => effects.push(callback),
+    window: { open: (...args) => opened.push(args) },
+    ...Object.fromEntries([...tags].map(tag => [tag, tag])),
+  };
+  const compiled = ts.transpileModule(`(${initializer.getText(ast)})`, {
+    compilerOptions: { jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const render = vm.runInNewContext(compiled, globals);
+  const products = [
+    { id: 1, name: 'Purchase URL', image_url: '/api/uploads/one.png', payment_url: 'https://example.invalid/purchase' },
+    { id: 2, name: 'SKU product', image_url: '/api/uploads/two.png', sku_id: '123' },
+    { id: 3, name: 'Contact seller', image_url: '/api/uploads/three.png' },
+  ];
+  let mainLoads = 0;
+  let everythingLoads = 0;
+  let viewed;
+  const props = {
+    isOpen: true, stores: Array.from({ length: 31 }, (_, id) => ({ id, number: id })),
+    everythingProducts: products, loadingStoreIds: new Set(), storeProductErrors: {},
+    loadStoreProducts: id => { assert.equal(id, 0); mainLoads++; },
+    loadEverythingProducts: () => everythingLoads++,
+    onProductView: product => { viewed = product; },
+    getCartUrl: product => `https://example.invalid/cart/?add-to-cart=${product.sku_id}`,
+  };
+  const findList = node => {
+    if (node?.type === 'EverythingProductsList') return node;
+    return (node?.props?.children || []).flat(Infinity).map(findList).find(Boolean);
+  };
+  const list = findList(render(props));
+  assert.ok(list);
+  assert.equal(list.props.products, products, 'actual Quadrants render must pass fetched products, not a default empty alias');
+  effects.forEach(callback => callback());
+  assert.equal(mainLoads, 1);
+  assert.equal(everythingLoads, 1);
+  list.props.onAddToCart(products[0]);
+  list.props.onAddToCart(products[1]);
+  list.props.onAddToCart(products[2]);
+  assert.equal(opened[0][0], products[0].payment_url);
+  assert.equal(opened[1][0], 'https://example.invalid/cart/?add-to-cart=123');
+  assert.equal(viewed, products[2]);
+  const failedList = findList(render({ ...props, everythingProductsError: 'HTTP 500' }));
+  assert.equal(failedList.props.error, 'HTTP 500');
+  assert.equal(failedList.props.onRetry, props.loadEverythingProducts);
+  const closed = render({ ...props, isOpen: false });
+  assert.equal(closed, null);
+  assert.ok(source.includes('everythingProducts={everythingProducts}'));
+});
+
+test('Everything renders a thumbnail per product and white cart/search controls without plus or pretend cart state', async () => {
+  const source = await readFile(new URL('features/profile/EverythingProductsList.tsx', root), 'utf8');
+  const exports = {};
+  const React = { createElement: (type, props, ...children) => ({ type, props: { ...props, children } }), useMemo: callback => callback() };
+  vm.runInNewContext(ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
+  }).outputText, {
+    exports,
+    require(name) {
+      if (name === 'react') return React;
+      if (name === '../../components/ui/button') return { Button: 'button' };
+      if (name === 'lucide-react') return { Search: 'Search', ShoppingCart: 'ShoppingCart', Loader2: 'Loader2' };
+      if (name === '../../components/ProductQueuedImage') return { __esModule: true, default: 'ProductQueuedImage' };
+      throw new Error(`Unexpected import ${name}`);
+    },
+  });
+  const flatten = node => node && typeof node === 'object'
+    ? [node, ...(node.props?.children || []).flat(Infinity).flatMap(flatten)] : [];
+  const products = Array.from({ length: 80 }, (_, id) => ({ id, name: `Product ${id}`, image_url: `/api/uploads/product-${id}.png` }));
+  let viewed;
+  let cart;
+  const nodes = flatten(exports.default({
+    products, onProductView: product => { viewed = product; }, onAddToCart: product => { cart = product; },
+  }));
+  assert.equal(nodes.filter(node => node.type === 'ProductQueuedImage').length, 80);
+  assert.equal(nodes.filter(node => node.type === 'ShoppingCart').length, 80);
+  assert.equal(nodes.filter(node => node.type === 'Search').length, 80);
+  let stopped = 0;
+  const cartButton = nodes.find(node => node.props.title === 'Add to cart');
+  cartButton.props.onClick({ stopPropagation() { stopped++; } });
+  assert.ok(products.includes(cart));
+  const viewButton = nodes.find(node => node.props.title === 'View product details' && node.type === 'button');
+  viewButton.props.onClick({ stopPropagation() { stopped++; } });
+  assert.ok(products.includes(viewed));
+  assert.equal(stopped, 2);
+  assert.ok(!source.includes('<Plus'));
+  assert.ok(!source.includes('setInCart'));
+  let retries = 0;
+  const failure = flatten(exports.default({ products: [], error: 'HTTP 500', onRetry: () => retries++ }));
+  assert.ok(failure.some(node => node.props.role === 'alert'));
+  failure.find(node => node.type === 'button').props.onClick();
+  assert.equal(retries, 1);
+  const loading = flatten(exports.default({ products: [], isLoading: true }));
+  assert.ok(loading.some(node => node.props['aria-label'] === 'Loading products'));
 });
