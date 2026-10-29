@@ -4,7 +4,10 @@ import { useAuth } from "../../hooks/useAuth";
 import { useMemeMute } from "../../lib/media-sound";
 import { Volume2, VolumeX } from "lucide-react";
 
-export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, showExternalUploadButton = false, hideFooter = false }) {
+// Posts the main MemeBox has shown this page visit, so a restored MemeBox can skip them.
+const mainMemeBoxShownPostIds = new Set();
+
+export default function TheMemeBoxImplementation001({ postSource = "all", embedded = false, showExternalUploadButton = false, hideFooter = false, randomStart = false }) {
   const { user: sharedUser } = useAuth();
   const isUploadTitleOptional = sharedUser?.id === 3;
   const { muted: memeMuted, setMuted: setMemeMuted, owner: memeSoundOwner } = useMemeMute(sharedUser?.id);
@@ -1109,6 +1112,26 @@ const submitComment = async () => {
     autoplayFreshPosts.current.clear();
     setCurrentPostIndex(0);
   }, [currentPage]);
+
+  const randomStartPending = useRef(randomStart);
+  useEffect(() => {
+    if (!randomStartPending.current || filteredPosts.length === 0) return;
+    randomStartPending.current = false;
+    let candidates = filteredPosts.filter((post) => !mainMemeBoxShownPostIds.has(post.id));
+    if (candidates.length === 0) {
+      mainMemeBoxShownPostIds.clear();
+      candidates = filteredPosts;
+    }
+    const nextPost = candidates[Math.floor(Math.random() * candidates.length)];
+    const nextIndex = filteredPosts.findIndex((post) => post.id === nextPost.id);
+    autoplayFreshPosts.current.add(nextPost.id);
+    currentPostIndexRef.current = nextIndex;
+    setCurrentPostIndex(nextIndex);
+  }, [filteredPosts.length]);
+
+  useEffect(() => {
+    if (showExternalUploadButton && !randomStartPending.current && displayPost?.id != null) mainMemeBoxShownPostIds.add(displayPost.id);
+  }, [showExternalUploadButton, displayPost?.id]);
 
   useEffect(() => {
     if (isMemeBoxHovered || filteredPosts.length < 2 || isUploadDialogOpen || isCommentDialogOpen || isViewCommentsDialogOpen || isFavoritesGridOpen || isZoomModalOpen) {

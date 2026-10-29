@@ -144,6 +144,12 @@ export interface MainHubUpgradeV001ForInternalCart {
   product_id: number;
   quantity: Generated<number>;
   added_at: string | null;
+  saved_for_later: Generated<number>;
+  carousel_item_id: number | null;
+  item_name: string | null;
+  item_price: string | null;
+  item_image_url: string | null;
+  item_sku: string | null;
 }
 
 export interface MainHubUpgradeV001ForLookingFor {

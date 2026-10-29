@@ -34,7 +34,7 @@ const AdditionalMemeBoxes: React.FC<{ data: any }> = ({ data }) => {
   );
 };
 
-export function renderTheMemeBox(data: any) {
+export function renderTheMemeBox(data: any, { randomStart = false }: { randomStart?: boolean } = {}) {
   const container = document.getElementById('TheReactMemeImplementationConnection001');
   if (!container) {
     unmountTheMemeBox();
@@ -49,7 +49,7 @@ export function renderTheMemeBox(data: any) {
   memeBoxRoot.render(
     <React.StrictMode>
       <div className="uhub-meme-box-stack">
-        <TheMemeBoxImplementation001 data={data} postSource="all" embedded showExternalUploadButton hideFooter />
+        <TheMemeBoxImplementation001 data={data} postSource="all" embedded showExternalUploadButton hideFooter randomStart={randomStart} />
         <div className="uhub-additional-memes"><AdditionalMemeBoxes data={data} /></div>
       </div>
     </React.StrictMode>

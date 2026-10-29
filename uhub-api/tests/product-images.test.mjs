@@ -209,7 +209,15 @@ test('all store row/detail and cart controls retain handlers with explicit scope
   assert.match(css, /\.uhub-root button\.uhub-store-action \{[^}]*background-color: transparent;[^}]*color: #fff;/);
   assert.match(css, /\.uhub-root button\.uhub-store-action:hover \{[^}]*background-color: transparent;[^}]*color: #fff;/);
   const detail = await readFile(new URL('features/profile/MainUhubFeatureV001ForProductDetailModal.tsx', root), 'utf8');
-  assert.match(detail, /onClick=\{handleAddToCart\}[\s\S]*?className="w-full bg-orange-400 hover:bg-orange-500 text-white h-12 text-lg"/);
+  assert.match(detail, /onClick=\{handleAddToCart\}\s*className="uhub-store-action uhub-detail-cart-button h-12 w-full"/);
+  assert.ok(detail.includes('const handleAddToCart = () => addToMainCart(product, Boolean(user));'));
+  assert.ok(!/bg-orange-400 hover:bg-orange-500 text-white h-12/.test(detail), 'Detail cart is a transparent white icon, not an orange button');
+  assert.ok(!main.includes('getCartUrl'), 'No cart button adds the first product SKU to the external cart');
+  assert.ok(!main.includes('page001.uminion.com/cart'));
+  assert.equal(main.split('onClick={showMainCart}').length - 1, 3, 'Union Store, Users\' Stores and Store 01-30 header carts open the Main Cart');
+  assert.match(css, /\.uhub-root button\.uhub-cart-checkout,[\s\S]*?cursor: not-allowed;/);
+  assert.ok(main.includes('void addToMainCart(p, Boolean(user));'), 'Each Store 01-30 product row has a cart button that adds that product');
+  assert.match(css, /\.uhub-root \.uhub-cart-toast \{[\s\S]*?background: #3f464f;[\s\S]*?color: #ffffff;/, 'Cart toast matches the gray site toasts with white text');
   assert.ok(main.includes("aria-label={inCart ? 'Remove from cart' : 'Add to cart'}"));
   assert.match(main, /className="uhub-store-action h-7 w-7 flex-shrink-0"[\s\S]*?onClick=/);
 });
@@ -230,13 +238,13 @@ test('opening mountain browser loads and renders Everything from the supplied pr
   visit(ast);
   assert.ok(initializer);
   const effects = [];
-  const opened = [];
+  const added = [];
   const globals = {
     React: { createElement: (type, props, ...children) => ({ type, props: { ...props, children } }) },
     useState: initial => [initial, () => {}],
     useMemo: callback => callback(),
     useEffect: callback => effects.push(callback),
-    window: { open: (...args) => opened.push(args) },
+    addToMainCart: (...args) => added.push(args),
     ...Object.fromEntries([...tags].map(tag => [tag, tag])),
   };
   const compiled = ts.transpileModule(`(${initializer.getText(ast)})`, {
@@ -257,7 +265,7 @@ test('opening mountain browser loads and renders Everything from the supplied pr
     loadStoreProducts: id => { assert.equal(id, 0); mainLoads++; },
     loadEverythingProducts: () => everythingLoads++,
     onProductView: product => { viewed = product; },
-    getCartUrl: product => `https://example.invalid/cart/?add-to-cart=${product.sku_id}`,
+    user: { id: 4 },
   };
   const findList = node => {
     if (node?.type === 'EverythingProductsList') return node;
@@ -271,10 +279,11 @@ test('opening mountain browser loads and renders Everything from the supplied pr
   assert.equal(everythingLoads, 1);
   list.props.onAddToCart(products[0]);
   list.props.onAddToCart(products[1]);
-  list.props.onAddToCart(products[2]);
-  assert.equal(opened[0][0], products[0].payment_url);
-  assert.equal(opened[1][0], 'https://example.invalid/cart/?add-to-cart=123');
-  assert.equal(viewed, products[2]);
+  assert.deepEqual(added.map(([product, loggedIn]) => [product, loggedIn]), [[products[0], true], [products[1], true]], 'Everything 🛒 adds to the Main Cart instead of opening external links');
+  assert.equal(viewed, undefined, 'The cart button no longer opens product details');
+  const loggedOutList = findList(render({ ...props, user: null }));
+  loggedOutList.props.onAddToCart(products[2]);
+  assert.deepEqual(added[2], [products[2], false], 'Logged-out visitors are routed to login by addToMainCart');
   const failedList = findList(render({ ...props, everythingProductsError: 'HTTP 500' }));
   assert.equal(failedList.props.error, 'HTTP 500');
   assert.equal(failedList.props.onRetry, props.loadEverythingProducts);
@@ -327,4 +336,34 @@ test('Everything renders a thumbnail per product and white cart/search controls 
   assert.equal(retries, 1);
   const loading = flatten(exports.default({ products: [], isLoading: true }));
   assert.ok(loading.some(node => node.props['aria-label'] === 'Loading products'));
+});
+
+test('Main Cart helper sends products and carousel entries to the internal cart and routes logged-out visitors to login', async () => {
+  const source = await readFile(new URL('lib/internal-cart.ts', root), 'utf8');
+  const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  const events = [];
+  const requests = [];
+  const module = { exports: {} };
+  const context = {
+    module, exports: module.exports,
+    require: () => ({ useCallback: f => f, useEffect: () => {}, useState: value => [value, () => {}] }),
+    CustomEvent: class { constructor(type) { this.type = type; } },
+    window: { dispatchEvent: event => events.push(event.type), setTimeout: () => 0, clearTimeout: () => {} },
+    fetch: async (url, init) => { requests.push([url, init.method, init.body]); return { ok: true, status: 200, json: async () => ({}) }; },
+  };
+  vm.runInNewContext(compiled, context);
+  const cart = module.exports;
+  assert.equal(await cart.addToMainCart({ id: 7 }, false), false);
+  assert.deepEqual([...events], ['uhub-request-login']);
+  assert.equal(requests.length, 0, 'Logged-out visitors never call the cart API');
+  assert.equal(await cart.addToMainCart({ id: 7 }, true), true);
+  assert.equal(await cart.addToMainCart({ carousel_item_id: 12 }, true), true);
+  assert.deepEqual(requests.map(request => [...request]), [
+    ['/api/products/cart/add', 'POST', '{"product_id":7}'],
+    ['/api/products/cart/add', 'POST', '{"carousel_item_id":12}'],
+  ]);
+  assert.deepEqual([...events].slice(1), ['uhub-cart-updated', 'uhub-cart-updated']);
+  const carouselProduct = cart.cartEntryToProduct({ product: null, carousel_item_id: 12, name: 'Poster', price: '$12', image_url: '/p.png', sku: 'P12' });
+  assert.deepEqual([carouselProduct.carousel_item_id, carouselProduct.price_label, carouselProduct.sku_id], [12, '$12', 'P12']);
+  assert.deepEqual(['$69.95', '$1,499.95 BYO Tapestry', '25', 'u24.gov.ua', '', null].map(cart.isCartPriceLabel), [true, true, true, false, false, false]);
 });

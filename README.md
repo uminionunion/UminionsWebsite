@@ -24,6 +24,7 @@ This is the single maintained project guide. [README-ARCHIVE.md](README-ARCHIVE.
 - [9. Maintenance rules](#9-maintenance-rules-for-future-changes)
   - [Dialog integration](#dialog-integration-and-documentation-baseline-2026-10-16)
   - [Saved image collections and startup refresh](#saved-image-collections-and-startup-refresh)
+  - [Main Cart (internal cart)](#main-cart-internal-cart)
 - [10. Navigation and route tracing](#10-navigation-and-route-tracing)
 - [11. Patching, rebuilding and safe delivery](#11-patching-rebuilding-and-safe-delivery)
 - [12. Troubleshooting and acceptance checklist](#12-troubleshooting-and-acceptance-checklist)
@@ -224,7 +225,7 @@ Mountain/Everything follow-up (2026-10-21): the quadrants modal received fetched
 Regression coverage is in [product-images.test.mjs](uhub-api/tests/product-images.test.mjs): 150-image queue drain, fairness/concurrency, failed/stalled requests, retries, deduplication, exact cache limits, URL changes, unmount cleanup and action styles, plus actual QuadrantsModal rendering with supplied Everything products, mountain-open loads, metadata errors/retry and purchase callbacks. The prior isolated image fixture proved the shared thumbnail component but did not test this parent-to-child data connection; do not treat that earlier check as verification of the mountain browser. Rebuilt assets must be deployed; no API/database migration is needed. Missing production media files are not repaired by frontend wiring.
 
 Follow-up verification: 22 targeted product/mobile tests passed. A real Edge fixture using the actual source-derived QuadrantsModal, actual Everything list, thumbnail queue and built CSS passed at 390px and 1200px. Clicking the mountain entry triggered metadata loading, an intentional metadata failure displayed Retry, and retry requested/displayed all 24 synthetic Everything images in under one second on localhost. Eye/search/cart computed styles were transparent with white SVGs, detail clicks worked, and cart icons replaced plus icons. Those localhost timings are not a production latency guarantee.
-- [carousel-rotation-queue.ts](includes/uhub/src/lib/carousel-rotation-queue.ts): `useQueuedImageSlot` registers a single-image placeholder at each former auto-changing carousel location (top-left, bottom-left, right, center, each cover, bottom promo). One browser scheduler chooses a different saved entry (cover's second entry for its first change, random afterward), removes the current image from the DOM, requests the replacement through the existing cache path, and fills that same placeholder. It then waits five seconds before the next location. There is no slide track, multi-image rotation, or independent autoplay clock. Manual arrows still select an entry.
+- [carousel-rotation-queue.ts](includes/uhub/src/lib/carousel-rotation-queue.ts): `useQueuedImageSlot` registers a single-image placeholder at each former auto-changing carousel location (top-left, bottom-left, right, center, each cover, bottom promo). One browser scheduler chooses a different saved entry (cover's second entry for its first change, random afterward; the mobile cover, which also carries the bottom entries, goes in saved order instead), removes the current image from the DOM, requests the replacement through the existing cache path, and fills that same placeholder. It then waits five seconds before the next location. There is no slide track, multi-image rotation, or independent autoplay clock. Manual arrows still select an entry.
 - The scheduler retains each location's image URLs and requests the chosen image through the image cache. **Current implementation caveat:** it races that request against four seconds and selects the replacement even on timeout/failure; it does not guarantee a ready image or skip a slow image. The old image is removed first; the slot stays blank until `QueuedImage` has its replacement. These slots no longer use `keepPreviousWhileLoading`; keyed image elements also remove the old image on manual changes. Captions, links, saved collections, management tools, hover pauses and cache limits are preserved. Do not describe this as guaranteed network-free display or a proven fix for long-running lag.
 - Registration order determines the visit order; instance IDs distinguish multiple covers. Hover state is consulted on a visit. Obsolete per-carousel interval and next-slide options have been removed. The manually paged broadcast gallery is separate from these queue-controlled image locations.
 - Carousel metadata is fetched on mount and relevant update events, not on every rotation. No carousel socket is currently implemented; chat Socket.IO is separate.
@@ -438,9 +439,13 @@ Display and editing use the same `/api/carousels/:slot/items` records. Locations
 
 #### Clickable Up/Down banner ads
 
-Banner slot dimensions are unchanged. Saved top and bottom banners retain their original `object-cover` fitting; personal top covers retain their original `object-contain` fitting. Button associations must not resize the slots or force captioned images to occupy half the available width.
+The desktop bottom banner row is **100px tall** (2.5× its former 40px `h-10`). The row, the linked-image wrapper and the image all use `h-[100px]`. The desktop top banner stays **160px** (`md:h-40`). A trial 1.5× increase for both banners (240px/150px) was judged too large and reverted. The mobile top cover (`h-32` and `.uhub-mobile-cover`) is unchanged. Widths, `object-cover` fitting and arrows are unchanged. Saved top and bottom banners retain their original `object-cover` fitting; personal top covers retain their original `object-contain` fitting. Button associations must not resize the slots or force captioned images to occupy half the available width.
 
-The supplied red umiMatch and blue Food & Clothing Pantry images live in [public](includes/uhub/public/) and are copied into the built assets. On API startup, the one-time `banner-button-links-v1` migration adds nullable `button_number` to `UhubManagedCarouselItems` and:
+The supplied red umiMatch and blue Food & Clothing Pantry images live in [public](includes/uhub/public/) and are copied into the built assets. `food-clothing-pantry-banner.jpg` must be the **blue lion** image (top, button 5) and `umimatch-banner.jpg` the **red heart** image (bottom, button 3). An earlier build had the two files' contents swapped (red showed on top with the pantry action); the contents were swapped back with no database change, because the saved rows reference the file names.
+
+**Mobile.** The bottom banner row is not shown on mobile. Instead, the mobile top cover plays the top (Up) entries in saved order, then every bottom (Down) entry that has an image (caption-only entries are skipped), then loops top → bottom → top. Mobile uses this sequential order; desktop keeps the random-after-first-change order. Linked bottom images remain clickable in the mobile cover.
+
+When a banner (or numbered button) opens umiMatch, Find-a-Pantry, Million-Pixel or Beta-Button on mobile, that feature takes the MemeBox's place on the Front Page, which is scrolled into view. A **Close & back to MemeBox** button above the feature (or the feature's own exit) restores the MemeBox. A MemeBox returning from such a feature starts on a random post that the main MemeBox has not shown during this page visit; once all have been shown, the list resets. The first MemeBox load and desktop behavior are unchanged. On API startup, the one-time `banner-button-links-v1` migration adds nullable `button_number` to `UhubManagedCarouselItems` and:
 
 - Replaces only the unedited, unlinked bottom default-cover placeholder with the red ad linked to **button 3 / heart**. The membership caption and other bottom entries remain.
 - Inserts the blue ad linked to **button 5 / lion** immediately after the first cover entry, retaining existing entries and IDs. This is only done when the original default cover remains and there is room within the 10-entry limit. Intentionally customized/full/empty collections are not overwritten.
@@ -454,13 +459,89 @@ Both banners invoke the same dispatcher as the numbered feature buttons, resolvi
 
 `GET /api/carousels/:slot/items` includes `button_number`. The authenticated highest-admin replace endpoint persists it for cover/bottom only, rejects out-of-range/fractional/non-numeric values and caption-only associations, accepts `null` to unlink, and preserves existing associations when older clients omit the property. Data remains in the main **database.sqlite**, not the MemeBox database. Back up the normal destination before deployment; rebuild **both API and uHub frontend** so the startup schema, banner assets and editor agree. The normal merge-triggered full deployment performs these steps.
 
-Validation: `npm.cmd run build` in the API and frontend, then `node --test tests/banner-actions.test.mjs tests/startup-api.test.mjs tests/mobile-dashboard.test.mjs tests/startup-refresh.test.mjs` in the API. These cover fresh/old-schema migration, custom-entry preservation, repeated startup/deletion, actual multipart save/reorder/unlink/auth checks, source-derived shared actions and editors, first cover selection followed by random rotation, and existing mobile/refresh behavior. Whole-frontend type-checking still has documented unrelated legacy errors; the production Vite build is separate.
+Validation: `npm.cmd run build` in the API and frontend, then `node --test tests/banner-actions.test.mjs tests/startup-api.test.mjs tests/mobile-dashboard.test.mjs tests/startup-refresh.test.mjs` in the API. These cover fresh/old-schema migration, custom-entry preservation, repeated startup/deletion, actual multipart save/reorder/unlink/auth checks, source-derived shared actions and editors, first cover selection followed by random rotation, the 160px top and 100px bottom rows, the mobile top-then-bottom sequential cover queue, mobile MemeBox replacement/random restore, and existing mobile/refresh behavior (27 tests). Whole-frontend type-checking still has documented unrelated legacy errors; the production Vite build is separate.
 
 [main.tsx](includes/uhub/src/main.tsx) schedules one full-page reload after 6000 ms on the first application load per tab session. A window-level guard prevents duplicate startup executions from scheduling multiple timers. The existing `uhub:first-load-refresh:v1` session marker is set to `scheduled` before scheduling and to `completed` before reloading; the callback checks its marker so it cannot reload twice. A document whose navigation type is already `reload` never schedules another timer, even if the session marker is missing. Existing session markers remain compatible and are not reset by an upgrade.
 
 The timer does not wait for login or image loading. If session storage is unavailable at scheduling or completion, it logs an error and cancels the automatic refresh rather than risking a loop. No visible countdown is added. `node --test tests/startup-refresh.test.mjs tests/broadcast-carousel.test.mjs tests/mobile-dashboard.test.mjs` from `uhub-api` verifies exactly one 6000ms timer/reload, duplicate startup/callback handling, reload-navigation suppression, retained session markers, blocked storage and the simple fitted image viewer (21 tests).
 
 Validation: all 21 checks passed, the scheduler and simplified image viewer passed targeted strict type-checks, and the rebuilt preview was tested in a fresh actual Edge session. Over 22 seconds there were exactly two main-frame navigations: the initial visit and one automatic reload. A subsequent manual reload with its session marker removed caused no extra automatic reload during the next 10 seconds.
+
+### Main Cart (internal cart)
+
+The Main Cart is uHub's own cart. It lives in the `MainHubUpgradeV001ForInternalCart` table in the main **database.sqlite**. Every uHub add-to-cart button now feeds it. Only logged-in members can use it. A logged-out visitor who presses any cart or add-to-cart button gets the login screen instead.
+
+**Opening it.** The 🛒 next to **Union Store** is the main **View Cart** button. The 🛒 next to **Users' Stores** and the 🛒 in the Store 01–30 headers open the same cart. These buttons have transparent backgrounds and white icons.
+
+- **Desktop:** the cart replaces the MemeBox/center area. Closing it (X) relaunches the MemeBox on a random entry.
+- **Mobile:** it opens as a modal like the numbered buttons. Closing it returns the visitor to whatever they were viewing.
+- Any code can open it with `window.dispatchEvent(new CustomEvent('uhub-open-main-cart'))`. It also closes on logout.
+
+**Each entry shows:**
+
+- the picture (clicking it opens the product details window);
+- the price, the name and the SKU (if there is one);
+- **Sold by** the seller (the user who added the product; managed carousel items show *Uminion Union*);
+- a quantity when it is above 1;
+- a gray **bookmark** (save for later) and a **trash** icon (remove).
+
+The **Saved for later** list sits at the bottom. It shows the same details, but with a **plus** icon that moves the entry back into the cart. An entry whose product was later deleted or trashed shows *No longer available*.
+
+**Checkout is intentionally grayed out** (`disabled`, `.uhub-cart-checkout`). It stays disabled until real store checkout exists. Today the purchase flow is split across pieces that are not connected to uHub:
+
+1. **The external store at `page001.uminion.com/cart`.** Links ending in `?add-to-cart=SKU` open that store's cart in a new tab.
+2. **The theme's own add-to-cart buttons.** The old WordPress `front-page.php` has 34 🛒 buttons with `data-sku`. They call `/wp-json/custom/v1/add-to-cart`, which is **not defined in this repository**, and the preview has no WooCommerce. Their "View Cart/Checkout" buttons go to `uminion.com/cart`, not `page001.uminion.com/cart`.
+
+Once WooCommerce (or another payment provider) is connected and the Main Cart can hand its items to a real checkout, enable the Checkout button. **Seller notification TODO:** when a member buys products from another member's store, that seller must automatically receive a message. It must tell them to send the product (with the buyer's shipping details) and what they earned from the sale.
+
+**What each button does:**
+
+| Location | Button | Action |
+| --- | --- | --- |
+| UnionSAM#20 → Union Store header | 🛒 | Opens the Main Cart |
+| UnionSAM#20 → Users' Stores header | 🛒 | Opens the Main Cart |
+| Store 01–30 header | 🛒 (transparent, white) | Opens the Main Cart |
+| Store 01–30 product rows | 🔍 / 🛒 (transparent, white) | 🔍 opens product details; 🛒 **adds that row's product** to the Main Cart |
+| Mountain → Everything list | 🔍 / 🛒 | 🔍 opens product details; 🛒 adds that product to the Main Cart |
+| Product details window | 🛒 (transparent, white icon) | Adds that product to the Main Cart |
+| Small header/footer carousels | Price button | A price-like label (e.g. `$69.95`) adds that carousel entry to the Main Cart. Any other label (e.g. `u24.gov.ua`) opens the saved website. The title links to the saved website when one exists. |
+
+Adding shows an "Added to your cart" toast in the bottom-right corner. It uses the same gray style as the site's other toasts (`#3f464f` background, `#64748b` border) with white text, and stays above open windows. Adding something already in the cart increases its quantity (1–99) and moves it out of Saved for later.
+
+**API** (`/api/products`, all require login):
+
+- `POST /cart/add {product_id}` adds a real store product (it must exist and not be trashed).
+- `POST /cart/add {carousel_item_id}` adds a left/right managed-carousel entry whose price is price-like. It is stored with `product_id = 0` and a snapshot of its name, price, image and SKU. The SKU comes from its `add-to-cart=` link.
+- `GET /cart` returns `{items, saved}` with display-ready fields, and `Cache-Control: no-store`.
+- `PATCH /cart/:itemId {saved_for_later}` saves an entry for later or moves it back.
+- `DELETE /cart/:itemId` removes an entry.
+
+Requests for other members' entries return 403. Banners and website-label carousel entries return 404.
+
+**Schema.** On startup, `scripts/init-data.cjs` adds these columns if they are missing: `saved_for_later` (default 0), `carousel_item_id`, `item_name`, `item_price`, `item_image_url`, `item_sku`. Existing cart rows are kept.
+
+**Frontend files:**
+
+- [internal-cart.ts](includes/uhub/src/lib/internal-cart.ts): API calls, events, the `useMainCart` hook and `isCartPriceLabel`.
+- [MainCartView.tsx](includes/uhub/src/features/profile/MainCartView.tsx): the cart UI.
+- The dashboard wiring is in [MainUhubFeatureV001ForMyProfileModal.tsx](includes/uhub/src/features/profile/MainUhubFeatureV001ForMyProfileModal.tsx).
+
+**Future upgrade: let logged-out visitors add to cart.** This is not built yet. Logged-out visitors are sent to login on purpose. (Steps when ready:
+
+1. Give each guest a random guest-cart ID in an httpOnly cookie, or keep the guest cart in `localStorage`.
+2. Add a nullable `guest_id` column (or a separate guest-cart table) and guest-aware add/view/save/remove endpoints with rate limits.
+3. On login or signup, merge the guest cart into the member's cart, combining quantities, then delete the guest rows.
+4. Expire abandoned guest carts with a scheduled cleanup.
+5. Remove the `requestLogin` gate in `addToMainCart` and `showMainCart`, still requiring login at Checkout if needed.
+6. Add tests for guest add, merge and cleanup.)
+
+Still unused/legacy:
+
+- `ProductBox` in the dashboard file and `MyStoreProductSection.tsx` are not displayed.
+- `MainHubUpgradeV001ForProductDetailModal.tsx` and `MainHubUpgradeV001ForMyProfileModal.tsx` (which link to `uminion.com/cart`) are not mounted.
+- The 34 theme buttons above are untouched.
+
+Validation: `npm.cmd run build` in the API and frontend, then `node --test tests/banner-actions.test.mjs tests/startup-api.test.mjs tests/mobile-dashboard.test.mjs tests/startup-refresh.test.mjs tests/product-images.test.mjs` from `uhub-api` (**36 tests passed**). These cover the API (logged-out 401s, validation, banner and website-label rejection, product and carousel adds, save/move back, re-add, cross-user 403s, delete) and the source wiring. The logged-in desktop and mobile flows, and the logged-out login prompts were checked in Edge against the preview with a temporary account, which was deleted afterwards.
 
 ## 10. Navigation and route tracing
 

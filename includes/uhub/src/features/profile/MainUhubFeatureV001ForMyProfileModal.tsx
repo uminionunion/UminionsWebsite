@@ -22,6 +22,8 @@ import { useQueuedImageSlot } from '../../lib/carousel-rotation-queue';
 import { useSiteWideMute } from '../../lib/media-sound';
 import { Volume2, VolumeX, MoreHorizontal, Radio, BookOpen, TreePalm, Skull, ShipWheel, Ship, Star, KeyRound, Wrench, Projector, Image as ImageIcon, SkipForward, SkipBack, Heart } from 'lucide-react';
 import { enqueueProductImageBatch } from '../../lib/product-image-cache';
+import { addToMainCart, isCartPriceLabel, LOGIN_REQUEST_EVENT, MAIN_CART_OPEN_EVENT } from '../../lib/internal-cart';
+import MainCartView from './MainCartView';
 import ProductSearchDropdown from './ProductSearchDropdown';
 import MainUhubFeatureV001ForEditProductModal from './MainUhubFeatureV001ForEditProductModal';
 import MainUhubFeatureV001ForUserProfileModal from './MainUhubFeatureV001ForUserProfileModal';
@@ -846,6 +848,7 @@ const useManagedCarouselItems = (slot: ManagedCarouselSlot) => {
 
 const ManagedProductCarousel = ({ slot }: { slot: ManagedCarouselSlot }) => {
   const { items } = useManagedCarouselItems(slot);
+  const { user } = useAuth();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const imageVisible = useQueuedImageSlot({ carouselId: `product-${slot}`, urls: items.map(item => item.image_url), index, setIndex, paused });
@@ -861,10 +864,19 @@ const ManagedProductCarousel = ({ slot }: { slot: ManagedCarouselSlot }) => {
       queuePriority={IMAGE_LOAD_PRIORITY.carousel}
     />}
     <div className="uhub-header-product-overlay">
-      {item.title && <span>{item.title}</span>}
+      {item.title && (item.website
+        ? <a href={item.website} target="_blank" rel="noopener noreferrer" title="Open website">{item.title}</a>
+        : <span>{item.title}</span>)}
       {item.description && <small>{item.description}</small>}
       <div className="flex gap-1">
-        {item.price && <button type="button" onClick={() => item.website && window.open(item.website, '_blank')}>{item.price}</button>}
+        {item.price && <button
+          type="button"
+          title={isCartPriceLabel(item.price) ? (user ? 'Add to cart' : 'Log in to add to cart') : 'Open website'}
+          onClick={() => {
+            if (item.id && isCartPriceLabel(item.price)) addToMainCart({ carousel_item_id: item.id }, Boolean(user));
+            else if (item.website) window.open(item.website, '_blank', 'noopener,noreferrer');
+          }}
+        >{item.price}</button>}
       </div>
     </div>
     <button type="button" className="uhub-mini-carousel-arrow right" onClick={() => setIndex(value => (value + 1) % items.length)}>›</button>
@@ -875,23 +887,27 @@ const HeaderProductCarousel = () => <ManagedProductCarousel slot="left" />;
 const FooterPosterCarousel = () => <ManagedProductCarousel slot="right" />;
 
 const defaultCoverImageUrl = '/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg';
+// Features that take over the MemeBox's spot on mobile until exited.
+const MOBILE_MEMEBOX_REPLACEMENT_VIEWS = ['UmiMatch#22', 'Find-a-Pantry#13', 'Million-Pixel#23', 'Beta-Button-10,011'];
 
 // Saved images feed one cover placeholder; the shared queue replaces its image.
-const CoverImageRotator = ({ userCoverUrl, opacity, fallbackToDefault = false, onButtonClick }: { userCoverUrl: string | null; opacity: number; fallbackToDefault?: boolean; onButtonClick: (number: number) => void }) => {
-  return <ManagedCoverImageSlot userCoverUrl={userCoverUrl} opacity={opacity} fallbackToDefault={fallbackToDefault} onButtonClick={onButtonClick} />;
+const CoverImageRotator = ({ userCoverUrl, opacity, fallbackToDefault = false, onButtonClick, appendedItems }: { userCoverUrl: string | null; opacity: number; fallbackToDefault?: boolean; onButtonClick: (number: number) => void; appendedItems?: ManagedCarouselItem[] }) => {
+  return <ManagedCoverImageSlot userCoverUrl={userCoverUrl} opacity={opacity} fallbackToDefault={fallbackToDefault} onButtonClick={onButtonClick} appendedItems={appendedItems} />;
 };
 
-const ManagedCoverImageSlot = ({ userCoverUrl, opacity, fallbackToDefault, onButtonClick }: { userCoverUrl: string | null; opacity: number; fallbackToDefault: boolean; onButtonClick: (number: number) => void }) => {
+// On mobile the hidden bottom banner's images are appended, so the cover plays top entries then bottom entries in order.
+const ManagedCoverImageSlot = ({ userCoverUrl, opacity, fallbackToDefault, onButtonClick, appendedItems }: { userCoverUrl: string | null; opacity: number; fallbackToDefault: boolean; onButtonClick: (number: number) => void; appendedItems?: ManagedCarouselItem[] }) => {
   const { items } = useManagedCarouselItems('cover');
   const slides = useMemo<ManagedCarouselItem[]>(() => {
     const saved = items.filter(item => item.image_url).map(item => item.image_url === defaultCoverImageUrl && userCoverUrl
       ? { ...item, image_url: userCoverUrl } : item);
-    return saved.length || !fallbackToDefault ? saved : [{ image_url: userCoverUrl || defaultCoverImageUrl }];
-  }, [items, fallbackToDefault, userCoverUrl]);
+    const top = saved.length || !fallbackToDefault ? saved : [{ image_url: userCoverUrl || defaultCoverImageUrl }];
+    return appendedItems ? [...top, ...appendedItems.filter(item => item.image_url)] : top;
+  }, [items, fallbackToDefault, userCoverUrl, appendedItems]);
   const urls = useMemo(() => slides.map(item => item.image_url), [slides]);
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [urls]);
-  const imageVisible = useQueuedImageSlot({ carouselId: 'cover', urls, index, setIndex, firstNextIndex: 1 });
+  const imageVisible = useQueuedImageSlot({ carouselId: 'cover', urls, index, setIndex, firstNextIndex: 1, sequential: Boolean(appendedItems) });
   const slide = slides[index];
   if (!imageVisible || !slide) return null;
   const buttonNumber = slide.button_number;
@@ -1808,7 +1824,6 @@ interface QuadrantsModalProps {
   userStoreProducts: Product[];
   isLoadingProducts: boolean;
   onAddProductClick: () => void;
-  getCartUrl: (product: Product | null) => string;
   storeProducts: { [key: number]: Product[] };
   onProductView: (product: Product) => void;
   onProductDelete: (productId: number) => void;
@@ -1845,7 +1860,6 @@ const QuadrantsModal: React.FC<QuadrantsModalProps> = ({
   userStoreProducts = [], 
   isLoadingProducts,
   onAddProductClick,
-  getCartUrl,
   storeProducts = {},
   onProductView,
   onProductDelete,
@@ -2452,11 +2466,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
       products={everythingProducts}
   isLoading={isLoadingEverythingProducts}
   onProductView={onProductView}
-      onAddToCart={(product) => {
-        if (product.payment_url) window.open(product.payment_url, '_blank', 'noopener,noreferrer');
-        else if (product.sku_id) window.open(getCartUrl(product), '_blank', 'noopener,noreferrer');
-        else onProductView(product);
-      }}
+      onAddToCart={(product) => addToMainCart(product, Boolean(user))}
       error={everythingProductsError}
       onRetry={loadEverythingProducts}
     />
@@ -3123,6 +3133,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [promoIndex, setPromoIndex] = useState(0);
   const { items: bottomPromoItems } = useManagedCarouselItems('bottom');
   useEffect(() => setPromoIndex(0), [bottomPromoItems]);
+  const mobileBottomBannerItems = useMemo(() => bottomPromoItems.filter(item => item.image_url), [bottomPromoItems]);
   const promoCount = bottomPromoItems.length;
   const activeBottomPromo = bottomPromoItems[promoIndex];
   const activeBottomPromoStyle = captionStyleToCss(parseCaptionStyle(activeBottomPromo?.description));
@@ -3651,17 +3662,58 @@ useEffect(() => {
 
   
 
+// Main Cart: replaces the center/MemeBox area on desktop and opens as a modal on phones.
+const [isMainCartOpen, setIsMainCartOpen] = useState(false);
+const memeBoxRandomAfterCartRef = useRef(false);
+const showMainCart = useCallback(() => {
+  if (!user) {
+    onOpenAuthModal('login');
+    return;
+  }
+  setIsMainCartOpen(true);
+}, [user, onOpenAuthModal]);
+const closeMainCart = () => {
+  setIsMainCartOpen(false);
+  if (isMobile) return;
+  // Desktop: bring the MemeBox back, starting on a random entry.
+  memeBoxRandomAfterCartRef.current = true;
+  setAreFeatureIconsActive(prev => ({ ...prev, heart: false, palm: false, lion: false, microphone: false }));
+  setCenterView('broadcasts');
+  setBroadcastView('UnionNews#14');
+};
 useEffect(() => {
-  if (isOpen && centerView === 'broadcasts' && broadcastView === 'UnionNews#14' && broadcasts['UnionNews#14']) {
-    renderTheMemeBox(broadcasts['UnionNews#14']);
+  if (!isOpen) return;
+  const handleLoginRequest = () => onOpenAuthModal('login');
+  window.addEventListener(LOGIN_REQUEST_EVENT, handleLoginRequest);
+  window.addEventListener(MAIN_CART_OPEN_EVENT, showMainCart);
+  return () => {
+    window.removeEventListener(LOGIN_REQUEST_EVENT, handleLoginRequest);
+    window.removeEventListener(MAIN_CART_OPEN_EVENT, showMainCart);
+  };
+}, [isOpen, onOpenAuthModal, showMainCart]);
+useEffect(() => {
+  if (!user) setIsMainCartOpen(false);
+}, [user]);
+// Choosing another center feature while the desktop cart is open replaces the cart.
+useEffect(() => setIsMainCartOpen(false), [centerView, broadcastView]);
+const isDesktopCartOpen = isMainCartOpen && !isMobile;
+
+const memeBoxReplacedByFeatureRef = useRef(false);
+useEffect(() => {
+  if (isOpen && !isDesktopCartOpen && centerView === 'broadcasts' && broadcastView === 'UnionNews#14' && broadcasts['UnionNews#14']) {
+    // A MemeBox coming back from a banner feature (mobile) or the Main Cart (desktop) restarts on a random, unseen entry.
+    renderTheMemeBox(broadcasts['UnionNews#14'], { randomStart: (isMobile && memeBoxReplacedByFeatureRef.current) || memeBoxRandomAfterCartRef.current });
+    memeBoxReplacedByFeatureRef.current = false;
+    memeBoxRandomAfterCartRef.current = false;
   } else {
+    if (isOpen && centerView === 'broadcasts' && MOBILE_MEMEBOX_REPLACEMENT_VIEWS.includes(broadcastView)) memeBoxReplacedByFeatureRef.current = true;
     unmountTheMemeBox();
   }
 
   return () => {
     unmountTheMemeBox();
   };
-}, [isOpen, centerView, broadcastView, isMobile]);
+}, [isOpen, centerView, broadcastView, isMobile, isDesktopCartOpen]);
 
 
 
@@ -3898,30 +3950,6 @@ const resetRightSection = () => {
     setProductDetailModalOpen(true);
   };
 
-  const handleAddToCart = (product: Product) => {
-    if (user) {
-      fetch('/api/products/cart/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product_id: product.id, quantity: 1 }),
-      }).catch(err => console.error('Error adding to cart:', err));
-    }
-  };
-
-  const getCartUrl = (product: Product | null): string => {
-    if (!product) {
-      return 'https://page001.uminion.com/cart/';
-    }
-
-    // If product has SKU, link directly to WooCommerce with SKU
-    if (product.sku_id) {
-      return `https://page001.uminion.com/cart/?add-to-cart=${encodeURIComponent(product.sku_id)}`;
-    }
-
-    // Default to general cart
-    return 'https://page001.uminion.com/cart/';
-  };
-
   const MainUhubFeatureV001ForSisterUnionPages = [
     'SisterUnion001NewEngland', 'SisterUnion002CentralEastCoast', 'SisterUnion003SouthEast',
     'SisterUnion004TheGreatLakesAndAppalachia', 'SisterUnion005CentralSouth', 'SisterUnion006CentralNorth',
@@ -4044,11 +4072,9 @@ const resetRightSection = () => {
     <div id="MainUhubFeatureV001ForUnionStore" className="border rounded-md p-2">
       <div className="flex justify-between items-center mb-2">
         <h4 className="font-semibold text-center flex-1">Union Store</h4>
-        <a href={getCartUrl(mainStoreProducts[0] || null)} target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="icon" className="uhub-store-action bg-orange-400 hover:bg-orange-500 text-white" aria-label="Open Union Store cart">
-            <ShoppingCart className="h-4 w-4" />
-          </Button>
-        </a>
+        <Button variant="ghost" size="icon" className="uhub-store-action h-7 w-7" onClick={showMainCart} aria-label={user ? 'View cart' : 'Log in to view your cart'} title={user ? 'View cart' : 'Log in to view your cart'}>
+          <ShoppingCart className="h-4 w-4" />
+        </Button>
       </div>
       <div className="space-y-2">
         {mainStoreProducts.length > 0 ? (
@@ -4108,11 +4134,9 @@ const resetRightSection = () => {
       </Button>
       <h4 className="font-semibold text-center flex-1">Users' Stores</h4>
     </div>
-    <a href="https://page001.uminion.com/cart/" target="_blank" rel="noopener noreferrer">
-      <Button variant="outline" size="icon" className="uhub-store-action bg-orange-400 hover:bg-orange-500 text-black" aria-label="Open Users Stores cart">
-        <ShoppingCart className="h-4 w-4" />
-      </Button>
-    </a>
+    <Button variant="ghost" size="icon" className="uhub-store-action h-7 w-7" onClick={showMainCart} aria-label={user ? 'View cart' : 'Log in to view your cart'} title={user ? 'View cart' : 'Log in to view your cart'}>
+      <ShoppingCart className="h-4 w-4" />
+    </Button>
   </div>
   <div 
     className="flex-1 overflow-y-auto"
@@ -4201,11 +4225,9 @@ const resetRightSection = () => {
   <div id="MainUhubFeatureV001ForStoreColumn" className="border rounded-md p-2 flex flex-col h-full" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
     <div className="flex justify-between items-center mb-2">
       <h4 className="font-semibold text-center flex-1">Store {String(centerRightView.number).padStart(2, '0')}</h4>
-      <a href={getCartUrl(storeProducts[centerRightView.number]?.[0] || null)} target="_blank" rel="noopener noreferrer">
-        <Button variant="outline" size="icon" className="bg-orange-400 hover:bg-orange-500 text-white">
-          <ShoppingCart className="h-4 w-4" />
-        </Button>
-      </a>
+      <Button variant="ghost" size="icon" className="uhub-store-action h-7 w-7" onClick={showMainCart} aria-label={user ? 'View cart' : 'Log in to view your cart'} title={user ? 'View cart' : 'Log in to view your cart'}>
+        <ShoppingCart className="h-4 w-4" />
+      </Button>
     </div>
     <div className="flex-1 overflow-y-auto space-y-2 mb-4">
       {loadingStoreIds.has(centerRightView.number) ? (
@@ -4248,6 +4270,19 @@ const resetRightSection = () => {
               title="View details"
             >
               <Search className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="uhub-store-action h-7 w-7 flex-shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                void addToMainCart(p, Boolean(user));
+              }}
+              aria-label={user ? `Add ${p.name} to cart` : 'Log in to add to cart'}
+              title={user ? 'Add to cart' : 'Log in to add to cart'}
+            >
+              <ShoppingCart className="h-4 w-4" />
             </Button>
           </div>
         ))
@@ -4402,6 +4437,12 @@ default:
 return (
   <>
     {!moveNavigationBelowMemeBox && broadcastNavigation}
+    {isMobile && MOBILE_MEMEBOX_REPLACEMENT_VIEWS.includes(broadcastView) && (
+      <Button type="button" variant="outline" className="uhub-mobile-memebox-return mb-3 w-full" onClick={() => {
+        setAreFeatureIconsActive(prev => ({ ...prev, heart: false, palm: false, lion: false }));
+        setBroadcastView('UnionNews#14');
+      }}><X className="h-4 w-4" /> Close &amp; back to MemeBox</Button>
+    )}
     {broadcastView === 'MyBroadcasts' ? 
       (user ? <CreateBroadcastView /> : <p className="text-center text-muted-foreground">You must be logged in to create a broadcast.</p>) 
       : (currentBroadcast ? <BroadcastView 
@@ -4778,6 +4819,11 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
       return;
     }
     activateCustomButton(number, number <= 15 ? 1 : Math.floor((number - 16) / 14) + 2);
+    if (isMobile) window.requestAnimationFrame(() => {
+      const center = document.getElementById('MainUhubFeatureV001ForMyProfileSettingsCenterSection');
+      const container = mobileContentRef.current;
+      if (center && container) container.scrollTop += center.getBoundingClientRect().top - container.getBoundingClientRect().top;
+    });
   };
 
   if (!isOpen) return null;
@@ -4821,7 +4867,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               <Button type="button" variant="outline" aria-current={mobileSection === 'features' ? 'page' : undefined} onClick={() => setMobileSection('features')}><img src="/uhub/dist/mobile-custom-buttons-logo.png" alt="" className="uhub-custom-buttons-logo exclude-zoom" /><span>10,000</span></Button>
             </nav>
             <div className="uhub-mobile-cover">
-              <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={1} fallbackToDefault onButtonClick={activateBannerButton} />
+              <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={1} fallbackToDefault onButtonClick={activateBannerButton} appendedItems={mobileBottomBannerItems} />
             </div>
           </header>
         )}
@@ -5138,7 +5184,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     flexDirection: 'column',
     backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent'
   }}>
-    {renderCenterContent()}
+    {isDesktopCartOpen
+      ? <MainCartView isLoggedIn={Boolean(user)} onClose={closeMainCart} closeLabel="Close cart and return to the MemeBox" onViewProduct={(product) => { setSelectedProduct(product); setProductDetailModalOpen(true); }} />
+      : renderCenterContent()}
   </div>
 
   {/* RIGHT DIVIDER - ONLY SHOW IF RIGHT NOT COLLAPSED */}
@@ -5220,10 +5268,10 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               {activeBottomPromo ? (
-                <div className="flex h-10 w-full items-center justify-center gap-2 px-9">
+                <div className="flex h-[100px] w-full items-center justify-center gap-2 px-9">
                   {promoImageVisible && activeBottomPromo.image_url && (activeBottomPromo.button_number
-                    ? <button type="button" className={`uhub-banner-action relative h-10 ${activeBottomPromo.title ? 'max-w-[50%]' : 'w-full max-w-none'}`} aria-label={`Open button ${activeBottomPromo.button_number}`} onClick={() => { if (activeBottomPromo.button_number != null) activateBannerButton(activeBottomPromo.button_number); }}><QueuedImage key={activeBottomPromo.image_url} src={activeBottomPromo.image_url} alt={activeBottomPromo.title || 'Promotion'} className={activeBottomPromo.title ? 'h-10 max-w-full rounded object-cover' : 'h-10 w-full max-w-none rounded object-cover'} queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache /></button>
-                    : <QueuedImage key={activeBottomPromo.image_url} src={activeBottomPromo.image_url} alt={activeBottomPromo.title || 'Promotion'} className={activeBottomPromo.title ? 'h-10 max-w-[50%] rounded object-cover' : 'h-10 w-full max-w-none rounded object-cover'} queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache />)}
+                    ? <button type="button" className={`uhub-banner-action relative h-[100px] ${activeBottomPromo.title ? 'max-w-[50%]' : 'w-full max-w-none'}`} aria-label={`Open button ${activeBottomPromo.button_number}`} onClick={() => { if (activeBottomPromo.button_number != null) activateBannerButton(activeBottomPromo.button_number); }}><QueuedImage key={activeBottomPromo.image_url} src={activeBottomPromo.image_url} alt={activeBottomPromo.title || 'Promotion'} className={activeBottomPromo.title ? 'h-[100px] max-w-full rounded object-cover' : 'h-[100px] w-full max-w-none rounded object-cover'} queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache /></button>
+                    : <QueuedImage key={activeBottomPromo.image_url} src={activeBottomPromo.image_url} alt={activeBottomPromo.title || 'Promotion'} className={activeBottomPromo.title ? 'h-[100px] max-w-[50%] rounded object-cover' : 'h-[100px] w-full max-w-none rounded object-cover'} queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache />)}
                   {activeBottomPromo.title && (activeBottomPromo.website
                     ? <a href={activeBottomPromo.website} target="_blank" rel="noopener noreferrer" className="text-center text-orange-400 hover:underline text-xs md:text-sm" style={activeBottomPromoStyle}>{activeBottomPromo.title}</a>
                     : <span className="text-center text-white text-xs md:text-sm" style={activeBottomPromoStyle}>{activeBottomPromo.title}</span>)}
@@ -5418,6 +5466,13 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     }}
   />
 )}
+        {isMainCartOpen && isMobile && (
+          <div className="uhub-main-cart-modal fixed inset-0 z-[100000] flex items-center justify-center bg-black bg-opacity-70" onClick={() => setIsMainCartOpen(false)}>
+            <div className="bg-background border rounded-lg p-4 w-[95%] max-h-[90vh] overflow-auto" role="dialog" aria-modal="true" aria-label="Your cart" onClick={event => event.stopPropagation()}>
+              <MainCartView isLoggedIn={Boolean(user)} onClose={closeMainCart} closeLabel="Close cart" onViewProduct={(product) => { setSelectedProduct(product); setProductDetailModalOpen(true); }} />
+            </div>
+          </div>
+        )}
         {isProductDetailModalOpen && (
           <MainUhubFeatureV001ForProductDetailModal isOpen={isProductDetailModalOpen} onClose={() => setProductDetailModalOpen(false)} product={selectedProduct} />
         )}
@@ -5490,7 +5545,6 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     setIsQuadrantsModalOpen(false);
     setAddProductModalOpen(true);
   }}
-  getCartUrl={getCartUrl}
   storeProducts={storeProducts}
   setSelectedProduct={setSelectedProduct}
   setProductDetailModalOpen={setProductDetailModalOpen}
