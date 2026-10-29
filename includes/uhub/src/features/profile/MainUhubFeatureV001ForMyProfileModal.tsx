@@ -715,7 +715,7 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
     loadProfile();
   };
 
-  if (!user) return <div className="p-6 text-center text-muted-foreground">Log in or sign up with uHub to use UmiMatch.</div>;
+  if (!user) return <div className="uhub-umimatch-login-prompt flex h-full min-h-[50vh] items-center justify-center p-6 text-center text-muted-foreground">Log-in or SignUp to use UmiMatch</div>;
 
   if (profile.is_enrolled !== 1) return <div className="flex h-full items-center justify-center rounded-md border bg-black p-6 text-center text-white">
     <div className="max-w-lg space-y-4">
@@ -1125,6 +1125,176 @@ const WelcomeTitleButton = ({ fallback, small = false }: { fallback: string; sma
   );
 };
 
+type UHomeHubButtonSetting = { number: number; title: string; image_url: string };
+const uHomeHubButtonsChangedEvent = 'uhub:uhome-hub-buttons-changed';
+const UHOME_HUB_TITLE_MAX = 40;
+
+// Titles and background images for the uHome-Hub #01-#30 buttons; blank entries keep the "#NN" look.
+const useUHomeHubButtonSettings = () => {
+  const [buttons, setButtons] = useState<UHomeHubButtonSetting[]>([]);
+  const reload = useCallback(() => {
+    fetch('/api/uhome-hub-buttons', { credentials: 'include', cache: 'no-store' })
+      .then(response => response.ok ? response.json() : null)
+      .then((data: { buttons?: UHomeHubButtonSetting[] } | null) => { if (Array.isArray(data?.buttons)) setButtons(data.buttons); })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    reload();
+    window.addEventListener(uHomeHubButtonsChangedEvent, reload);
+    return () => window.removeEventListener(uHomeHubButtonsChangedEvent, reload);
+  }, [reload]);
+  return buttons;
+};
+
+type UHomeHubButtonDraft = UHomeHubButtonSetting & { file?: File; preview?: string; removeImage?: boolean };
+
+const UHomeHubButtonsAdminModal = ({ onClose }: { onClose: () => void }) => {
+  const [drafts, setDrafts] = useState<UHomeHubButtonDraft[]>([]);
+  const [original, setOriginal] = useState<UHomeHubButtonSetting[]>([]);
+  const [loadError, setLoadError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const draftsRef = useRef<UHomeHubButtonDraft[]>([]);
+  draftsRef.current = drafts;
+  useEffect(() => {
+    fetch('/api/uhome-hub-buttons', { credentials: 'include', cache: 'no-store' })
+      .then(async response => {
+        if (!response.ok) throw new Error(`Unable to load the uHome-Hub buttons (${response.status}).`);
+        const data: { buttons?: UHomeHubButtonSetting[] } = await response.json();
+        if (!Array.isArray(data.buttons)) throw new Error('The uHome-Hub response was invalid.');
+        setOriginal(data.buttons);
+        setDrafts(data.buttons.map(button => ({ ...button })));
+      })
+      .catch((error: unknown) => setLoadError(error instanceof Error ? error.message : 'Unable to load the uHome-Hub buttons.'));
+    return () => draftsRef.current.forEach(draft => { if (draft.preview) URL.revokeObjectURL(draft.preview); });
+  }, []);
+  const update = (number: number, change: Partial<UHomeHubButtonDraft>) => setDrafts(current => current.map(draft => {
+    if (draft.number !== number) return draft;
+    if (draft.preview && ('file' in change || change.removeImage)) URL.revokeObjectURL(draft.preview);
+    return { ...draft, ...change };
+  }));
+  const handleSave = async () => {
+    const changed = drafts.filter(draft => {
+      const saved = original.find(button => button.number === draft.number);
+      return draft.file || draft.removeImage || draft.title.trim() !== (saved?.title || '');
+    });
+    if (!changed.length) return onClose();
+    if (changed.some(draft => draft.title.trim().length > UHOME_HUB_TITLE_MAX)) return alert(`Titles can be up to ${UHOME_HUB_TITLE_MAX} characters.`);
+    const formData = new FormData();
+    const uploads: File[] = [];
+    formData.append('buttons', JSON.stringify(changed.map(draft => ({
+      number: draft.number,
+      title: draft.title.trim(),
+      uploadIndex: draft.file ? uploads.push(draft.file) - 1 : null,
+      removeImage: !draft.file && !!draft.removeImage,
+    }))));
+    uploads.forEach(file => formData.append('images', file));
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/uhome-hub-buttons', { method: 'POST', credentials: 'include', body: formData });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Unable to save (${response.status}).`);
+      window.dispatchEvent(new Event(uHomeHubButtonsChangedEvent));
+      onClose();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Unable to save the uHome-Hub buttons.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+  return <div className="fixed inset-0 z-[100300] flex items-center justify-center bg-black/75 p-4">
+    <div role="dialog" aria-modal="true" aria-label="uHome-Hub button titles and backgrounds" className="uhub-uhome-hub-buttons-admin max-h-[86vh] w-[92vw] max-w-3xl overflow-y-auto rounded-md border bg-black p-4 text-white">
+      <div className="mb-3 flex items-center justify-between"><h3 className="font-bold">uHome-Hub buttons #01–#30: titles &amp; background images</h3><Button type="button" variant="outline" size="sm" onClick={onClose}>Close</Button></div>
+      <p className="my-2 text-xs text-muted-foreground">Leave a title blank to show the button number. Background images are optional; buttons without one stay transparent.</p>
+      {loadError ? <p className="py-5 text-center text-red-400">{loadError}</p> : !drafts.length ? <p className="py-5 text-center">Loading buttons…</p> : <div className="space-y-2">
+        {drafts.map(draft => {
+          const label = `#${String(draft.number).padStart(2, '0')}`;
+          const image = draft.preview || (draft.removeImage ? '' : draft.image_url);
+          return <div key={draft.number} className="grid grid-cols-[120px_1fr] items-center gap-2 rounded border p-2 text-xs" data-uhome-hub-button={draft.number}>
+            <div className="flex h-10 items-center justify-center overflow-hidden rounded border border-gray-700 bg-cover bg-center px-1 font-semibold text-white" style={{ backgroundImage: image ? `url("${image}")` : undefined, textShadow: image ? '0 1px 3px #000' : undefined }}>
+              <span className="truncate">{draft.title.trim() || label}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="w-8 font-bold">{label}</span>
+              <input value={draft.title} maxLength={UHOME_HUB_TITLE_MAX} onChange={event => update(draft.number, { title: event.target.value })} placeholder={`Title (blank = ${label})`} aria-label={`Title for button ${label}`} className="min-w-[140px] flex-1 rounded border bg-gray-900 p-1 text-white" style={{ color: '#ffffff', fontSize: '12px' }} />
+              <Button type="button" size="sm" variant="outline" onClick={event => (event.currentTarget.nextElementSibling as HTMLInputElement | null)?.click()}>{image ? 'Change image' : 'Add image'}</Button>
+              <input type="file" accept="image/*" className="hidden" aria-label={`Background image for button ${label}`} onChange={event => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) update(draft.number, { file, preview: URL.createObjectURL(file), removeImage: false });
+              }} />
+              {image && <Button type="button" size="sm" variant="destructive" onClick={() => update(draft.number, { file: undefined, preview: undefined, removeImage: true })}>Remove image</Button>}
+            </div>
+          </div>;
+        })}
+      </div>}
+      <Button type="button" className="mt-3" disabled={isSaving || !drafts.length} onClick={handleSave}>{isSaving ? 'Saving…' : 'Save'}</Button>
+    </div>
+  </div>;
+};
+
+// "30BKG" button: only a high-high-high admin sees it; it edits the uHome-Hub #01-#30 titles and background images.
+const UHomeHubButtonsAdminButton = ({ small = false }: { small?: boolean }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button
+        className={`uhub-30bkg-button font-bold hover:opacity-90 ${small ? 'text-xs h-8' : 'text-sm'}`}
+        style={{ backgroundColor: '#FFDAB9', color: '#0B1F4D' }}
+        title="uHome-Hub #01-#30 titles and background images"
+        onClick={() => setOpen(true)}
+      >30BKG</Button>
+      {open && <UHomeHubButtonsAdminModal onClose={() => setOpen(false)} />}
+    </>
+  );
+};
+
+// Mobile anvil slots alternate: the feature button shows first, then "Coming Soon", and repeat on the given interval.
+const MOBILE_TOP_ANVIL_ROTATE_MS = 6700;
+const MOBILE_BOTTOM_ANVIL_ROTATE_MS = 7600;
+const useAlternatingFeatureSlot = (intervalMs: number, enabled: boolean) => {
+  const [showFeature, setShowFeature] = useState(true);
+  useEffect(() => {
+    setShowFeature(true);
+    if (!enabled) return;
+    const timer = window.setInterval(() => setShowFeature(current => !current), intervalMs);
+    return () => window.clearInterval(timer);
+  }, [intervalMs, enabled]);
+  return showFeature;
+};
+
+const AdminHubButton = ({ className = '', onClick }: { className?: string; onClick: () => void }) => (
+  <Button type="button" className={`uhub-admin-hub-button bg-orange-500 hover:bg-orange-600 text-black font-bold ${className}`} title="Admin Hub" onClick={onClick}>
+    <Wrench className="h-4 w-4" /> Admin Hub
+  </Button>
+);
+
+// Admin Hub: the one place for every high-high-high admin editor button. Each button opens the same editor it always has.
+const AdminHubModal = ({ welcomeFallback, onClose, onOpenUnionNews14Modal, onOpenManagedCarouselAdmin }: {
+  welcomeFallback: string;
+  onClose: () => void;
+  onOpenUnionNews14Modal: () => void;
+  onOpenManagedCarouselAdmin: (slot: ManagedCarouselAdminTarget) => void;
+}) => (
+  <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/75 p-4">
+    <div role="dialog" aria-modal="true" aria-label="Admin Hub" className="uhub-admin-hub w-[92vw] max-w-xl rounded-md border bg-black p-4 text-white">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="font-bold">Admin Hub</h3>
+        <Button type="button" variant="outline" size="icon" aria-label="Close Admin Hub" onClick={onClose}><X className="h-4 w-4" /></Button>
+      </div>
+      <div className="uhub-admin-button-row flex min-w-0 flex-wrap items-center gap-2">
+        <Button className="bg-green-700 hover:bg-green-800 text-white text-sm" onClick={onOpenUnionNews14Modal}>Add Images?</Button>
+        <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-sm" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
+        <Button className="bg-gray-300 hover:bg-gray-200 text-[#b87333] font-extrabold text-sm" title="CenterImageCarousel" onClick={() => onOpenManagedCarouselAdmin('center')}>C</Button>
+        <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
+        <Button className="bg-pink-500 hover:bg-pink-600 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
+        <Button className="bg-purple-600 hover:bg-purple-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
+        <WelcomeTitleButton fallback={welcomeFallback} />
+        <UHomeHubButtonsAdminButton />
+      </div>
+    </div>
+  </div>
+);
+
 const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdminTarget | null; onClose: () => void }) => {
   const [activeLeftSlot, setActiveLeftSlot] = useState<'left-top' | 'left'>('left');
   const [items, setItems] = useState<Array<ManagedCarouselItem & { file?: File }>>([]);
@@ -1320,8 +1490,7 @@ const BroadcastView = ({
   broadcastView, 
   unionNews14Images, 
   setUnionNews14Images,
-  onOpenUnionNews14Modal, 
-  onOpenManagedCarouselAdmin,
+  onOpenAdminHub,
   onExitUmiMatch,
   onImageZoom,
   broadcastDividerDragging,
@@ -1514,22 +1683,6 @@ const BroadcastView = ({
             </div>
             <div className="flex items-center gap-2 mb-4">
               <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-sm">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
-              {user?.is_high_high_high_admin === 1 && (
-                <>
-                <Button 
-                  className="bg-green-700 hover:bg-green-800 text-white text-sm"
-                  onClick={() => onOpenUnionNews14Modal()}
-                >
-                  Add Images?
-                </Button>
-                <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-sm" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
-                <Button className="bg-gray-300 hover:bg-gray-200 text-[#b87333] font-extrabold text-sm" title="CenterImageCarousel" onClick={() => onOpenManagedCarouselAdmin('center')}>C</Button>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
-                <Button className="bg-pink-500 hover:bg-pink-600 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white text-sm" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
-                <WelcomeTitleButton fallback={broadcast.description} />
-                </>
-              )}
             </div>
             <div className="flex-1 overflow-hidden">
               <div className="flex h-full min-w-0 gap-2">
@@ -1562,20 +1715,7 @@ if (isMobile) {
         <div className="flex-shrink-0 flex flex-col w-[100%] mx-auto py-4">
           <div className="flex items-center gap-2 mb-2">
             {user?.is_high_high_high_admin === 1 && (
-              <>
-              <Button 
-                className="bg-green-700 hover:bg-green-800 text-white text-xs h-8"
-                onClick={() => onOpenUnionNews14Modal()}
-              >
-                Add
-              </Button>
-              <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
-              <Button className="bg-gray-300 hover:bg-gray-200 text-[#b87333] font-extrabold text-xs h-8" title="CenterImageCarousel" onClick={() => onOpenManagedCarouselAdmin('center')}>C</Button>
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
-              <Button className="bg-pink-500 hover:bg-pink-600 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
-                            <WelcomeTitleButton fallback={broadcast.description} small />
-                            </>
+              <AdminHubButton className="text-xs h-8" onClick={onOpenAdminHub} />
                           )}
                         </div>
 
@@ -1723,22 +1863,6 @@ if (isMobile) {
             </div>
             <div className="flex items-center gap-2 mb-2">
               <a href={broadcast.website} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline text-xs">Learn how to code (in less than 5min) for Free- over at our GitHub here:</a>
-              {user?.is_high_high_high_admin === 1 && (
-                <>
-                <Button 
-                  className="bg-green-700 hover:bg-green-800 text-white text-xs h-8"
-                  onClick={() => onOpenUnionNews14Modal()}
-                >
-                  Add
-                </Button>
-                <Button className="bg-yellow-400 hover:bg-yellow-500 text-black text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('left')}>L</Button>
-                <Button className="bg-gray-300 hover:bg-gray-200 text-[#b87333] font-extrabold text-xs h-8" title="CenterImageCarousel" onClick={() => onOpenManagedCarouselAdmin('center')}>C</Button>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('right')}>R</Button>
-                <Button className="bg-pink-500 hover:bg-pink-600 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('cover')}>Up</Button>
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white text-xs h-8" onClick={() => onOpenManagedCarouselAdmin('bottom')}>Down</Button>
-                                <WelcomeTitleButton fallback={broadcast.description} small />
-                                </>
-                              )}
                             </div>
 
                             {/* CAROUSEL - Shows limited images based on width */}
@@ -3032,6 +3156,8 @@ const HomeModal = ({ isOpen, onClose, userProducts = [], user = null }: { isOpen
 const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyProfileModalProps> = ({ isOpen, onClose, onOpenAuthModal, onBadgeZoom, mobileWorldFeedDraft, onMobileWorldFeedDraftChange: setMobileWorldFeedDraft }) => {
   const { user, logout } = useAuth();
   const isMobile = useMobileViewport();
+  const showTopAnvilFeature = useAlternatingFeatureSlot(MOBILE_TOP_ANVIL_ROTATE_MS, isMobile);
+  const showBottomAnvilFeature = useAlternatingFeatureSlot(MOBILE_BOTTOM_ANVIL_ROTATE_MS, isMobile);
   const [mobileSection, setMobileSection] = useState<'front' | 'hub' | 'stores' | 'features' | 'more'>('front');
   const [mobileFooterOpen, setMobileFooterOpen] = useState(false);
   const [mobileAboutOpen, setMobileAboutOpen] = useState(false);
@@ -3043,6 +3169,7 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
   const [isPoliticFilterPressed, setPoliticFilterPressed] = useState(false);
   const [managedCarouselAdminSlot, setManagedCarouselAdminSlot] = useState<ManagedCarouselAdminTarget | null>(null);
   const MainUhubFeatureV001ForUHomeHubButtons = Array.from({ length: 30 }, (_, i) => i + 1);
+  const uHomeHubButtonSettings = useUHomeHubButtonSettings();
   const [customizableButtonPage, setCustomizableButtonPage] = useState(1);
   const CustomButtonsPage001sNextPageButton = 'CustomButtonsPage001sNextPageButton';
   const CustomButtonsPage002sPreviousPageButton = 'CustomButtonsPage002sPreviousPageButton';
@@ -3324,6 +3451,8 @@ const MainUhubFeatureV001ForMyProfileModal: React.FC<MainUhubFeatureV001ForMyPro
 
 
 const [isUnionNews14ModalOpen, setIsUnionNews14ModalOpen] = useState(false);
+const [isAdminHubOpen, setIsAdminHubOpen] = useState(false);
+const isAdmin = user?.is_high_high_high_admin === 1;
 const [unionNews14Images, setUnionNews14Images] = useState<BroadcastItem[]>([]);
 
   useEffect(() => {
@@ -4466,10 +4595,12 @@ return (
   <>
     {!moveNavigationBelowMemeBox && broadcastNavigation}
     {isMobile && MOBILE_MEMEBOX_REPLACEMENT_VIEWS.includes(broadcastView) && (
-      <Button type="button" variant="outline" className="uhub-mobile-memebox-return mb-3 w-full" onClick={() => {
-        setAreFeatureIconsActive(prev => ({ ...prev, heart: false, palm: false, lion: false }));
-        setBroadcastView('UnionNews#14');
-      }}><X className="h-4 w-4" /> Close &amp; back to MemeBox</Button>
+      <div className="mb-2 flex justify-end">
+        <Button type="button" variant="outline" size="icon" className="uhub-mobile-memebox-return" aria-label="Close &amp; back to MemeBox" title="Close &amp; back to MemeBox" onClick={() => {
+          setAreFeatureIconsActive(prev => ({ ...prev, heart: false, palm: false, lion: false }));
+          setBroadcastView('UnionNews#14');
+        }}><X className="h-4 w-4" /></Button>
+      </div>
     )}
     {broadcastView === 'MyBroadcasts' ? 
       (user ? <CreateBroadcastView /> : <p className="text-center text-muted-foreground">You must be logged in to create a broadcast.</p>) 
@@ -4479,8 +4610,7 @@ return (
   broadcastView={broadcastView}
   unionNews14Images={unionNews14Images}
   setUnionNews14Images={setUnionNews14Images}
-  onOpenUnionNews14Modal={() => setIsUnionNews14ModalOpen(true)}
-  onOpenManagedCarouselAdmin={setManagedCarouselAdminSlot}
+  onOpenAdminHub={() => setIsAdminHubOpen(true)}
   onExitUmiMatch={() => { setAreFeatureIconsActive(prev => ({ ...prev, heart: false })); setBroadcastView('UnionNews#14'); }}
   onImageZoom={(imageUrl: string, title: string, items: BroadcastItem[], currentIndex: number) => {
     console.log('[PROFILE MODAL] Broadcast carousel image zoom:', title, 'Index:', currentIndex);
@@ -4891,7 +5021,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               <Button type="button" variant="outline" disabled={!user} onClick={() => setIsHomeModalOpen(true)}><Home /><span>Profile</span></Button>
               <Button type="button" variant="outline" aria-current={mobileSection === 'hub' ? 'page' : undefined} onClick={() => setMobileSection('hub')}><MessageSquare /><span>uHome-Hub</span>{unreadChatrooms.size > 0 && <span className="uhub-mobile-unread" aria-label="Unread chats" />}</Button>
               <Button type="button" variant="outline" onClick={handleMicrophoneButtonClick}><Radio /><span>UnionRadio</span></Button>
-              <Button id="uhub-mobile-coming-soon-top" type="button" variant="outline" disabled><Anvil /><span>Coming Soon</span></Button>
+              {showTopAnvilFeature
+                ? <Button id="uhub-mobile-coming-soon-top" type="button" variant="outline" title="UmiMatch" style={{ backgroundColor: '#dc2626', borderColor: '#dc2626', color: '#ffffff' }} onClick={() => activateBannerButton(3)}><Heart fill="currentColor" /><span>UmiMatch</span></Button>
+                : <Button id="uhub-mobile-coming-soon-top" type="button" variant="outline" disabled><Anvil /><span>Coming Soon</span></Button>}
               <Button type="button" variant="outline" aria-current={mobileSection === 'features' ? 'page' : undefined} onClick={() => setMobileSection('features')}><img src="/uhub/dist/mobile-custom-buttons-logo.png" alt="" className="uhub-custom-buttons-logo exclude-zoom" /><span>10,000</span></Button>
             </nav>
             <div className="uhub-mobile-cover">
@@ -4910,7 +5042,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                <Button type="button" variant="outline" size="icon" aria-label="Next feature page" disabled={customizableButtonPage === 715} onClick={() => setCustomizableButtonPage(page => Math.min(715, page + 1))}><ChevronRight className="h-5 w-5" /></Button>
              </div>
            </div>
-           <div id="MainUhubFeatureV001ForMyProfileSettingsTopLeftSection" className="md:w-1/5 grid grid-cols-4 md:grid-cols-2 grid-rows-1 md:grid-rows-2 gap-2 md:pr-4" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
+           <div id="MainUhubFeatureV001ForMyProfileSettingsTopLeftSection" className={`md:w-1/5 grid grid-cols-4 md:grid-cols-2 grid-rows-1 gap-2 md:pr-4 ${isAdmin ? 'uhub-top-left-admin md:grid-rows-3 md:gap-1' : 'md:grid-rows-2'}`} style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent' }}>
              <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Broadcast" onClick={() => setCenterView('broadcasts')}><Megaphone className="h-4 w-4 mb-1" /> Broadcast</Button>
              <Button variant="outline" className="flex flex-col h-full items-center justify-center text-xs text-white bg-transparent border-gray-700 hover:bg-gray-700 hover:text-white" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="HikingToAllStores" onClick={() => setIsQuadrantsModalOpen(true)}>
                <Mountain className="h-4 w-4 mb-1" /> Stores
@@ -4926,6 +5058,10 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                }
                setIsHomeModalOpen(true);
              }} disabled={!user}><Home className="h-4 w-4 mb-1" /> Home</Button>
+             {isAdmin && <>
+               <AdminHubButton className="flex h-full min-h-0 flex-col gap-0 px-1 py-0 text-xs" onClick={() => setIsAdminHubOpen(true)} />
+               <Button id="uhub-admin-coming-soon" type="button" variant="outline" className="flex flex-col h-full min-h-0 items-center justify-center gap-0 px-1 py-0 text-xs text-white bg-transparent border-gray-700" style={{ color: '#ffffff', backgroundColor: 'transparent' }} title="Admin Coming Soon" disabled><Anvil className="h-4 w-4" /> Admin Coming Soon</Button>
+             </>}
            </div>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative overflow-hidden" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: 'none' }}>
              {!isMobile && <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={areProfileSurfacesOpaque ? 1 : 0.5} onButtonClick={activateBannerButton} />}
@@ -5146,7 +5282,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     <nav className="uhub-mobile-navigation" aria-label="Mobile sections">
       <button type="button" aria-current={mobileSection === 'front' ? 'page' : undefined} onClick={() => { setMobileSection('front'); setCenterView('broadcasts'); setBroadcastView('UnionNews#14'); }}><Megaphone /><span>Front Page</span></button>
       <button type="button" aria-current={mobileSection === 'stores' ? 'page' : undefined} onClick={() => setMobileSection('stores')}><ShoppingCart /><span>Stores</span></button>
-      <button id="uhub-mobile-coming-soon-footer" type="button" disabled><Anvil /><span>Coming Soon</span></button>
+      {showBottomAnvilFeature
+        ? <button id="uhub-mobile-coming-soon-footer" type="button" title="Find a Pantry" style={{ backgroundColor: '#2563eb', borderColor: '#2563eb', color: '#ffffff' }} onClick={() => activateBannerButton(5)}><span className="uhub-mobile-lion-icon" aria-hidden="true">𓃮</span><span>Find a Pantry</span></button>
+        : <button id="uhub-mobile-coming-soon-footer" type="button" disabled><Anvil /><span>Coming Soon</span></button>}
       <button type="button" aria-current={mobileSection === 'more' ? 'page' : undefined} onClick={() => setMobileSection('more')}><MoreHorizontal /><span>More</span></button>
     </nav>
   )}
@@ -5166,6 +5304,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
         <h3 className="text-center font-bold mb-2 md:mb-4 text-xs md:text-base">uHome-Hub:</h3>
         <div className="grid grid-cols-2 gap-1 md:gap-2">
           {MainUhubFeatureV001ForUHomeHubButtons.map(num => {
+            const hubButton = uHomeHubButtonSettings.find(button => button.number === num);
+            const hubLabel = `#${String(num).padStart(2, '0')}`;
+            const hubTitle = hubButton?.title?.trim() || '';
             return (
               <div key={num} className="relative">
                 <Button 
@@ -5177,10 +5318,13 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
                     backgroundColor: 'transparent',
                     borderColor: '#374151',
                     boxShadow: 'none',
+                    ...(hubButton?.image_url ? { backgroundImage: `url("${hubButton.image_url}")`, backgroundSize: 'cover', backgroundPosition: 'center', textShadow: '0 1px 3px #000' } : {}),
                   }}
+                  title={hubTitle ? `${hubLabel} ${hubTitle}` : undefined}
+                  data-uhome-hub-button={num}
                   onClick={() => handleUHomeHubClick(num)}
                 >
-                  #{String(num).padStart(2, '0')}
+                  <span className="truncate">{hubTitle || hubLabel}</span>
                 </Button>
                 
                 {/* Green unread message badge */}
@@ -5652,6 +5796,15 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
 )}
 
 
+
+{user?.is_high_high_high_admin === 1 && isAdminHubOpen && (
+  <AdminHubModal
+    welcomeFallback={broadcasts['UnionNews#14'].description}
+    onClose={() => setIsAdminHubOpen(false)}
+    onOpenUnionNews14Modal={() => setIsUnionNews14ModalOpen(true)}
+    onOpenManagedCarouselAdmin={setManagedCarouselAdminSlot}
+  />
+)}
 
 {user?.is_high_high_high_admin === 1 && (
   <ManagedCarouselAdminModal slot={managedCarouselAdminSlot} onClose={() => setManagedCarouselAdminSlot(null)} />

@@ -56,7 +56,7 @@ export function PantryControls({ addPantry, activeView, setActiveView, selectedP
   const title = getTitle();
 
   return (
-    <div className="p-6 flex flex-col h-full">
+    <div className="p-1 md:p-6 flex flex-col h-full">
       {title && <h2 className="text-2xl font-bold mb-4 flex-shrink-0">{title}</h2>}
       <div className="overflow-y-auto flex-grow">
         <div className="space-y-4">

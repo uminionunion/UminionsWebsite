@@ -162,6 +162,33 @@ test('startup migrations, banner associations and existing API routes work again
     });
     assert.equal(lastMove.status, 400, 'Last active image cannot swap into the archive');
     assert.equal(await readFile(path.join(directory, 'broadcast-images', 'archive-fixture.png'), 'utf8'), 'archived-media-fixture');
+    // 30BKG: uHome-Hub #01-#30 titles and background images.
+    const hubButtons = async () => (await (await fetch(`${base}/api/uhome-hub-buttons`)).json()).buttons;
+    const saveHub = (buttons, cookie = `token=${token}`, upload) => {
+      const body = new FormData();
+      body.append('buttons', JSON.stringify(buttons));
+      if (upload) body.append('images', new Blob([Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64')], { type: 'image/gif' }), 'hub.gif');
+      return fetch(`${base}/api/uhome-hub-buttons`, { method: 'POST', headers: cookie ? { Cookie: cookie } : {}, body });
+    };
+    let hub = await hubButtons();
+    assert.equal(hub.length, 30);
+    assert.ok(hub.every((button, index) => button.number === index + 1 && button.title === '' && button.image_url === ''));
+    assert.equal((await saveHub([{ number: 1, title: 'x' }], '')).status, 401);
+    assert.equal((await saveHub([{ number: 1, title: 'x' }], `token=${memberToken}`)).status, 403);
+    for (const invalid of [[{ number: 0 }], [{ number: 31 }], [{ number: 1.5 }], [{ number: 2 }, { number: 2 }], [{ number: 3, title: 'x'.repeat(41) }], [{ number: 3, uploadIndex: 0 }]]) {
+      assert.equal((await saveHub(invalid)).status, 400, JSON.stringify(invalid));
+    }
+    assert.equal((await saveHub([{ number: 1, title: '  Union Hall  ' }, { number: 30, title: 'Last', uploadIndex: 0 }], `token=${token}`, true)).status, 200);
+    hub = await hubButtons();
+    assert.deepEqual([hub[0].title, hub[0].image_url, hub[29].title], ['Union Hall', '', 'Last']);
+    assert.match(hub[29].image_url, /^\/api\/uploads\/managed-carousels\/uhome-hub-buttons\/button-30-.*\.gif$/);
+    const hubImagePath = path.join(directory, 'uploads', 'managed-carousels', 'uhome-hub-buttons', path.basename(hub[29].image_url));
+    assert.ok((await readFile(hubImagePath)).length > 0);
+    assert.equal((await getItems('left')).some(item => item.slot === 'uhome-hub-buttons'), false);
+    assert.equal((await saveHub([{ number: 30, title: 'Last', removeImage: true }])).status, 200);
+    hub = await hubButtons();
+    assert.deepEqual([hub[0].title, hub[29].title, hub[29].image_url], ['Union Hall', 'Last', ''], 'Removing an image keeps other buttons and titles');
+    await assert.rejects(readFile(hubImagePath), 'Removed background images are deleted from disk');
     // Main Cart: store products and header/footer carousel entries, saved for later, ownership and removal.
     const cartRequest = (route, method = 'GET', body, cookie = `token=${token}`) => fetch(`${base}/api/products/cart${route}`, {
       method, headers: { ...(cookie ? { Cookie: cookie } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined,

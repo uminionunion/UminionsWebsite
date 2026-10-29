@@ -64,10 +64,10 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
 
   return (
     <div>
-      <div className="grid gap-4 md:grid-cols-[1.35fr_0.9fr_0.9fr]">
+      <div className="pantry-finder-filters grid grid-cols-3 gap-2 md:grid-cols-[1.35fr_0.9fr_0.9fr] md:gap-4 [&>div]:min-w-0 [&_h4]:break-words [&_label]:break-words [&_label]:hyphens-auto [&_label]:text-xs md:[&_label]:text-sm">
         <div>
           <h4 className="pantry-finder-section-title font-medium mb-2">Find a:</h4>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-3">
             {categoryTypes.map(type => (
               <div key={type.id} className="flex items-center space-x-2">
                 <Checkbox 
@@ -75,7 +75,7 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
                   checked={selectedCategories.includes(type.id)}
                   onCheckedChange={(checked) => handleCategoryChange(type.id, !!checked)}
                 />
-                <Label htmlFor={`filter-type-${type.id}`} className={cn('pantry-finder-list-label', type.className)}>{type.label}</Label>
+                <Label htmlFor={`filter-type-${type.id}`} className={cn('pantry-finder-list-label', type.className)}>{type.label.replace('/', '/\u200B')}</Label>
               </div>
             ))}
           </div>
@@ -107,10 +107,10 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
 
         <div>
           <h4 className="pantry-finder-section-title font-medium mb-2">Country</h4>
-          <div className="max-h-[170px] overflow-y-auto space-y-2 border rounded-md p-2">
+          <div className="max-h-[170px] overflow-y-auto space-y-2 border rounded-md p-1 md:p-2">
             <RadioGroup value={selectedCountry || ''} onValueChange={handleCountryChange}>
               {sortedCountryList.map(country => (
-                <div key={country} className="flex items-center space-x-2">
+                <div key={country} className="flex items-center space-x-1 md:space-x-2">
                   <RadioGroupItem value={country} id={`country-${country}`} />
                   <Label htmlFor={`country-${country}`} className="pantry-finder-list-label">{country}</Label>
                 </div>
@@ -121,11 +121,11 @@ export function FindPantryView({ selectedCategories, onCategoryChange, selectedC
 
         {(states && states.length > 0) ? (
           <div>
-            <h4 className="pantry-finder-section-title font-medium mb-2">{selectedCountry} States/Provinces</h4>
-            <div className="max-h-[170px] overflow-y-auto space-y-2 border rounded-md p-2">
+            <h4 className="pantry-finder-section-title font-medium mb-2">{selectedCountry} States/{'\u200B'}Provinces</h4>
+            <div className="max-h-[170px] overflow-y-auto space-y-2 border rounded-md p-1 md:p-2">
               <RadioGroup value={selectedState || ''} onValueChange={handleStateChange}>
                 {states.map(state => (
-                  <div key={state} className="flex items-center space-x-2">
+                  <div key={state} className="flex items-center space-x-1 md:space-x-2">
                     <RadioGroupItem value={state} id={`state-${state}`} />
                     <Label htmlFor={`state-${state}`} className="pantry-finder-list-label">{state}</Label>
                   </div>

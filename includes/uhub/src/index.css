@@ -691,6 +691,22 @@
   display: contents;
 }
 
+/* Admins get a third Admin Hub row in the top-left quadrant; the six buttons share the old two-row height. */
+.uhub-root .uhub-top-left-admin > button {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1.1;
+}
+
+.uhub-root .uhub-top-left-admin > button .text-2xl {
+  font-size: 1.125rem;
+}
+
+.uhub-root .uhub-top-left-admin > button svg {
+  margin-bottom: 1px;
+}
+
 @media (max-width: 767px) {
   .uhub-root .uhub-dashboard,
   .uhub-root .uhub-dashboard * {
@@ -1089,6 +1105,12 @@
   .uhub-root .uhub-mobile-navigation svg {
     height: 21px;
     width: 21px;
+  }
+
+  .uhub-root .uhub-mobile-navigation .uhub-mobile-lion-icon {
+    height: 21px;
+    font-size: 21px;
+    line-height: 21px;
   }
 
   .uhub-root .uhub-mobile-navigation button[aria-current="page"] {
