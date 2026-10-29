@@ -57,8 +57,8 @@ export default function TheMemeBoxImplementation001({ postSource = "all", embedd
   const touchStartY = useRef(0);
   const SWIPE_THRESHOLD = 50;
   const MAX_UPLOAD_IMAGES = 10;
-  const ROTATION_IMAGE_DELAY_MS = 3000;
-  const ROTATION_MOTION_DELAY_MS = 8000; // Videos/GIFs autoplay on their own, so give them more time before rotating.
+  const ROTATION_IMAGE_DELAY_MS = 6000;
+  const ROTATION_MOTION_DELAY_MS = 16000; // Videos/GIFs autoplay on their own, so give them more time before rotating.
   const toastTimerRef = useRef(null);
   const [toastMessage, setToastMessage] = useState("");
   useEffect(() => () => {
