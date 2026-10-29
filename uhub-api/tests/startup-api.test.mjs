@@ -162,6 +162,46 @@ test('startup migrations, banner associations and existing API routes work again
     });
     assert.equal(lastMove.status, 400, 'Last active image cannot swap into the archive');
     assert.equal(await readFile(path.join(directory, 'broadcast-images', 'archive-fixture.png'), 'utf8'), 'archived-media-fixture');
+    // Main Cart: store products and header/footer carousel entries, saved for later, ownership and removal.
+    const cartRequest = (route, method = 'GET', body, cookie = `token=${token}`) => fetch(`${base}/api/products/cart${route}`, {
+      method, headers: { ...(cookie ? { Cookie: cookie } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) }, body: body ? JSON.stringify(body) : undefined,
+    });
+    assert.equal((await cartRequest('', 'GET', undefined, '')).status, 401, 'Logged-out visitors cannot read a cart');
+    assert.equal((await cartRequest('/add', 'POST', { product_id: 1 }, '')).status, 401, 'Logged-out visitors cannot add to a cart');
+    assert.equal((await cartRequest('/add', 'POST', {})).status, 400);
+    assert.equal((await cartRequest('/add', 'POST', { product_id: 999 })).status, 404);
+    const cartFixture = new Database(path.join(directory, 'database.sqlite'));
+    const carouselId = Number(cartFixture.prepare("INSERT INTO UhubManagedCarouselItems(slot,image_url,title,price,website,display_order) VALUES ('left','/cart-poster.png','Cart poster','$12','https://page001.uminion.com/cart/?add-to-cart=POSTER12',99)").run().lastInsertRowid);
+    const bannerId = Number(cartFixture.prepare("INSERT INTO UhubManagedCarouselItems(slot,image_url,display_order) VALUES ('bottom','/banner.png',99)").run().lastInsertRowid);
+    const websiteLabelId = Number(cartFixture.prepare("INSERT INTO UhubManagedCarouselItems(slot,image_url,title,price,website,display_order) VALUES ('left','/ukraine.png','Ukraine Poster','u24.gov.ua','https://u24.gov.ua',98)").run().lastInsertRowid);
+    cartFixture.prepare("UPDATE MainHubUpgradeV001ForProducts SET price=19.5, sku_id='FIX-1', image_url='/fixture.png' WHERE id=1").run();
+    cartFixture.close();
+    assert.equal((await cartRequest('/add', 'POST', { carousel_item_id: bannerId })).status, 404, 'Banners are not cart products');
+    assert.equal((await cartRequest('/add', 'POST', { carousel_item_id: websiteLabelId })).status, 404, 'Website-link buttons are not cart products');
+    assert.equal((await cartRequest('/add', 'POST', { product_id: 1 })).status, 200);
+    assert.equal((await cartRequest('/add', 'POST', { product_id: 1 })).status, 200);
+    assert.equal((await cartRequest('/add', 'POST', { carousel_item_id: carouselId })).status, 200);
+    let cart = await (await cartRequest('')).json();
+    assert.equal(cart.saved.length, 0);
+    const productEntry = cart.items.find(item => item.product_id === 1);
+    const posterEntry = cart.items.find(item => item.carousel_item_id === carouselId);
+    assert.deepEqual([productEntry.name, productEntry.price, productEntry.sku, productEntry.seller_name, productEntry.quantity, productEntry.image_url, productEntry.product.id],
+      ['Fixture product', '$19.50', 'FIX-1', 'startup-test-user', 2, '/fixture.png', 1]);
+    assert.deepEqual([posterEntry.name, posterEntry.price, posterEntry.sku, posterEntry.seller_name, posterEntry.product], ['Cart poster', '$12', 'POSTER12', 'Uminion Union', null]);
+    assert.equal((await cartRequest(`/${productEntry.id}`, 'PATCH', { saved_for_later: 'yes' })).status, 400);
+    assert.equal((await cartRequest(`/${productEntry.id}`, 'PATCH', { saved_for_later: true })).status, 200);
+    cart = await (await cartRequest('')).json();
+    assert.deepEqual([cart.items.map(item => item.id), cart.saved.map(item => item.id)], [[posterEntry.id], [productEntry.id]]);
+    assert.equal((await cartRequest('/add', 'POST', { product_id: 1 })).status, 200, 'Re-adding moves a saved entry back into the cart');
+    cart = await (await cartRequest('')).json();
+    assert.deepEqual([cart.items.length, cart.saved.length, cart.items.find(item => item.id === productEntry.id).quantity], [2, 0, 3]);
+    const strangerCookie = `token=${jwt.sign({ userId: 5, username: 'startup-test-friend' }, env.JWT_SECRET)}`;
+    assert.equal((await cartRequest(`/${posterEntry.id}`, 'DELETE', undefined, strangerCookie)).status, 403);
+    assert.equal((await cartRequest(`/${posterEntry.id}`, 'PATCH', { saved_for_later: true }, strangerCookie)).status, 403);
+    assert.deepEqual((await (await cartRequest('', 'GET', undefined, strangerCookie)).json()), { items: [], saved: [] });
+    assert.equal((await cartRequest(`/${posterEntry.id}`, 'DELETE')).status, 200);
+    cart = await (await cartRequest('')).json();
+    assert.deepEqual(cart.items.map(item => item.id), [productEntry.id]);
   } finally {
     if (child && child.exitCode === null) {
       child.kill();

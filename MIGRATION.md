@@ -225,6 +225,11 @@ the pantry ad is inserted after the first cover only when the default remains
 and the collection has room. Existing custom images and IDs are retained.
 Deploy the rebuilt API and frontend together; see the
 [Up/Down banner guide](README.md#clickable-updown-banner-ads).
+The Main Cart upgrade adds nullable/defaulted columns (`saved_for_later`,
+`carousel_item_id`, `item_name`, `item_price`, `item_image_url`, `item_sku`) to
+`MainHubUpgradeV001ForInternalCart` on API startup when they are missing.
+Existing cart rows are kept unchanged; see the
+[Main Cart guide](README.md#main-cart-internal-cart).
 The old source remains unchanged; do not delete its volume
 or use volume-removal commands as part of this change. If rollback is needed
 after accepting new version-3 writes, preserve that destination too: reverting

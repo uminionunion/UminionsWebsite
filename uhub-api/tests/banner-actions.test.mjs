@@ -62,7 +62,7 @@ function hooks() {
 test('ads invoke the actual shared button dispatcher independently of the visible button page', () => {
   const events = [], errors = [], flags = { heart: false, palm: false, lion: false, microphone: false };
   const globals = {
-    customizableButtonPage: 715, user: { id: 3, is_high_high_high_admin: 0 },
+    customizableButtonPage: 715, user: { id: 3, is_high_high_high_admin: 0 }, isMobile: false,
     areFeatureIconsActive: flags,
     setAreFeatureIconsActive: update => Object.assign(flags, update(flags)),
     setMobileSection: value => events.push(['mobile', value]),
@@ -135,13 +135,77 @@ test('cover starts with the personal cover, then the pantry image opens button 5
   assert.ok(nodes(result).find(node => node.type === 'image').props.className.includes('object-cover'), 'Saved top banners retain their original full-slot crop');
 });
 
-test('linked bottom banners retain the original height, width limits and cover fitting', () => {
-  const linked = source.slice(source.indexOf('? <button type="button" className={`uhub-banner-action relative h-10'));
+test('bottom banner row is 2.5x taller (40px to 100px) while keeping width limits and cover fitting', () => {
+  const linked = source.slice(source.indexOf('? <button type="button" className={`uhub-banner-action relative h-[100px]'));
   const image = linked.slice(0, linked.indexOf('</button>'));
   assert.ok(image.includes("activeBottomPromo.title ? 'max-w-[50%]' : 'w-full max-w-none'"));
-  assert.ok(image.includes("'h-10 max-w-full rounded object-cover' : 'h-10 w-full max-w-none rounded object-cover'"));
+  assert.ok(image.includes("'h-[100px] max-w-full rounded object-cover' : 'h-[100px] w-full max-w-none rounded object-cover'"));
   assert.ok(!image.includes('object-contain'));
   assert.ok(!image.includes("'w-1/2'"));
+  assert.ok(source.includes('<div className="flex h-[100px] w-full items-center justify-center gap-2 px-9">'));
+  assert.ok(!/activeBottomPromo[^\n]*\bh-10\b/.test(source), 'No bottom banner element keeps the old 40px height');
+  assert.ok(source.includes('id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 '), 'Desktop top banner stays 160px');
+});
+
+test('mobile cover appends bottom banner images after the top entries and plays them in order', () => {
+  const h = hooks(), clicks = [], registered = [];
+  const items = [{ image_url: '/top-a.jpg' }, { image_url: '/blue.jpg', button_number: 5 }];
+  const bottom = [{ image_url: '/red.jpg', button_number: 3 }, { image_url: '/bottom-b.jpg' }];
+  const render = compile(`${declaration('ManagedCoverImageSlot')} ManagedCoverImageSlot`, {
+    ...h, React, defaultCoverImageUrl: '/default.jpg',
+    useManagedCarouselItems: () => ({ items }),
+    useQueuedImageSlot: options => { registered.push(options); return true; },
+    QueuedImage: 'image', IMAGE_LOAD_PRIORITY: { critical: 0 },
+  });
+  const props = { userCoverUrl: null, opacity: 1, fallbackToDefault: true, onButtonClick: number => clicks.push(number), appendedItems: bottom };
+  h.render(() => render(props));
+  assert.deepEqual([...registered[0].urls], ['/top-a.jpg', '/blue.jpg', '/red.jpg', '/bottom-b.jpg']);
+  assert.equal(registered[0].sequential, true);
+  registered[0].setIndex(2);
+  const result = h.render(() => render(props));
+  assert.equal(result.props['aria-label'], 'Open button 3');
+  result.props.onClick();
+  assert.deepEqual(clicks, [3]);
+  registered.length = 0;
+  h.render(() => render({ ...props, appendedItems: undefined }));
+  assert.equal(registered[0].sequential, false, 'Desktop cover keeps random rotation');
+  assert.ok(source.includes('appendedItems={mobileBottomBannerItems}'));
+  assert.ok(source.includes('{!isMobile && <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={areProfileSurfacesOpaque ? 1 : 0.5} onButtonClick={activateBannerButton} />}'));
+});
+
+test('sequential rotation walks top then bottom entries and loops', async () => {
+  const rotationSource = await readFile(new URL('../../includes/uhub/src/lib/carousel-rotation-queue.ts', import.meta.url), 'utf8');
+  const h = hooks(), timers = [], moves = [];
+  const exports = {};
+  compile(rotationSource, {
+    exports, require: name => name === 'react' ? { ...h, useState: initial => [initial, () => {}] }
+      : name === 'react-dom' ? { flushSync: callback => callback() } : {
+        IMAGE_LOAD_PRIORITY: { carousel: 1 }, retainQueuedImages: () => () => {}, preloadQueuedImage: async () => {},
+      },
+    window: { setTimeout: (callback, delay) => { timers.push({ callback, delay }); return timers.length; } },
+    Math: Object.assign(Object.create(Math), { random: () => 0.99 }),
+  });
+  let index = 0;
+  const options = { carouselId: 'cover', urls: ['/t1.jpg', '/t2.jpg', '/b1.jpg'], firstNextIndex: 1, sequential: true, setIndex: next => { moves.push(next); index = next; } };
+  for (let step = 0; step < 4; step++) {
+    h.render(() => exports.useQueuedImageSlot({ ...options, index }));
+    const timer = timers.find(entry => entry.delay === 5000);
+    timers.splice(timers.indexOf(timer), 1);
+    await timer.callback();
+  }
+  assert.deepEqual(moves, [1, 2, 0, 1]);
+});
+
+test('on mobile, banner features replace the MemeBox until closed, then it restarts on a random unseen entry', async () => {
+  assert.ok(source.includes("const MOBILE_MEMEBOX_REPLACEMENT_VIEWS = ['UmiMatch#22', 'Find-a-Pantry#13', 'Million-Pixel#23', 'Beta-Button-10,011'];"));
+  assert.ok(source.includes("renderTheMemeBox(broadcasts['UnionNews#14'], { randomStart: (isMobile && memeBoxReplacedByFeatureRef.current) || memeBoxRandomAfterCartRef.current });"));
+  assert.ok(source.includes('isOpen && !isDesktopCartOpen && centerView === \'broadcasts\''), 'The desktop Main Cart replaces the MemeBox while open');
+  assert.ok(source.includes('Close &amp; back to MemeBox'));
+  const renderer = await readFile(new URL('../../includes/uhub/src/TheMemeBoxRenderer.tsx', import.meta.url), 'utf8');
+  assert.ok(renderer.includes('showExternalUploadButton hideFooter randomStart={randomStart}'));
+  const memeBox = await readFile(new URL('../../includes/uhub/src/features/profile/TheMemeBoxImplementation001.jsx', import.meta.url), 'utf8');
+  assert.ok(memeBox.includes('const mainMemeBoxShownPostIds = new Set();'));
+  assert.ok(memeBox.includes('filteredPosts.filter((post) => !mainMemeBoxShownPostIds.has(post.id))'));
 });
 
 test('Up and Down editors persist, change and clear optional button associations', async () => {

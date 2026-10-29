@@ -372,73 +372,208 @@ router.post('/:productId/restore', authenticate, async (req, res) => {
         res.status(500).json({ message: 'Failed to restore product' });
     }
 });
-// POST - Add item to internal cart
+// ---- Main Cart (uHub's internal cart) ----
+// Store products are referenced by product_id. Header/footer carousel entries are not products, so they
+// use product_id 0 plus carousel_item_id and a snapshot of their name, price, image and SKU.
+const CART_CAROUSEL_SLOTS = ['left', 'right'];
+const skuFromWebsite = (website) => {
+    if (!website)
+        return null;
+    try {
+        return new URL(website, 'https://uminion.com').searchParams.get('add-to-cart') || null;
+    }
+    catch {
+        return null;
+    }
+};
+const formatProductPrice = (price) => {
+    const value = Number(price);
+    return price === null || price === undefined || price === '' || !Number.isFinite(value) ? null : `$${value.toFixed(2)}`;
+};
+const findOwnedCartItem = async (itemId, userId) => {
+    const id = Number(itemId);
+    if (!Number.isInteger(id) || id <= 0)
+        return null;
+    const item = await db
+        .selectFrom('MainHubUpgradeV001ForInternalCart')
+        .selectAll()
+        .where('id', '=', id)
+        .executeTakeFirst();
+    return item && item.user_id === userId ? item : null;
+};
+// POST - Add a store product ({product_id}) or a carousel entry ({carousel_item_id}) to the Main Cart
 router.post('/cart/add', authenticate, async (req, res) => {
     if (!req.user) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
     }
-    const { product_id, quantity = 1 } = req.body;
+    const productId = Number(req.body?.product_id);
+    const carouselItemId = Number(req.body?.carousel_item_id);
+    const quantity = Math.max(1, Math.min(99, Math.trunc(Number(req.body?.quantity)) || 1));
+    const userId = req.user.userId;
     try {
-        const product = await db
-            .selectFrom('MainHubUpgradeV001ForProducts')
-            .selectAll()
-            .where('id', '=', product_id)
-            .executeTakeFirst();
-        if (!product) {
-            res.status(404).json({ message: 'Product not found' });
-            return;
-        }
-        // Add or update cart item
-        const existingItem = await db
+        let existingQuery = db
             .selectFrom('MainHubUpgradeV001ForInternalCart')
             .selectAll()
-            .where('user_id', '=', req.user.userId)
-            .where('product_id', '=', product_id)
-            .executeTakeFirst();
-        if (existingItem) {
-            await db
-                .updateTable('MainHubUpgradeV001ForInternalCart')
-                .set({ quantity: existingItem.quantity + quantity })
-                .where('id', '=', existingItem.id)
-                .execute();
+            .where('user_id', '=', userId);
+        let snapshot;
+        let cartProductId;
+        if (Number.isInteger(productId) && productId > 0) {
+            const product = await db
+                .selectFrom('MainHubUpgradeV001ForProducts')
+                .select(['id', 'is_in_trash'])
+                .where('id', '=', productId)
+                .executeTakeFirst();
+            if (!product || Boolean(product.is_in_trash)) {
+                res.status(404).json({ message: 'Product not found' });
+                return;
+            }
+            cartProductId = productId;
+            snapshot = { carousel_item_id: null, item_name: null, item_price: null, item_image_url: null, item_sku: null };
+            existingQuery = existingQuery.where('product_id', '=', productId);
+        }
+        else if (Number.isInteger(carouselItemId) && carouselItemId > 0) {
+            const entry = await db
+                .selectFrom('UhubManagedCarouselItems')
+                .selectAll()
+                .where('id', '=', carouselItemId)
+                .executeTakeFirst();
+            if (!entry || !CART_CAROUSEL_SLOTS.includes(entry.slot) || !/^\s*[$€£]?\s*\d/.test(entry.price || '')) {
+                res.status(404).json({ message: 'Carousel item not found' });
+                return;
+            }
+            cartProductId = 0;
+            snapshot = {
+                carousel_item_id: entry.id,
+                item_name: entry.title || 'Uminion Union item',
+                item_price: entry.price || null,
+                item_image_url: entry.image_url,
+                item_sku: skuFromWebsite(entry.website),
+            };
+            existingQuery = existingQuery.where('product_id', '=', 0).where('carousel_item_id', '=', entry.id);
         }
         else {
-            await db
-                .insertInto('MainHubUpgradeV001ForInternalCart')
-                .values({
-                user_id: req.user.userId,
-                product_id,
-                quantity,
-            })
-                .execute();
+            res.status(400).json({ message: 'A product_id or carousel_item_id is required' });
+            return;
         }
-        res.json({ message: 'Item added to cart' });
+        const existingItem = await existingQuery.executeTakeFirst();
+        if (existingItem) {
+            // Adding again increases the quantity and moves a saved-for-later entry back into the cart.
+            await db
+                .updateTable('MainHubUpgradeV001ForInternalCart')
+                .set({ ...snapshot, quantity: existingItem.quantity + quantity, saved_for_later: 0 })
+                .where('id', '=', existingItem.id)
+                .execute();
+            res.json({ message: 'Item added to cart', item_id: existingItem.id });
+            return;
+        }
+        const inserted = await db
+            .insertInto('MainHubUpgradeV001ForInternalCart')
+            .values({ ...snapshot, user_id: userId, product_id: cartProductId, quantity, saved_for_later: 0, added_at: new Date().toISOString() })
+            .executeTakeFirst();
+        res.json({ message: 'Item added to cart', item_id: Number(inserted.insertId) });
     }
     catch (error) {
         console.error('[PRODUCTS] Error adding to cart:', error);
         res.status(500).json({ message: 'Failed to add to cart' });
     }
 });
-// GET - Get user's cart
+// GET - The logged-in user's Main Cart: { items, saved } (saved = "Saved for later")
 router.get('/cart', authenticate, async (req, res) => {
     if (!req.user) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
     }
     try {
-        const cartItems = await db
-            .selectFrom('MainHubUpgradeV001ForInternalCart')
-            .leftJoin('MainHubUpgradeV001ForProducts', 'MainHubUpgradeV001ForInternalCart.product_id', 'MainHubUpgradeV001ForProducts.id')
-            .selectAll('MainHubUpgradeV001ForInternalCart')
-            .selectAll('MainHubUpgradeV001ForProducts')
-            .where('MainHubUpgradeV001ForInternalCart.user_id', '=', req.user.userId)
+        const rows = await db
+            .selectFrom('MainHubUpgradeV001ForInternalCart as c')
+            .leftJoin('MainHubUpgradeV001ForProducts as p', 'p.id', 'c.product_id')
+            .leftJoin('users as u', 'u.id', 'p.user_id')
+            .select([
+            'c.id', 'c.product_id', 'c.carousel_item_id', 'c.quantity', 'c.saved_for_later', 'c.added_at',
+            'c.item_name', 'c.item_price', 'c.item_image_url', 'c.item_sku',
+            'p.id as p_id', 'p.name as p_name', 'p.subtitle as p_subtitle', 'p.description as p_description',
+            'p.price as p_price', 'p.image_url as p_image_url', 'p.sku_id as p_sku_id', 'p.store_type as p_store_type',
+            'p.store_id as p_store_id', 'p.user_store_id as p_user_store_id', 'p.user_id as p_user_id',
+            'p.payment_method as p_payment_method', 'p.payment_url as p_payment_url', 'p.url as p_url',
+            'p.is_in_trash as p_is_in_trash', 'p.created_at as p_created_at', 'u.username as seller_username',
+        ])
+            .where('c.user_id', '=', req.user.userId)
+            .orderBy('c.id', 'desc')
             .execute();
-        res.json(cartItems);
+        const entries = rows.map(row => {
+            const isCarouselEntry = !row.product_id;
+            const product = !isCarouselEntry && row.p_id ? {
+                id: row.p_id,
+                name: row.p_name,
+                subtitle: row.p_subtitle,
+                description: row.p_description,
+                price: row.p_price,
+                image_url: row.p_image_url,
+                sku_id: row.p_sku_id,
+                store_type: row.p_store_type,
+                store_id: row.p_store_id,
+                user_store_id: row.p_user_store_id,
+                user_id: row.p_user_id,
+                payment_method: row.p_payment_method,
+                payment_url: row.p_payment_url,
+                url: row.p_url,
+                created_at: row.p_created_at,
+            } : null;
+            return {
+                id: row.id,
+                product_id: isCarouselEntry ? null : row.product_id,
+                carousel_item_id: row.carousel_item_id,
+                quantity: row.quantity,
+                saved_for_later: Boolean(row.saved_for_later),
+                added_at: row.added_at,
+                name: isCarouselEntry ? row.item_name : (row.p_name || 'Product no longer available'),
+                price: isCarouselEntry ? row.item_price : formatProductPrice(row.p_price),
+                image_url: isCarouselEntry ? row.item_image_url : row.p_image_url,
+                sku: isCarouselEntry ? row.item_sku : row.p_sku_id,
+                seller_id: isCarouselEntry ? null : row.p_user_id,
+                seller_name: isCarouselEntry ? 'Uminion Union' : (row.seller_username || 'Unknown seller'),
+                unavailable: !isCarouselEntry && (!product || Boolean(row.p_is_in_trash)),
+                product,
+            };
+        });
+        res.set('Cache-Control', 'no-store');
+        res.json({
+            items: entries.filter(entry => !entry.saved_for_later),
+            saved: entries.filter(entry => entry.saved_for_later),
+        });
     }
     catch (error) {
         console.error('[PRODUCTS] Error fetching cart:', error);
         res.status(500).json({ message: 'Failed to fetch cart' });
+    }
+});
+// PATCH - Move a cart entry to / from "Saved for later"
+router.patch('/cart/:itemId', authenticate, async (req, res) => {
+    if (!req.user) {
+        res.status(401).json({ message: 'Unauthorized' });
+        return;
+    }
+    if (typeof req.body?.saved_for_later !== 'boolean') {
+        res.status(400).json({ message: 'saved_for_later must be true or false' });
+        return;
+    }
+    try {
+        const cartItem = await findOwnedCartItem(req.params.itemId, req.user.userId);
+        if (!cartItem) {
+            res.status(403).json({ message: 'You do not own this cart item' });
+            return;
+        }
+        await db
+            .updateTable('MainHubUpgradeV001ForInternalCart')
+            .set({ saved_for_later: req.body.saved_for_later ? 1 : 0 })
+            .where('id', '=', cartItem.id)
+            .execute();
+        res.json({ message: req.body.saved_for_later ? 'Saved for later' : 'Moved back to cart' });
+    }
+    catch (error) {
+        console.error('[PRODUCTS] Error updating cart item:', error);
+        res.status(500).json({ message: 'Failed to update cart item' });
     }
 });
 // DELETE - Remove item from cart
@@ -448,19 +583,14 @@ router.delete('/cart/:itemId', authenticate, async (req, res) => {
         return;
     }
     try {
-        const { itemId } = req.params;
-        const cartItem = await db
-            .selectFrom('MainHubUpgradeV001ForInternalCart')
-            .selectAll()
-            .where('id', '=', parseInt(itemId))
-            .executeTakeFirst();
-        if (!cartItem || cartItem.user_id !== req.user.userId) {
+        const cartItem = await findOwnedCartItem(req.params.itemId, req.user.userId);
+        if (!cartItem) {
             res.status(403).json({ message: 'You do not own this cart item' });
             return;
         }
         await db
             .deleteFrom('MainHubUpgradeV001ForInternalCart')
-            .where('id', '=', parseInt(itemId))
+            .where('id', '=', cartItem.id)
             .execute();
         res.json({ message: 'Item removed from cart' });
     }
@@ -711,14 +841,14 @@ router.delete('/user-stores/:userStoreId', authenticate, async (req, res) => {
                 })
                     .execute();
             }
-            console.log(`[PRODUCTS] ✅ Moved ${productsInStore.length} products to trash`);
+            console.log(`[PRODUCTS] âœ… Moved ${productsInStore.length} products to trash`);
         }
         // Delete the user store
         await db
             .deleteFrom('user_stores')
             .where('id', '=', parsedStoreId)
             .execute();
-        console.log(`[PRODUCTS] ✅ User store ${parsedStoreId} deleted successfully by user ${req.user.userId}`);
+        console.log(`[PRODUCTS] âœ… User store ${parsedStoreId} deleted successfully by user ${req.user.userId}`);
         res.status(200).json({
             message: 'User store and all its products have been deleted',
             storeId: parsedStoreId,
@@ -726,7 +856,7 @@ router.delete('/user-stores/:userStoreId', authenticate, async (req, res) => {
         });
     }
     catch (error) {
-        console.error('[PRODUCTS] ❌ Error deleting user store:', error);
+        console.error('[PRODUCTS] âŒ Error deleting user store:', error);
         res.status(500).json({
             message: 'Failed to delete user store',
             error: error instanceof Error ? error.message : 'Unknown error',
@@ -867,7 +997,7 @@ router.put('/:productId/user-store', authenticate, async (req, res) => {
             .set(updatePayload)
             .where('id', '=', parsedProductId)
             .execute();
-        console.log(`[PRODUCTS] ✅ Product ${parsedProductId} assigned to user store ${userStoreId || 'null'} by user ${req.user.userId}`);
+        console.log(`[PRODUCTS] âœ… Product ${parsedProductId} assigned to user store ${userStoreId || 'null'} by user ${req.user.userId}`);
         res.status(200).json({
             message: 'Product updated successfully',
             productId: parsedProductId,
@@ -875,7 +1005,7 @@ router.put('/:productId/user-store', authenticate, async (req, res) => {
         });
     }
     catch (error) {
-        console.error('[PRODUCTS] ❌ Error updating product user store:', error);
+        console.error('[PRODUCTS] âŒ Error updating product user store:', error);
         res.status(500).json({
             message: 'Failed to update product',
             error: error instanceof Error ? error.message : 'Unknown error'
@@ -939,11 +1069,11 @@ router.get('/stores/all/with-products', async (req, res) => {
             }
         });
         const result = Array.from(storesMap.values());
-        console.log(`[PRODUCTS] ✅ Fetched ${result.length} user stores with products`);
+        console.log(`[PRODUCTS] âœ… Fetched ${result.length} user stores with products`);
         res.json(result);
     }
     catch (error) {
-        console.error('[PRODUCTS] ❌ Error fetching user stores:', error);
+        console.error('[PRODUCTS] âŒ Error fetching user stores:', error);
         res.status(500).json({ message: 'Failed to fetch user stores' });
     }
 });
@@ -974,8 +1104,8 @@ router.get('/user/:userId/stores', async (req, res) => {
             .orderBy('us.created_at', 'desc')
             .orderBy('p.created_at', 'desc')
             .execute();
-        console.log(`[PRODUCTS] ✅ Fetched ${stores.length} records for user ${parsedUserId}`);
-        // Transform flat results into nested structure: uStore → products
+        console.log(`[PRODUCTS] âœ… Fetched ${stores.length} records for user ${parsedUserId}`);
+        // Transform flat results into nested structure: uStore â†’ products
         const storesMap = new Map();
         stores.forEach(row => {
             if (!storesMap.has(row.id)) {
@@ -1008,7 +1138,7 @@ router.get('/user/:userId/stores', async (req, res) => {
         res.json(result);
     }
     catch (error) {
-        console.error('[PRODUCTS] ❌ Error fetching user stores:', error);
+        console.error('[PRODUCTS] âŒ Error fetching user stores:', error);
         res.status(500).json({ message: 'Failed to fetch user stores' });
     }
 });
@@ -1108,7 +1238,7 @@ router.post('/user/:userId/stores', authenticate, async (req, res) => {
         })
             .returning(['id', 'user_id', 'name', 'subtitle', 'description', 'created_at'])
             .executeTakeFirstOrThrow();
-        console.log(`[PRODUCTS] ✅ Store created successfully: ID=${newStore.id}, name="${newStore.name}", user=${parsedUserId}`);
+        console.log(`[PRODUCTS] âœ… Store created successfully: ID=${newStore.id}, name="${newStore.name}", user=${parsedUserId}`);
         res.status(201).json({
             id: newStore.id,
             user_id: newStore.user_id,
@@ -1120,7 +1250,7 @@ router.post('/user/:userId/stores', authenticate, async (req, res) => {
         });
     }
     catch (error) {
-        console.error('[PRODUCTS] ❌ Error creating store:', error);
+        console.error('[PRODUCTS] âŒ Error creating store:', error);
         res.status(500).json({
             message: 'Failed to create store',
             error: error instanceof Error ? error.message : 'Unknown error'
@@ -1128,7 +1258,7 @@ router.post('/user/:userId/stores', authenticate, async (req, res) => {
     }
 });
 // GET - Get friends' products for Friends' Stores quadrant
-// NEW: Restructured to show uStore hierarchy (friend → uStore → products)
+// NEW: Restructured to show uStore hierarchy (friend â†’ uStore â†’ products)
 router.get('/friends/stores/all', authenticate, async (req, res) => {
     if (!req.user) {
         res.status(401).json({ message: 'Unauthorized' });
@@ -1187,7 +1317,7 @@ router.get('/friends/stores/all', authenticate, async (req, res) => {
             .orderBy('p.created_at', 'desc')
             .execute();
         console.log(`[FRIENDS STORES] Fetched ${friendsUStoresData.length} records from friends' uStores`);
-        // Transform flat results into hierarchical structure: friend → uStore → products
+        // Transform flat results into hierarchical structure: friend â†’ uStore â†’ products
         const friendsMap = new Map();
         friendsUStoresData.forEach(row => {
             // Create friend entry if not exists
@@ -1196,7 +1326,7 @@ router.get('/friends/stores/all', authenticate, async (req, res) => {
                     friend_id: row.friend_id,
                     friend_username: row.friend_username,
                     friend_profile_image_url: row.friend_profile_image_url,
-                    uStores: new Map(), // uStore ID → uStore data
+                    uStores: new Map(), // uStore ID â†’ uStore data
                 });
             }
             const friend = friendsMap.get(row.friend_id);
@@ -1231,11 +1361,11 @@ router.get('/friends/stores/all', authenticate, async (req, res) => {
             friend_profile_image_url: friend.friend_profile_image_url,
             uStores: Array.from(friend.uStores.values()),
         }));
-        console.log(`[FRIENDS STORES] ✅ Fetched ${result.length} friends with hierarchical uStore structure`);
+        console.log(`[FRIENDS STORES] âœ… Fetched ${result.length} friends with hierarchical uStore structure`);
         res.json(result);
     }
     catch (error) {
-        console.error('[FRIENDS STORES] ❌ Error fetching friends products:', error);
+        console.error('[FRIENDS STORES] âŒ Error fetching friends products:', error);
         res.status(500).json({ message: 'Failed to fetch friends products' });
     }
 });
@@ -1291,7 +1421,7 @@ router.put('/user-stores/:userStoreId/:imageType', authenticate, async (req, res
         // Save file
         await uploadedFile.mv(filePath);
         const imageUrl = `/data/uploads/store-images/${fileName}`;
-        console.log(`[PRODUCTS] ✅ Store ${imageType} uploaded: ${imageUrl}`);
+        console.log(`[PRODUCTS] âœ… Store ${imageType} uploaded: ${imageUrl}`);
         // Update database
         const updateData = {};
         updateData[`${imageType}_url`] = imageUrl;
@@ -1300,7 +1430,7 @@ router.put('/user-stores/:userStoreId/:imageType', authenticate, async (req, res
             .set(updateData)
             .where('id', '=', parsedStoreId)
             .execute();
-        console.log(`[PRODUCTS] ✅ User store ${userStoreId} ${imageType} updated in database`);
+        console.log(`[PRODUCTS] âœ… User store ${userStoreId} ${imageType} updated in database`);
         res.status(200).json({
             message: `${imageType} updated successfully`,
             imageUrl,

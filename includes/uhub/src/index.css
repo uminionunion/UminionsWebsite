@@ -31,6 +31,50 @@
   color: #fff;
 }
 
+.uhub-root button.uhub-store-action:disabled {
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.uhub-root button.uhub-cart-bookmark {
+  color: #6b7280;
+}
+
+.uhub-root button.uhub-cart-bookmark:hover {
+  color: #d1d5db;
+}
+
+.uhub-root button.uhub-cart-checkout,
+.uhub-root button.uhub-cart-checkout:hover {
+  background-color: #374151;
+  color: #9ca3af;
+  border: 1px solid #4b5563;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.uhub-root .uhub-cart-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483647;
+  max-width: min(360px, calc(100vw - 40px));
+  padding: 14px 16px;
+  border-radius: 6px;
+  border: 1px solid #64748b;
+  background: #3f464f;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 14px;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+.uhub-root .uhub-cart-toast-error {
+  border-color: #ef4444;
+}
+
 .uhub-root button.uhub-product-image-retry {
   background-color: #fb923c;
   color: #000;
@@ -165,12 +209,18 @@
   text-shadow: 0 1px 2px #000;
 }
 
-.uhub-root .uhub-header-product-overlay span {
+.uhub-root .uhub-header-product-overlay span,
+.uhub-root .uhub-header-product-overlay a {
   min-width: 0;
   overflow: hidden;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.uhub-root .uhub-header-product-overlay a {
+  color: inherit;
+  text-decoration: underline;
 }
 
 .uhub-root .uhub-header-product-overlay small {

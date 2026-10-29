@@ -255,6 +255,20 @@ if (!db.prepare('PRAGMA table_info(UhubManagedCarouselItems)').all().some(column
   db.exec('ALTER TABLE UhubManagedCarouselItems ADD COLUMN button_number INTEGER');
 }
 
+// Main Cart: saved-for-later flag plus snapshots for carousel entries, which are not store products.
+const cartColumns = new Set(db.prepare('PRAGMA table_info(MainHubUpgradeV001ForInternalCart)').all().map(column => column.name));
+for (const [name, definition] of [
+  ['saved_for_later', 'INTEGER NOT NULL DEFAULT 0'],
+  ['carousel_item_id', 'INTEGER'],
+  ['item_name', 'TEXT'],
+  ['item_price', 'TEXT'],
+  ['item_image_url', 'TEXT'],
+  ['item_sku', 'TEXT'],
+]) {
+  if (!cartColumns.has(name)) db.exec(`ALTER TABLE MainHubUpgradeV001ForInternalCart ADD COLUMN ${name} ${definition}`);
+}
+console.log('[init-data] MainHubUpgradeV001ForInternalCart Main Cart columns verified.');
+
 // Import previously hard-coded display entries once. The marker preserves intentionally empty collections.
 db.exec('CREATE TABLE IF NOT EXISTS UhubCarouselDefaultsImported (slot TEXT PRIMARY KEY)');
 const defaultCover = '/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg';

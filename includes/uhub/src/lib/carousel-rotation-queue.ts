@@ -13,6 +13,7 @@ interface Registered {
   paused: boolean;
   setImageVisible: (visible: boolean) => void;
   firstNextIndex?: number;
+  sequential: boolean;
 }
 
 const carousels = new Map<string, Registered>();
@@ -27,8 +28,9 @@ async function step() {
     if (entry && !entry.paused && entry.urls.length > 1) {
       const urls = entry.urls;
       const choices = entry.urls.map((_, position) => position).filter(position => position !== entry.index);
-      const next = entry.firstNextIndex !== undefined && choices.includes(entry.firstNextIndex)
-        ? entry.firstNextIndex : choices[Math.floor(Math.random() * choices.length)];
+      const next = entry.sequential ? (entry.index + 1) % entry.urls.length
+        : entry.firstNextIndex !== undefined && choices.includes(entry.firstNextIndex)
+          ? entry.firstNextIndex : choices[Math.floor(Math.random() * choices.length)];
       const src = entry.urls[next];
       flushSync(() => entry.setImageVisible(false));
       if (src) {
@@ -58,14 +60,16 @@ interface QueuedImageSlotOptions {
   setIndex: (index: number) => void;
   paused?: boolean;
   firstNextIndex?: number;
+  // Plays entries in saved order and loops, instead of picking randomly.
+  sequential?: boolean;
 }
 
-export function useQueuedImageSlot({ carouselId: baseId, urls, index, setIndex, paused = false, firstNextIndex }: QueuedImageSlotOptions) {
+export function useQueuedImageSlot({ carouselId: baseId, urls, index, setIndex, paused = false, firstNextIndex, sequential = false }: QueuedImageSlotOptions) {
   // The top and bottom covers share a name, so each instance gets its own id.
   const carouselId = `${baseId}-${useId()}`;
   const urlsKey = urls.join('|');
   const [imageVisible, setImageVisible] = useState(true);
-  const entryRef = useRef<Registered>({ urls, index, setIndex, paused, setImageVisible, firstNextIndex });
+  const entryRef = useRef<Registered>({ urls, index, setIndex, paused, setImageVisible, firstNextIndex, sequential });
   if (entryRef.current.urls.join('|') !== urlsKey) {
     entryRef.current.urls = urls;
     entryRef.current.firstNextIndex = firstNextIndex;
@@ -73,6 +77,7 @@ export function useQueuedImageSlot({ carouselId: baseId, urls, index, setIndex, 
   entryRef.current.index = index;
   entryRef.current.setIndex = setIndex;
   entryRef.current.paused = paused;
+  entryRef.current.sequential = sequential;
 
   // Every carousel image goes into the cache up front.
   useEffect(() => retainQueuedImages(urls.filter(Boolean)), [urlsKey]);

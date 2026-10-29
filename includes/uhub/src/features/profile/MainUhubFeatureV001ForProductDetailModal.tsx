@@ -11,6 +11,7 @@ import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { ShoppingCart, Mail } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { addToMainCart } from '../../lib/internal-cart';
 
 interface MainUhubFeatureV001ForProductDetailModalProps {
   isOpen: boolean;
@@ -78,13 +79,7 @@ const MainUhubFeatureV001ForProductDetailModal: React.FC<MainUhubFeatureV001ForP
     }
   };
 
-  const handleAddToCart = () => {
-    if (product.payment_url) {
-      window.open(product.payment_url, '_blank');
-    } else {
-      alert('No purchase URL available. Please contact the seller.');
-    }
-  };
+  const handleAddToCart = () => addToMainCart(product, Boolean(user));
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -114,7 +109,7 @@ const MainUhubFeatureV001ForProductDetailModal: React.FC<MainUhubFeatureV001ForP
 
           {/* Price */}
           <div className="mb-6">
-            <p className="text-3xl font-bold text-orange-400">${product.price ? product.price.toFixed(2) : '0.00'}</p>
+            <p className="text-3xl font-bold text-orange-400">{product.price_label ?? `$${product.price ? Number(product.price).toFixed(2) : '0.00'}`}</p>
           </div>
 
        {/* Payment Method Section */}
@@ -168,12 +163,14 @@ const MainUhubFeatureV001ForProductDetailModal: React.FC<MainUhubFeatureV001ForP
 
           {/* Add to Cart Button */}
           <div className="mt-auto pt-4 border-t border-gray-700">
-            <Button 
+            <Button
+              variant="ghost"
               onClick={handleAddToCart}
-              className="w-full bg-orange-400 hover:bg-orange-500 text-white h-12 text-lg"
+              className="uhub-store-action uhub-detail-cart-button h-12 w-full"
+              aria-label={user ? 'Add to cart' : 'Log in to add to cart'}
+              title={user ? 'Add to cart' : 'Log in to add to cart'}
             >
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Add to Cart
+              <ShoppingCart className="h-6 w-6" />
             </Button>
           </div>
         </div>
