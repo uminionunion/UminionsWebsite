@@ -333,6 +333,7 @@ export interface UhubManagedCarouselItems {
   description: string | null;
   price: string | null;
   website: string | null;
+  button_number: Generated<number | null>;
   display_order: number;
   created_at: Generated<string | null>;
 }

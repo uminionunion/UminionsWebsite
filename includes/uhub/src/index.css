@@ -4,6 +4,19 @@
 @tailwind components;
 @tailwind utilities;
 
+.uhub-root button.uhub-banner-action {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  box-shadow: none;
+}
+
+.uhub-root button.uhub-banner-action:focus-visible {
+  outline: 2px solid #fb923c;
+  outline-offset: -2px;
+}
+
 .uhub-root button.uhub-store-action {
   background-color: transparent;
   color: #fff;

@@ -218,6 +218,13 @@ in `ArchiveImagesForUnionNews14` and excluded from the active gallery. Original
 image records, IDs, media files and legacy episode references are preserved;
 this is archival, not loss during migration. The future admin archive viewer is
 tracked in the [carousel guide](README.md#unionnews14-image-pairs-and-zoom).
+The managed-banner upgrade also adds nullable `button_number` to the destination's
+`UhubManagedCarouselItems` table. Its one-time marker preserves later admin edits
+and deleted ads; only the untouched bottom cover placeholder is replaced, and
+the pantry ad is inserted after the first cover only when the default remains
+and the collection has room. Existing custom images and IDs are retained.
+Deploy the rebuilt API and frontend together; see the
+[Up/Down banner guide](README.md#clickable-updown-banner-ads).
 The old source remains unchanged; do not delete its volume
 or use volume-removal commands as part of this change. If rollback is needed
 after accepting new version-3 writes, preserve that destination too: reverting
