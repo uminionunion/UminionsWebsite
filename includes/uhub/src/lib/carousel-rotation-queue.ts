@@ -12,6 +12,7 @@ interface Registered {
   setIndex: (index: number) => void;
   paused: boolean;
   setImageVisible: (visible: boolean) => void;
+  firstNextIndex?: number;
 }
 
 const carousels = new Map<string, Registered>();
@@ -26,7 +27,8 @@ async function step() {
     if (entry && !entry.paused && entry.urls.length > 1) {
       const urls = entry.urls;
       const choices = entry.urls.map((_, position) => position).filter(position => position !== entry.index);
-      const next = choices[Math.floor(Math.random() * choices.length)];
+      const next = entry.firstNextIndex !== undefined && choices.includes(entry.firstNextIndex)
+        ? entry.firstNextIndex : choices[Math.floor(Math.random() * choices.length)];
       const src = entry.urls[next];
       flushSync(() => entry.setImageVisible(false));
       if (src) {
@@ -37,7 +39,10 @@ async function step() {
       }
       if (carousels.get(id) === entry) {
         flushSync(() => {
-          if (entry.urls === urls) entry.setIndex(next);
+          if (entry.urls === urls) {
+            entry.firstNextIndex = undefined;
+            entry.setIndex(next);
+          }
           entry.setImageVisible(true);
         });
       }
@@ -52,15 +57,19 @@ interface QueuedImageSlotOptions {
   index: number;
   setIndex: (index: number) => void;
   paused?: boolean;
+  firstNextIndex?: number;
 }
 
-export function useQueuedImageSlot({ carouselId: baseId, urls, index, setIndex, paused = false }: QueuedImageSlotOptions) {
+export function useQueuedImageSlot({ carouselId: baseId, urls, index, setIndex, paused = false, firstNextIndex }: QueuedImageSlotOptions) {
   // The top and bottom covers share a name, so each instance gets its own id.
   const carouselId = `${baseId}-${useId()}`;
   const urlsKey = urls.join('|');
   const [imageVisible, setImageVisible] = useState(true);
-  const entryRef = useRef<Registered>({ urls, index, setIndex, paused, setImageVisible });
-  if (entryRef.current.urls.join('|') !== urlsKey) entryRef.current.urls = urls;
+  const entryRef = useRef<Registered>({ urls, index, setIndex, paused, setImageVisible, firstNextIndex });
+  if (entryRef.current.urls.join('|') !== urlsKey) {
+    entryRef.current.urls = urls;
+    entryRef.current.firstNextIndex = firstNextIndex;
+  }
   entryRef.current.index = index;
   entryRef.current.setIndex = setIndex;
   entryRef.current.paused = paused;

@@ -10,7 +10,7 @@ import net from 'node:net';
 import Database from 'better-sqlite3';
 import jwt from 'jsonwebtoken';
 
-test('startup migrations and the six reported failing API routes work against the shipped schema', { timeout: 60000 }, async () => {
+test('startup migrations, banner associations and existing API routes work against the shipped schema', { timeout: 90000 }, async () => {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const directory = await mkdtemp(path.join(os.tmpdir(), 'uhub-startup-test-'));
   const fixture = new Database(path.join(directory, 'database.sqlite'));
@@ -30,8 +30,34 @@ test('startup migrations and the six reported failing API routes work against th
     fixture.close();
     const env = { ...process.env, DATA_DIRECTORY: directory, NODE_ENV: 'test', JWT_SECRET: 'startup-regression-fixture-secret' };
     await promisify(execFile)(process.execPath, ['scripts/init-data.cjs'], { cwd: root, env });
+    const defaults = new Database(path.join(directory, 'database.sqlite'));
+    const covers = defaults.prepare("SELECT * FROM UhubManagedCarouselItems WHERE slot='cover' ORDER BY display_order").all();
+    assert.deepEqual(covers.map(item => [item.image_url, item.button_number]), [
+      ['/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg', null],
+      ['/uhub/dist/food-clothing-pantry-banner.jpg', 5],
+    ]);
+    assert.equal(defaults.prepare("SELECT button_number FROM UhubManagedCarouselItems WHERE image_url='/uhub/dist/umimatch-banner.jpg'").get().button_number, 3);
+    // Simulate the pre-upgrade table while retaining unrelated admin entries.
+    defaults.prepare("DELETE FROM UhubCarouselDefaultsImported WHERE slot='banner-button-links-v1'").run();
+    defaults.prepare("DELETE FROM UhubManagedCarouselItems WHERE image_url='/uhub/dist/food-clothing-pantry-banner.jpg'").run();
+    defaults.prepare("UPDATE UhubManagedCarouselItems SET image_url='/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg' WHERE image_url='/uhub/dist/umimatch-banner.jpg'").run();
+    defaults.prepare("INSERT INTO UhubManagedCarouselItems(slot,image_url,title,display_order) VALUES ('cover','/custom-banner.jpg','Keep me',1)").run();
+    defaults.exec('ALTER TABLE UhubManagedCarouselItems DROP COLUMN button_number');
+    defaults.close();
     await promisify(execFile)(process.execPath, ['scripts/init-data.cjs'], { cwd: root, env });
     const migrated = new Database(path.join(directory, 'database.sqlite'));
+    const selectBanners = "SELECT * FROM UhubManagedCarouselItems WHERE slot IN ('cover','bottom') ORDER BY slot,display_order";
+    const bannerSnapshot = migrated.prepare(selectBanners).all();
+    assert.deepEqual(bannerSnapshot.filter(item => item.slot === 'cover').map(item => [item.image_url, item.button_number]), [
+      ['/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg', null],
+      ['/uhub/dist/food-clothing-pantry-banner.jpg', 5],
+      ['/custom-banner.jpg', null],
+    ]);
+    await promisify(execFile)(process.execPath, ['scripts/init-data.cjs'], { cwd: root, env });
+    assert.deepEqual(migrated.prepare(selectBanners).all(), bannerSnapshot, 'Repeated startup retains IDs, edits and ordering');
+    migrated.prepare("DELETE FROM UhubManagedCarouselItems WHERE image_url='/uhub/dist/food-clothing-pantry-banner.jpg'").run();
+    await promisify(execFile)(process.execPath, ['scripts/init-data.cjs'], { cwd: root, env });
+    assert.equal(migrated.prepare("SELECT count(*) AS n FROM UhubManagedCarouselItems WHERE image_url='/uhub/dist/food-clothing-pantry-banner.jpg'").get().n, 0, 'Intentionally removed ads stay removed');
     assert.equal(migrated.prepare('SELECT count(*) AS n FROM MainHubUpgradeV001ForProducts').get().n, 1);
     assert.equal(migrated.prepare('SELECT store_id FROM MainHubUpgradeV001ForProducts').get().store_id, 0);
     migrated.prepare('UPDATE users SET is_high_high_high_admin=1 WHERE id=4').run();
@@ -51,7 +77,7 @@ test('startup migrations and the six reported failing API routes work against th
     child = spawn(process.execPath, ['--input-type=module', '-e', `const {startServer}=await import(${JSON.stringify(entry)}); await startServer(${port});`], { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] });
     child.stderr.on('data', chunk => { errors = (errors + chunk.toString()).slice(-16000); });
     await new Promise((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error(`Fixture API startup timed out: ${errors}`)), 15000);
+      const timer = setTimeout(() => reject(new Error(`Fixture API startup timed out: ${output}\n${errors}`)), 45000);
       child.stdout.on('data', chunk => {
         output = (output + chunk.toString()).slice(-8000);
         if (output.includes('API Server running')) { clearTimeout(timer); resolve(); }
@@ -83,6 +109,41 @@ test('startup migrations and the six reported failing API routes work against th
     }
     assert.deepEqual(failures, [], `${failures.join('\n')}\n${errors}`);
     const base = `http://127.0.0.1:${port}`;
+    const getItems = async slot => (await (await fetch(`${base}/api/carousels/${slot}/items`)).json()).items;
+    const replace = (slot, items, cookie = `token=${token}`, upload) => {
+      const body = new FormData();
+      body.append('items', JSON.stringify(items));
+      if (upload) body.append('images', new Blob([Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64')], { type: 'image/gif' }), 'banner.gif');
+      return fetch(`${base}/api/carousels/${slot}/items/replace`, { method: 'POST', headers: cookie ? { Cookie: cookie } : {}, body });
+    };
+    const original = await getItems('cover');
+    assert.equal((await replace('cover', original, '')).status, 401);
+    const memberToken = jwt.sign({ userId: 5, username: 'startup-test-friend' }, env.JWT_SECRET);
+    assert.equal((await replace('cover', original, `token=${memberToken}`)).status, 403);
+    for (const invalid of [0, -1, 10001, 3.5, '3', true]) {
+      assert.equal((await replace('cover', original.map(item => ({ ...item, button_number: invalid })))).status, 400);
+    }
+    assert.deepEqual(await getItems('cover'), original, 'Invalid choices do not change saved images or associations');
+    for (const number of [1, 3, 5, 10000]) {
+      assert.equal((await replace('cover', original.map(item => ({ ...item, button_number: number })))).status, 201);
+      assert.ok((await getItems('cover')).every(item => item.button_number === number));
+    }
+    const omitted = original.map(({ button_number, ...item }) => item).reverse();
+    assert.equal((await replace('cover', omitted)).status, 201);
+    assert.deepEqual((await getItems('cover')).map(item => [item.id, item.button_number]), omitted.map(item => [item.id, 10000]), 'Legacy saves preserve associations and reorder existing IDs');
+    assert.equal((await replace('cover', original.map(item => ({ ...item, button_number: null })))).status, 201);
+    assert.ok((await getItems('cover')).every(item => item.button_number === null), 'Explicit null unlinks an ad');
+    assert.equal((await replace('bottom', [{ uploadIndex: 0, button_number: 3 }], `token=${token}`, true)).status, 201);
+    const uploaded = await getItems('bottom');
+    assert.equal(uploaded[0].button_number, 3);
+    assert.match(uploaded[0].image_url, /^\/api\/uploads\/managed-carousels\/bottom\/.*\.gif$/);
+    assert.ok((await readFile(path.join(directory, 'uploads', 'managed-carousels', 'bottom', path.basename(uploaded[0].image_url)))).length > 0);
+    assert.equal((await replace('bottom', [{ title: 'Caption only', button_number: 5 }])).status, 400);
+    const center = await getItems('center');
+    assert.equal((await replace('center', center.map(item => ({ ...item, button_number: 5 })))).status, 400);
+    const persisted = new Database(path.join(directory, 'database.sqlite'), { readonly: true });
+    assert.equal(persisted.prepare('SELECT button_number FROM UhubManagedCarouselItems WHERE id=?').get(uploaded[0].id).button_number, 3);
+    persisted.close();
     const gallery = await (await fetch(`${base}/api/broadcasts/union-news-14/images`)).json();
     assert.equal(gallery.length, 366);
     assert.deepEqual(gallery.slice(0, 2).map(image => image.id), [368, 367]);

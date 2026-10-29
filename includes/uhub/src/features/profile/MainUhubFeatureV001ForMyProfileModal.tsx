@@ -177,6 +177,7 @@ interface ManagedCarouselItem {
   description?: string | null;
   price?: string | null;
   website?: string | null;
+  button_number?: number | null;
   isUrl?: boolean;
   style?: CaptionStyle;
 }
@@ -876,29 +877,34 @@ const FooterPosterCarousel = () => <ManagedProductCarousel slot="right" />;
 const defaultCoverImageUrl = '/defaultUminionUassets/defaultUminionUbanneriArt06,505.19.jpg';
 
 // Saved images feed one cover placeholder; the shared queue replaces its image.
-const CoverImageRotator = ({ userCoverUrl, opacity, fallbackToDefault = false }: { userCoverUrl: string | null; opacity: number; fallbackToDefault?: boolean }) => {
-  if (userCoverUrl) return <img src={userCoverUrl} alt="Your cover" className="absolute inset-0 h-full w-full object-contain" style={{ opacity }} />;
-  return <ManagedCoverImageSlot opacity={opacity} fallbackToDefault={fallbackToDefault} />;
+const CoverImageRotator = ({ userCoverUrl, opacity, fallbackToDefault = false, onButtonClick }: { userCoverUrl: string | null; opacity: number; fallbackToDefault?: boolean; onButtonClick: (number: number) => void }) => {
+  return <ManagedCoverImageSlot userCoverUrl={userCoverUrl} opacity={opacity} fallbackToDefault={fallbackToDefault} onButtonClick={onButtonClick} />;
 };
 
-const ManagedCoverImageSlot = ({ opacity, fallbackToDefault }: { opacity: number; fallbackToDefault: boolean }) => {
+const ManagedCoverImageSlot = ({ userCoverUrl, opacity, fallbackToDefault, onButtonClick }: { userCoverUrl: string | null; opacity: number; fallbackToDefault: boolean; onButtonClick: (number: number) => void }) => {
   const { items } = useManagedCarouselItems('cover');
-  const urls = useMemo(() => {
-    const savedUrls = items.map(item => item.image_url).filter(Boolean);
-    return savedUrls.length || !fallbackToDefault ? savedUrls : [defaultCoverImageUrl];
-  }, [items, fallbackToDefault]);
+  const slides = useMemo<ManagedCarouselItem[]>(() => {
+    const saved = items.filter(item => item.image_url).map(item => item.image_url === defaultCoverImageUrl && userCoverUrl
+      ? { ...item, image_url: userCoverUrl } : item);
+    return saved.length || !fallbackToDefault ? saved : [{ image_url: userCoverUrl || defaultCoverImageUrl }];
+  }, [items, fallbackToDefault, userCoverUrl]);
+  const urls = useMemo(() => slides.map(item => item.image_url), [slides]);
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [urls]);
-  const imageVisible = useQueuedImageSlot({ carouselId: 'cover', urls, index, setIndex });
-  return imageVisible && urls.length > 0 ? <QueuedImage
-    key={urls[index] || defaultCoverImageUrl}
-    src={urls[index] || defaultCoverImageUrl}
+  const imageVisible = useQueuedImageSlot({ carouselId: 'cover', urls, index, setIndex, firstNextIndex: 1 });
+  const slide = slides[index];
+  if (!imageVisible || !slide) return null;
+  const buttonNumber = slide.button_number;
+  const image = <QueuedImage
+    key={slide.image_url}
+    src={slide.image_url}
     alt="uHub cover"
-    className="absolute inset-0 h-full w-full object-cover"
+    className={`absolute inset-0 h-full w-full ${userCoverUrl && slide.image_url === userCoverUrl ? 'object-contain' : 'object-cover'}`}
     style={{ opacity }}
     queuePriority={IMAGE_LOAD_PRIORITY.critical}
     retainInCache
-  /> : null;
+  />;
+  return buttonNumber ? <button type="button" className="uhub-banner-action absolute inset-0 h-full w-full" aria-label={`Open button ${buttonNumber}`} onClick={() => onButtonClick(buttonNumber)}>{image}</button> : image;
 };
 
 // The anchor placeholder starts with the default image and is replaced by the shared queue.
@@ -1112,6 +1118,7 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
   const activeSlot: ManagedCarouselSlot = slot === 'left' ? activeLeftSlot : slot === 'right' ? 'right' : slot === 'cover' ? 'cover' : slot === 'center' ? 'center' : 'bottom';
   const maxItems = getManagedCarouselLimit(activeSlot);
   const isBottom = activeSlot === 'bottom';
+  const supportsButton = activeSlot === 'cover' || isBottom;
   const slotLabel = slot === 'left' ? (activeSlot === 'left-top' ? 'upper left' : 'lower left') : slot === 'cover' ? 'cover image' : slot === 'bottom' ? 'bottom promo' : slot === 'center' ? 'center image' : 'right';
   useEffect(() => {
     if (!slot) return;
@@ -1138,6 +1145,7 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (items.length > maxItems) return alert(`This collection can contain up to ${maxItems} entries.`);
+    if (supportsButton && items.some(item => item.button_number != null && (!Number.isInteger(item.button_number) || item.button_number < 1 || item.button_number > 10000))) return alert('Choose a whole button number from 1 to 10000.');
     if (isBottom) {
       if (items.some(item => !item.image_url && !item.file && !(item.title || '').trim())) return alert('Each entry needs an image or a caption.');
       if (items.some(item => item.isUrl && !isAcceptedCaptionUrl(item.website || ''))) return alert('Caption URLs must start with http://, https:// or www.');
@@ -1154,6 +1162,7 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
         description: isBottom ? JSON.stringify(item.style || {}) : item.description || '',
         price: item.price || '',
         website: isBottom && !item.isUrl ? '' : isBottom ? normalizeCaptionUrl(item.website || '') : (item.website || '').trim(),
+        ...(supportsButton ? { button_number: item.button_number ?? null } : {}),
       };
     });
     uploads.forEach(file => formData.append('images', file));
@@ -1178,7 +1187,7 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
       </div>}
       {slot === 'cover' && <p className="my-2 text-xs text-muted-foreground">Manage up to 10 entries, including the editable default cover. While that default entry is present, members see their own cover in its place. Images use the shared queue with 5 seconds between visits.</p>}
       {slot === 'center' && <p className="my-2 text-xs text-muted-foreground">Manage up to 49 entries, including the editable or removable anchor image. Captions are optional. Images use the shared queue with 5 seconds between visits.</p>}
-      {isBottom && <p className="my-2 text-xs text-muted-foreground">Manage up to 10 image and/or caption entries, including the existing membership caption and cover image. All entries can be edited, reordered or removed.</p>}
+      {isBottom && <p className="my-2 text-xs text-muted-foreground">Manage up to 10 image and/or caption entries, including the membership caption and umiMatch banner. All entries can be edited, reordered or removed.</p>}
       <p className="my-2 text-xs text-muted-foreground">Manage images, captions, prices, and order. Existing images stay in place unless replaced or removed.</p>
       {isLoading ? <p className="py-5 text-center">Loading carousel…</p> : loadError ? <p className="py-5 text-center text-red-400">{loadError}</p> : <div className="space-y-2">
         {items.map((item, index) => <div key={item.id ?? `new-${index}`} className="grid grid-cols-[72px_1fr] gap-2 rounded border p-2 text-xs">
@@ -1191,6 +1200,10 @@ const ManagedCarouselAdminModal = ({ slot, onClose }: { slot: ManagedCarouselAdm
           </div>
           <div className="grid grid-cols-2 gap-2">
             <input value={item.title || ''} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, title: event.target.value } : entry))} placeholder="Caption/title" className="rounded border bg-gray-900 p-1" />
+            {supportsButton && (item.image_url || item.file) && <div className="col-span-2 flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={item.button_number != null} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, button_number: event.target.checked ? 3 : null } : entry))} />Would you like to associate this image with a button?</label>
+              {item.button_number != null && <label>Button number (1-10,000)<input type="number" min={1} max={10000} step={1} required value={Number.isNaN(item.button_number) ? '' : item.button_number} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, button_number: event.target.value === '' ? Number.NaN : Number(event.target.value) } : entry))} className="ml-2 w-24 rounded border bg-gray-900 p-1" /></label>}
+            </div>}
             {isBottom ? <>
               <label className="flex items-center gap-1"><input type="checkbox" checked={!!item.isUrl} onChange={event => setItems(current => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, isUrl: event.target.checked } : entry))} />Is this caption a URL?</label>
               <div className="col-span-2 flex flex-wrap items-center gap-2">
@@ -4689,6 +4702,84 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
   return shuffled;
 };
 
+  const activateCustomButton = (buttonNumber: number | string, page = customizableButtonPage) => {
+    if (typeof buttonNumber === 'string') {
+      if (buttonNumber.endsWith('sPreviousPageButton')) setCustomizableButtonPage(Math.max(1, page - 1));
+      else if (buttonNumber.endsWith('sNextPageButton')) setCustomizableButtonPage(Math.min(715, page + 1));
+      return;
+    }
+    if ((page === 1 && (buttonNumber === 6 || (buttonNumber === 4 && user?.id !== 1))) ||
+      (page === 715 && ((buttonNumber === 9998 && !aboutPage.page.enabled) || (buttonNumber === 9999 && !termsPage.page.enabled)) && user?.is_high_high_high_admin !== 1)) return;
+    if (page === 1 && (buttonNumber === 1 || buttonNumber === 7)) {
+      if (user) handleTopLeftButtonClick(buttonNumber === 1 ? 'friends' : 'settings');
+      return;
+    }
+    if (buttonNumber === 18) {
+      setIsButton18Active(current => {
+        setIsSnakeModalOpen(!current);
+        return !current;
+      });
+      return;
+    }
+    const externalLinks: Record<number, string> = {
+      2: 'https://github.com/uminionunion/UminionsWebsite/discussions/13',
+      9: 'https://whatsYORstory.com',
+      10: 'https://www.facebook.com/share/g/1FMa6xWVmQ/',
+      11: 'https://www.facebook.com/share/g/1EfPw4uW8k/',
+      12: 'https://www.facebook.com/share/g/1PD9kge6ZL/',
+      13: 'https://github.com/uminionunion/UminionsWebsite/discussions/13',
+      14: 'https://github.com/uminionunion/UminionsWebsite',
+    };
+    if (page === 1 && externalLinks[buttonNumber]) {
+      window.open(externalLinks[buttonNumber], '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (page === 715 && (buttonNumber === 9998 || buttonNumber === 9999)) {
+      setOpenSitePage(buttonNumber === 9998 ? 'about' : 'terms');
+      return;
+    }
+    if (page === 715 && buttonNumber === 10000) {
+      window.open('https://www.uminion.com', '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (page === 1 && buttonNumber === 8) {
+      setAreProfileSurfacesOpaque(prev => !prev);
+      return;
+    }
+    if (page === 1 && [3, 4, 5].includes(buttonNumber)) {
+      const key = buttonNumber === 3 ? 'heart' : buttonNumber === 4 ? 'palm' : 'lion';
+      const nextState = !areFeatureIconsActive[key];
+      setMobileSection('front');
+      setAreFeatureIconsActive(prev => ({ ...prev, heart: false, palm: false, lion: false, microphone: false, [key]: nextState }));
+      setCenterView('broadcasts');
+      setBroadcastView(nextState ? buttonNumber === 3 ? 'UmiMatch#22' : buttonNumber === 4 ? 'Million-Pixel#23' : 'Find-a-Pantry#13' : 'UnionNews#14');
+      return;
+    }
+    if (page === 715 && buttonNumber === 10011 && (user?.id === 1 || user?.id === 2)) {
+      setMobileSection('front');
+      setCenterView('broadcasts');
+      setBroadcastView(current => current === 'Beta-Button-10,011' ? 'UnionNews#14' : 'Beta-Button-10,011');
+      return;
+    }
+    setAreFeatureIconsActive(prev => ({
+      ...prev,
+      heart: buttonNumber === 3 ? !prev.heart : prev.heart,
+      palm: buttonNumber === 4 ? !prev.palm : prev.palm,
+      lion: buttonNumber === 5 ? !prev.lion : prev.lion,
+      microphone: buttonNumber === 6 ? !prev.microphone : prev.microphone,
+      steeringWheel: buttonNumber === 7 ? !prev.steeringWheel : prev.steeringWheel,
+      movie: buttonNumber === 15 ? !prev.movie : prev.movie,
+    }));
+    if (page === 1 && ![3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(buttonNumber)) setIsQuadrantsModalOpen(true);
+  };
+  const activateBannerButton = (number: number) => {
+    if (!Number.isInteger(number) || number < 1 || number > 10000) {
+      console.error('[CAROUSELS] Invalid associated button:', number);
+      return;
+    }
+    activateCustomButton(number, number <= 15 ? 1 : Math.floor((number - 16) / 14) + 2);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -4730,7 +4821,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               <Button type="button" variant="outline" aria-current={mobileSection === 'features' ? 'page' : undefined} onClick={() => setMobileSection('features')}><img src="/uhub/dist/mobile-custom-buttons-logo.png" alt="" className="uhub-custom-buttons-logo exclude-zoom" /><span>10,000</span></Button>
             </nav>
             <div className="uhub-mobile-cover">
-              <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={1} fallbackToDefault />
+              <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={1} fallbackToDefault onButtonClick={activateBannerButton} />
             </div>
           </header>
         )}
@@ -4763,7 +4854,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
              }} disabled={!user}><Home className="h-4 w-4 mb-1" /> Home</Button>
            </div>
            <div id="MainUhubFeatureV001ForMyProfileSettingsTopMiddleSection" className="md:w-2/5 h-32 md:h-40 bg-cover bg-center rounded-md relative overflow-hidden" style={{ backgroundColor: areProfileSurfacesOpaque ? '#000000' : 'transparent', backgroundImage: 'none' }}>
-             {!isMobile && <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={areProfileSurfacesOpaque ? 1 : 0.5} />}
+             {!isMobile && <CoverImageRotator userCoverUrl={user?.cover_photo_url || null} opacity={areProfileSurfacesOpaque ? 1 : 0.5} onButtonClick={activateBannerButton} />}
              {user && <Button className="absolute bottom-2 right-2" size="sm" onClick={() => setPhotoEditorPurpose('cover')}>Change Cover</Button>}
            </div>
 
@@ -4868,186 +4959,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
             : undefined,
           boxShadow: buttonNumber === 18 && isButton18Active ? '0 0 0 2px rgba(34, 197, 94, 0.45)' : 'none',
         }}
-        onClick={() => {
-          if (buttonNumber === 18) {
-            setIsButton18Active((currentValue) => {
-              const nextValue = !currentValue;
-              setIsSnakeModalOpen(nextValue);
-              return nextValue;
-            });
-            return;
-          }
-
-          if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')) {
-            setCustomizableButtonPage(page => Math.max(1, page - 1));
-            return;
-          }
-
-          if (typeof buttonNumber === 'string' && buttonNumber.endsWith('sNextPageButton')) {
-            setCustomizableButtonPage(page => Math.min(715, page + 1));
-            return;
-          }
-
-          if (customizableButtonPage === 1 && buttonNumber === 9) {
-            window.open('https://whatsYORstory.com', '_blank', 'noopener,noreferrer');
-            return;
-          }
-
-          if (customizableButtonPage === 1 && buttonNumber === 10) {
-            window.open('https://www.facebook.com/share/g/1FMa6xWVmQ/', '_blank', 'noopener,noreferrer');
-            return;
-          }
-
-          if (customizableButtonPage === 1 && buttonNumber === 11) {
-            window.open('https://www.facebook.com/share/g/1EfPw4uW8k/', '_blank', 'noopener,noreferrer');
-            return;
-          }
-
-          if (customizableButtonPage === 1 && buttonNumber === 12) {
-            window.open('https://www.facebook.com/share/g/1PD9kge6ZL/', '_blank', 'noopener,noreferrer');
-            return;
-          }
-
-          if (customizableButtonPage === 1 && buttonNumber === 13) {
-            window.open('https://github.com/uminionunion/UminionsWebsite/discussions/13', '_blank', 'noopener,noreferrer');
-            return;
-          }
-
-          if (customizableButtonPage === 1 && buttonNumber === 14) {
-            window.open('https://github.com/uminionunion/UminionsWebsite', '_blank', 'noopener,noreferrer');
-            return;
-          }
-
-          if (customizableButtonPage === 715 && (buttonNumber === 9998 || buttonNumber === 9999)) {
-            setOpenSitePage(buttonNumber === 9998 ? 'about' : 'terms');
-            return;
-          }
-
-          if (customizableButtonPage === 715 && buttonNumber === 10000) {
-            window.open('https://www.uminion.com', '_blank', 'noopener,noreferrer');
-            return;
-          }
-
-          if (customizableButtonPage === 1 && buttonNumber === CustomButtonsPage001sNextPageButton) {
-            setCustomizableButtonPage(2);
-            return;
-          }
-
-          if (customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sPreviousPageButton) {
-            setCustomizableButtonPage(1);
-            return;
-          }
-
-          if (customizableButtonPage === 2 && buttonNumber === CustomButtonsPage002sNextPageButton) {
-            setCustomizableButtonPage(3);
-            return;
-          }
-
-          if (customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sPreviousPageButton) {
-            setCustomizableButtonPage(2);
-            return;
-          }
-
-          if (customizableButtonPage === 3 && buttonNumber === CustomButtonsPage003sNextPageButton) {
-            setCustomizableButtonPage(4);
-            return;
-          }
-
-          if (customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sPreviousPageButton) {
-            setCustomizableButtonPage(3);
-            return;
-          }
-
-          if (customizableButtonPage === 4 && buttonNumber === CustomButtonsPage004sNextPageButton) {
-            setCustomizableButtonPage(5);
-            return;
-          }
-
-          if (customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sPreviousPageButton) {
-            setCustomizableButtonPage(4);
-            return;
-          }
-
-          if (customizableButtonPage === 5 && buttonNumber === CustomButtonsPage005sNextPageButton) {
-            setCustomizableButtonPage(6);
-            return;
-          }
-
-          if (customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sPreviousPageButton) {
-            setCustomizableButtonPage(5);
-            return;
-          }
-
-          if (customizableButtonPage === 6 && buttonNumber === CustomButtonsPage006sNextPageButton) {
-            setCustomizableButtonPage(7);
-            return;
-          }
-
-          if (customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sPreviousPageButton) {
-            setCustomizableButtonPage(6);
-            return;
-          }
-
-          if (customizableButtonPage === 7 && buttonNumber === CustomButtonsPage007sNextPageButton) {
-            setCustomizableButtonPage(8);
-            return;
-          }
-
-          if (customizableButtonPage === 1 && buttonNumber === 8) {
-            setAreProfileSurfacesOpaque(prev => !prev);
-            return;
-          }
-
-          // Microphone toggle: 1st click opens Broadcasts-UnionRadio#15, 2nd click opens MyBroadcasts.
-          if (customizableButtonPage === 1 && buttonNumber === 3) {
-            setMobileSection('front');
-            const nextHeartState = !areFeatureIconsActive.heart;
-            setAreFeatureIconsActive(prev => ({ ...prev, heart: nextHeartState, palm: false, lion: false, microphone: false }));
-            setCenterView('broadcasts');
-            setBroadcastView(nextHeartState ? 'UmiMatch#22' : 'UnionNews#14');
-            return;
-          }
-
-          if (customizableButtonPage === 1 && buttonNumber === 4) {
-            // Million-Pixel#23 is disabled for everyone except user ID 1 until Stripe/WooCommerce is finished.
-            if (user?.id !== 1) return;
-            setMobileSection('front');
-            const nextPalmState = !areFeatureIconsActive.palm;
-            setAreFeatureIconsActive(prev => ({ ...prev, heart: false, palm: nextPalmState, lion: false, microphone: false }));
-            setCenterView('broadcasts');
-            setBroadcastView(nextPalmState ? 'Million-Pixel#23' : 'UnionNews#14');
-            return;
-          }
-
-          if (customizableButtonPage === 1 && buttonNumber === 5) {
-            setMobileSection('front');
-            const nextLionState = !areFeatureIconsActive.lion;
-            setAreFeatureIconsActive(prev => ({ ...prev, heart: false, palm: false, lion: nextLionState, microphone: false }));
-            setCenterView('broadcasts');
-            setBroadcastView(nextLionState ? 'Find-a-Pantry#13' : 'UnionNews#14');
-            return;
-          }
-
-          if (customizableButtonPage === 715 && buttonNumber === 10011 && (user?.id === 1 || user?.id === 2)) {
-            setMobileSection('front');
-            setCenterView('broadcasts');
-            setBroadcastView(current => current === 'Beta-Button-10,011' ? 'UnionNews#14' : 'Beta-Button-10,011');
-            return;
-          }
-
-          setAreFeatureIconsActive(prev => ({
-            ...prev,
-            heart: buttonNumber === 3 ? !prev.heart : prev.heart,
-            palm: buttonNumber === 4 ? !prev.palm : prev.palm,
-            lion: buttonNumber === 5 ? !prev.lion : prev.lion,
-            microphone: buttonNumber === 6 ? !prev.microphone : prev.microphone,
-            steeringWheel: buttonNumber === 7 ? !prev.steeringWheel : prev.steeringWheel,
-            movie: buttonNumber === 15 ? !prev.movie : prev.movie,
-          }));
-          if (customizableButtonPage === 1 && ![3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(buttonNumber)) {
-            setIsQuadrantsModalOpen(true);
-          }
-        }}
+        onClick={() => activateCustomButton(buttonNumber)}
         disabled={(customizableButtonPage === 715 && ((buttonNumber === 9998 && !aboutPage.page.enabled) || (buttonNumber === 9999 && !termsPage.page.enabled)) && user?.is_high_high_high_admin !== 1) || (typeof buttonNumber === 'number' && buttonNumber >= 10001 && buttonNumber <= 10012 && !(customizableButtonPage === 715 && buttonNumber === 10011 && (user?.id === 1 || user?.id === 2))) || (customizableButtonPage === 1 && (buttonNumber === 4 && user?.id !== 1 || buttonNumber === 6))}
         title={typeof buttonNumber === 'string' && buttonNumber.endsWith('sPreviousPageButton')
           ? 'Previous button page'
@@ -5309,7 +5221,9 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               </Button>
               {activeBottomPromo ? (
                 <div className="flex h-10 w-full items-center justify-center gap-2 px-9">
-                  {promoImageVisible && activeBottomPromo.image_url && <QueuedImage key={activeBottomPromo.image_url} src={activeBottomPromo.image_url} alt={activeBottomPromo.title || 'Promotion'} className={activeBottomPromo.title ? 'h-10 max-w-[50%] rounded object-cover' : 'h-10 w-full max-w-none rounded object-cover'} queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache />}
+                  {promoImageVisible && activeBottomPromo.image_url && (activeBottomPromo.button_number
+                    ? <button type="button" className={`uhub-banner-action relative h-10 ${activeBottomPromo.title ? 'max-w-[50%]' : 'w-full max-w-none'}`} aria-label={`Open button ${activeBottomPromo.button_number}`} onClick={() => { if (activeBottomPromo.button_number != null) activateBannerButton(activeBottomPromo.button_number); }}><QueuedImage key={activeBottomPromo.image_url} src={activeBottomPromo.image_url} alt={activeBottomPromo.title || 'Promotion'} className={activeBottomPromo.title ? 'h-10 max-w-full rounded object-cover' : 'h-10 w-full max-w-none rounded object-cover'} queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache /></button>
+                    : <QueuedImage key={activeBottomPromo.image_url} src={activeBottomPromo.image_url} alt={activeBottomPromo.title || 'Promotion'} className={activeBottomPromo.title ? 'h-10 max-w-[50%] rounded object-cover' : 'h-10 w-full max-w-none rounded object-cover'} queuePriority={IMAGE_LOAD_PRIORITY.critical} retainInCache />)}
                   {activeBottomPromo.title && (activeBottomPromo.website
                     ? <a href={activeBottomPromo.website} target="_blank" rel="noopener noreferrer" className="text-center text-orange-400 hover:underline text-xs md:text-sm" style={activeBottomPromoStyle}>{activeBottomPromo.title}</a>
                     : <span className="text-center text-white text-xs md:text-sm" style={activeBottomPromoStyle}>{activeBottomPromo.title}</span>)}

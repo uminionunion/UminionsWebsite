@@ -226,7 +226,6 @@ db.exec(`
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
 `);
-
 const episodeColumns = db.prepare('PRAGMA table_info(UserBroadcastEpisodes)').all().map((c) => c.name);
 if (!episodeColumns.includes('last_played_at')) {
   db.exec('ALTER TABLE UserBroadcastEpisodes ADD COLUMN last_played_at TEXT');
@@ -246,11 +245,15 @@ db.exec(`
     description TEXT,
     price TEXT,
     website TEXT,
+    button_number INTEGER,
     display_order INTEGER NOT NULL DEFAULT 0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
 `);
 console.log('[init-data] UhubManagedCarouselItems table verified.');
+if (!db.prepare('PRAGMA table_info(UhubManagedCarouselItems)').all().some(column => column.name === 'button_number')) {
+  db.exec('ALTER TABLE UhubManagedCarouselItems ADD COLUMN button_number INTEGER');
+}
 
 // Import previously hard-coded display entries once. The marker preserves intentionally empty collections.
 db.exec('CREATE TABLE IF NOT EXISTS UhubCarouselDefaultsImported (slot TEXT PRIMARY KEY)');
@@ -297,6 +300,24 @@ db.transaction(() => {
   }
 })();
 console.log('[init-data] Editable carousel defaults imported (existing collections preserved).');
+
+db.transaction(() => {
+  const marker = 'banner-button-links-v1';
+  if (db.prepare('SELECT slot FROM UhubCarouselDefaultsImported WHERE slot = ?').get(marker)) return;
+  const redBanner = '/uhub/dist/umimatch-banner.jpg';
+  const blueBanner = '/uhub/dist/food-clothing-pantry-banner.jpg';
+  db.prepare(`UPDATE UhubManagedCarouselItems SET image_url = ?, button_number = 3
+    WHERE slot = 'bottom' AND image_url = ? AND COALESCE(title, '') = ''
+      AND COALESCE(website, '') = '' AND COALESCE(description, '') = ''
+      AND COALESCE(price, '') = '' AND button_number IS NULL`).run(redBanner, defaultCover);
+  const cover = db.prepare("SELECT id, image_url FROM UhubManagedCarouselItems WHERE slot = 'cover' ORDER BY display_order, id").all();
+  if (!cover.some(item => item.image_url === blueBanner) && cover.some(item => item.image_url === defaultCover) && cover.length < 10) {
+    cover.forEach((item, index) => db.prepare('UPDATE UhubManagedCarouselItems SET display_order = ? WHERE id = ?').run(index === 0 ? 0 : index + 1, item.id));
+    db.prepare(`INSERT INTO UhubManagedCarouselItems(slot, image_url, button_number, display_order)
+      VALUES ('cover', ?, 5, 1)`).run(blueBanner);
+  }
+  db.prepare('INSERT INTO UhubCarouselDefaultsImported(slot) VALUES (?)').run(marker);
+})();
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS UmiMatchProfiles (

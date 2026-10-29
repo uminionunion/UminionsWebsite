@@ -136,6 +136,17 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req: Reque
     }
     if (requestedItems) {
       for (const item of requestedItems) {
+        if (item.button_number !== undefined && item.button_number !== null &&
+          (typeof item.button_number !== 'number' || !Number.isInteger(item.button_number) || item.button_number < 1 || item.button_number > 10000)) {
+          return res.status(400).json({ error: 'Associated button must be a whole number from 1 to 10000' });
+        }
+        if (item.button_number != null && slot !== 'cover' && slot !== 'bottom') {
+          return res.status(400).json({ error: 'Button associations are supported only for Up and Down banners' });
+        }
+        if (item.button_number != null && item.uploadIndex == null &&
+          !existingItems.some(existing => existing.id === Number(item.id) && existing.image_url)) {
+          return res.status(400).json({ error: 'A button association needs an image, not just a caption' });
+        }
         if (item.uploadIndex !== null && item.uploadIndex !== undefined) {
           const uploadIndex = Number(item.uploadIndex);
           if (!Number.isInteger(uploadIndex) || uploadIndex < 0 || uploadIndex >= files.length) {
@@ -157,6 +168,7 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req: Reque
       description: string | null;
       price: string | null;
       website: string | null;
+      button_number: number | null;
       display_order: number;
     }> = [];
     const writtenFiles: string[] = [];
@@ -198,6 +210,7 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req: Reque
           description: getString(item.description).trim() || null,
           price: getString(item.price).trim() || null,
           website: normalizeWebsite(website) || null,
+          button_number: item.button_number === undefined ? existing?.button_number ?? null : item.button_number,
           display_order: index,
         });
       }
@@ -216,6 +229,7 @@ router.post('/api/carousels/:slot/items/replace', requireAuth, async (req: Reque
           description: getIndexedBodyValue(req.body, 'description', index) || null,
           price: getIndexedBodyValue(req.body, 'price', index) || null,
           website: getIndexedBodyValue(req.body, 'website', index) || null,
+          button_number: null,
           display_order: index,
         });
       }
