@@ -100,18 +100,19 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
 
   return (
     <div className="grid h-full min-h-[520px] w-full grid-rows-[auto_1fr] bg-background">
-      <div className="grid grid-cols-[26%_74%] gap-3 border-b p-3">
-      <div className="flex flex-col gap-3">
-        <Button className="w-full justify-center text-center" onClick={() => setActiveView('find')} variant={'default'}>
+      {/* Mobile: the three action buttons share one row, with Find a / Country / States side by side below them. */}
+      <div className="grid grid-cols-1 gap-2 border-b p-2 md:grid-cols-[26%_74%] md:gap-3 md:p-3">
+      <div className="pantry-finder-actions grid grid-cols-3 gap-2 md:flex md:flex-col md:gap-3">
+        <Button className="w-full justify-center text-center whitespace-normal h-auto px-1 text-xs md:h-10 md:px-4 md:text-sm" onClick={() => setActiveView('find')} variant={'default'}>
           Find a Pantry
         </Button>
-        <Button className="w-full justify-center text-center whitespace-normal h-auto" onClick={() => setActiveView('host')} variant="secondary">
+        <Button className="w-full justify-center text-center whitespace-normal h-auto px-1 text-xs md:px-4 md:text-sm" onClick={() => setActiveView('host')} variant="secondary">
           Know-of a Pantry? Host a Pantry?
         </Button>
         {/* Running for Office? disabled 10/15/26 by StorytellingSalem; remove disabled and restore onClick to bring it back */}
         <Button 
           className={cn(
-            "w-full justify-center text-center",
+            "w-full justify-center text-center whitespace-normal h-auto px-1 text-xs md:h-10 md:px-4 md:text-sm",
             "bg-yellow-400 hover:bg-yellow-500 text-black"
           )}
           disabled
@@ -121,7 +122,7 @@ export function TheFoodPantryFeature({ pantries, addPantry }: TheFoodPantryFeatu
         </Button>
       </div>
       <div className="relative min-h-0">
-      <div className="absolute inset-0 overflow-y-auto">
+      <div className="overflow-y-auto md:absolute md:inset-0">
         <PantryControls
           addPantry={addPantry}
           activeView="find"

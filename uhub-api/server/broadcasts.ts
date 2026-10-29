@@ -329,6 +329,96 @@ router.post('/api/site-pages/:key/image', requireAuth, async (req: Request, res:
   }
 });
 
+// uHome-Hub #01-#30 titles and background images ("30BKG"). Stored as private rows in the carousel table
+// (slot 'uhome-hub-buttons', display_order = button number), so no migration is needed.
+const UHOME_HUB_SLOT = 'uhome-hub-buttons' as const;
+const UHOME_HUB_BUTTON_COUNT = 30;
+const UHOME_HUB_TITLE_MAX = 40;
+const uhomeHubImagePrefix = `/api/uploads/managed-carousels/${UHOME_HUB_SLOT}/`;
+const loadUHomeHubButtons = async () => {
+  const rows = await db.selectFrom('UhubManagedCarouselItems').selectAll().where('slot', '=', UHOME_HUB_SLOT).execute();
+  return Array.from({ length: UHOME_HUB_BUTTON_COUNT }, (_, index) => {
+    const row = rows.find(item => item.display_order === index + 1);
+    return { number: index + 1, title: row?.title || '', image_url: row?.image_url || '' };
+  });
+};
+
+router.get('/api/uhome-hub-buttons', async (_req: Request, res: Response) => {
+  try {
+    res.json({ buttons: await loadUHomeHubButtons() });
+  } catch (error) {
+    console.error('[UHOME HUB] Error loading buttons:', error);
+    res.status(500).json({ error: 'Failed to load uHome-Hub buttons' });
+  }
+});
+
+router.post('/api/uhome-hub-buttons', requireAuth, async (req: Request, res: Response) => {
+  try {
+    if (!(await isHighHighHighAdmin(req.user!.userId))) return res.status(403).json({ error: 'High-high-high admin only' });
+    let requested: unknown;
+    try { requested = JSON.parse(getString(req.body?.buttons)); } catch { return res.status(400).json({ error: 'Buttons are invalid' }); }
+    if (!Array.isArray(requested) || requested.length > UHOME_HUB_BUTTON_COUNT) return res.status(400).json({ error: 'Buttons are invalid' });
+    const files = getUploadedFiles(req);
+    const allowedExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
+    const seen = new Set<number>();
+    const changes: Array<{ number: number; title: string; uploadIndex: number | null; removeImage: boolean }> = [];
+    for (const item of requested as any[]) {
+      const number = item?.number;
+      if (!Number.isInteger(number) || number < 1 || number > UHOME_HUB_BUTTON_COUNT || seen.has(number)) return res.status(400).json({ error: 'Each button number must be a unique whole number from 1 to 30' });
+      seen.add(number);
+      if (item.title !== undefined && typeof item.title !== 'string') return res.status(400).json({ error: 'Titles must be text' });
+      const title = (item.title || '').replace(/[\u0000-\u001f\u007f]/g, '').trim();
+      if (title.length > UHOME_HUB_TITLE_MAX) return res.status(400).json({ error: `Titles can be up to ${UHOME_HUB_TITLE_MAX} characters` });
+      let uploadIndex: number | null = null;
+      if (item.uploadIndex !== undefined && item.uploadIndex !== null) {
+        uploadIndex = Number(item.uploadIndex);
+        if (!Number.isInteger(uploadIndex) || uploadIndex < 0 || uploadIndex >= files.length) return res.status(400).json({ error: 'Background image upload is missing' });
+        if (!allowedExtensions.has(path.extname(files[uploadIndex].name).toLowerCase())) return res.status(400).json({ error: 'Only image uploads are allowed' });
+      }
+      changes.push({ number, title, uploadIndex, removeImage: item.removeImage === true });
+    }
+    const directory = path.join(process.env.DATA_DIRECTORY || path.join(process.cwd(), 'data'), 'uploads', 'managed-carousels', UHOME_HUB_SLOT);
+    fs.mkdirSync(directory, { recursive: true });
+    const existingRows = await db.selectFrom('UhubManagedCarouselItems').selectAll().where('slot', '=', UHOME_HUB_SLOT).execute();
+    const writtenFiles: string[] = [];
+    const replacedImages: string[] = [];
+    const updates: Array<{ number: number; title: string; image_url: string; id?: number }> = [];
+    try {
+      for (const change of changes) {
+        const row = existingRows.find(item => item.display_order === change.number);
+        let imageUrl = row?.image_url || '';
+        if (change.uploadIndex !== null) {
+          const file = files[change.uploadIndex];
+          const fileName = `button-${change.number}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}${path.extname(file.name).toLowerCase()}`;
+          await file.mv(path.join(directory, fileName));
+          writtenFiles.push(path.join(directory, fileName));
+          imageUrl = `${uhomeHubImagePrefix}${fileName}`;
+        } else if (change.removeImage) imageUrl = '';
+        if (row?.image_url && row.image_url !== imageUrl) replacedImages.push(row.image_url);
+        updates.push({ number: change.number, title: change.title, image_url: imageUrl, id: row?.id });
+      }
+      await db.transaction().execute(async trx => {
+        for (const update of updates) {
+          if (update.id) await trx.updateTable('UhubManagedCarouselItems').set({ title: update.title, image_url: update.image_url }).where('id', '=', update.id).execute();
+          else await trx.insertInto('UhubManagedCarouselItems').values({ slot: UHOME_HUB_SLOT, image_url: update.image_url, title: update.title, description: null, price: null, website: null, display_order: update.number }).execute();
+        }
+      });
+    } catch (error) {
+      writtenFiles.forEach(file => { if (fs.existsSync(file)) fs.unlinkSync(file); });
+      throw error;
+    }
+    for (const imageUrl of replacedImages) {
+      if (!imageUrl.startsWith(uhomeHubImagePrefix)) continue;
+      const filePath = path.join(directory, path.basename(imageUrl));
+      if (path.dirname(filePath) === directory && fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    }
+    res.json({ buttons: await loadUHomeHubButtons() });
+  } catch (error) {
+    console.error('[UHOME HUB] Error saving buttons:', error);
+    res.status(500).json({ error: 'Failed to save uHome-Hub buttons' });
+  }
+});
+
 // Create a new broadcast (the container; episodes go inside).
 router.post('/api/broadcasts', requireAuth, async (req: Request, res: Response) => {
   try {

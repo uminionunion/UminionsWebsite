@@ -200,7 +200,7 @@ test('on mobile, banner features replace the MemeBox until closed, then it resta
   assert.ok(source.includes("const MOBILE_MEMEBOX_REPLACEMENT_VIEWS = ['UmiMatch#22', 'Find-a-Pantry#13', 'Million-Pixel#23', 'Beta-Button-10,011'];"));
   assert.ok(source.includes("renderTheMemeBox(broadcasts['UnionNews#14'], { randomStart: (isMobile && memeBoxReplacedByFeatureRef.current) || memeBoxRandomAfterCartRef.current });"));
   assert.ok(source.includes('isOpen && !isDesktopCartOpen && centerView === \'broadcasts\''), 'The desktop Main Cart replaces the MemeBox while open');
-  assert.ok(source.includes('Close &amp; back to MemeBox'));
+  assert.match(source, /<div className="mb-2 flex justify-end">\s*<Button[^>]*size="icon" className="uhub-mobile-memebox-return" aria-label="Close &amp; back to MemeBox"[\s\S]{0,260}><X className="h-4 w-4" \/><\/Button>/, 'The return control is an X-only button at the top right');
   const renderer = await readFile(new URL('../../includes/uhub/src/TheMemeBoxRenderer.tsx', import.meta.url), 'utf8');
   assert.ok(renderer.includes('showExternalUploadButton hideFooter randomStart={randomStart}'));
   const memeBox = await readFile(new URL('../../includes/uhub/src/features/profile/TheMemeBoxImplementation001.jsx', import.meta.url), 'utf8');
@@ -288,4 +288,56 @@ test('shared rotation prioritizes the first cover change once, then resumes rand
 test('mobile cover overlay lets taps reach linked banner images', async () => {
   const css = await readFile(new URL('../../includes/uhub/src/index.css', import.meta.url), 'utf8');
   assert.match(css, /\.uhub-mobile-cover::after \{[^}]*pointer-events: none;/, 'The decorative ::after layer must not block banner taps on mobile');
+});
+
+test('30BKG admin button edits uHome-Hub titles and backgrounds', () => {
+  assert.equal((source.match(/<UHomeHubButtonsAdminButton( small)? \/>/g) || []).length, 1, '30BKG lives in the Admin Hub');
+  assert.match(source, /backgroundColor: '#FFDAB9', color: '#0B1F4D' \}\}[\s\S]{0,200}>30BKG<\/Button>/, '30BKG is peach with dark blue text');
+  assert.match(source, /<span className="truncate">\{hubTitle \|\| hubLabel\}<\/span>/, 'Blank titles keep the #NN label');
+  assert.match(source, /hubButton\?\.image_url \? \{ backgroundImage:/, 'Saved background images show on the hub buttons');
+});
+
+test('Admin Hub holds every admin editor button and opens from the top-left quadrant', () => {
+  const hub = declaration('AdminHubModal');
+  for (const label of ['>Add Images?</Button>', '>L</Button>', '>C</Button>', '>R</Button>', '>Up</Button>', '>Down</Button>', '<WelcomeTitleButton fallback={welcomeFallback} />', '<UHomeHubButtonsAdminButton />']) {
+    assert.ok(hub.includes(label), `Admin Hub contains ${label}`);
+  }
+  for (const slot of ['left', 'center', 'right', 'cover', 'bottom']) assert.ok(hub.includes(`onOpenManagedCarouselAdmin('${slot}')`));
+  assert.ok(hub.includes('uhub-admin-button-row flex min-w-0 flex-wrap'), 'Admin Hub buttons wrap on narrow screens');
+  assert.ok(!/onOpenManagedCarouselAdmin\('left'\)/.test(declaration('BroadcastView')), 'Broadcast rows no longer carry the admin buttons');
+  assert.match(source, /isAdmin \? 'uhub-top-left-admin md:grid-rows-3 md:gap-1' : 'md:grid-rows-2'/, 'Admins get a third quadrant row in the same height');
+  assert.match(source, /\{isAdmin && <>\s*<AdminHubButton[^>]*onClick=\{\(\) => setIsAdminHubOpen\(true\)\} \/>\s*<Button id="uhub-admin-coming-soon"[^>]*disabled><Anvil[^>]*\/> Admin Coming Soon<\/Button>/);
+  assert.ok(source.includes('<AdminHubButton className="text-xs h-8" onClick={onOpenAdminHub} />'), 'Mobile admins reach the Admin Hub from the front page');
+  assert.match(source, /\{user\?\.is_high_high_high_admin === 1 && isAdminHubOpen && \(\s*<AdminHubModal/);
+});
+
+test('logged-out UmiMatch prompt is centered with the new wording', () => {
+  assert.ok(source.includes('flex h-full min-h-[50vh] items-center justify-center p-6 text-center text-muted-foreground">Log-in or SignUp to use UmiMatch</div>'));
+});
+
+test('mobile Pantry Finder puts actions in one row and Find a / Country / States side by side', async () => {
+  const feature = await readFile(new URL('../../includes/pantry-finder/src/pages/pantry-feature/the-food-pantry-feature.tsx', import.meta.url), 'utf8');
+  const view = await readFile(new URL('../../includes/pantry-finder/src/pages/pantry-feature/find-pantry-view.tsx', import.meta.url), 'utf8');
+  assert.ok(feature.includes('pantry-finder-actions grid grid-cols-3 gap-2 md:flex md:flex-col md:gap-3'));
+  assert.ok(feature.includes('grid grid-cols-1 gap-2 border-b p-2 md:grid-cols-[26%_74%]'));
+  assert.ok(view.includes('pantry-finder-filters grid grid-cols-3 gap-2 md:grid-cols-[1.35fr_0.9fr_0.9fr]'));
+  assert.ok(view.includes('grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-3'), 'Find a: is a vertical list on mobile and 2x2 on desktop');
+});
+
+test('mobile anvils alternate with the heart and lion buttons, feature first', () => {
+  const h = hooks();
+  const timers = [];
+  const useSlot = compile(`${declaration('useAlternatingFeatureSlot')} useAlternatingFeatureSlot`, {
+    ...h, window: { setInterval: (callback, delay) => { timers.push({ callback, delay }); return timers.length; }, clearInterval: () => {} },
+  });
+  assert.equal(h.render(() => useSlot(6700, true)), true, 'The feature button shows first');
+  assert.equal(timers[0].delay, 6700);
+  timers[0].callback();
+  assert.equal(h.render(() => useSlot(6700, true)), false, 'Then Coming Soon');
+  timers[0].callback();
+  assert.equal(h.render(() => useSlot(6700, true)), true, 'Then the feature again');
+  assert.ok(source.includes('const MOBILE_TOP_ANVIL_ROTATE_MS = 6700;'));
+  assert.ok(source.includes('const MOBILE_BOTTOM_ANVIL_ROTATE_MS = 7600;'));
+  assert.ok(source.includes("style={{ backgroundColor: '#dc2626', borderColor: '#dc2626', color: '#ffffff' }} onClick={() => activateBannerButton(3)}><Heart fill=\"currentColor\" />"));
+  assert.ok(source.includes("style={{ backgroundColor: '#2563eb', borderColor: '#2563eb', color: '#ffffff' }} onClick={() => activateBannerButton(5)}><span className=\"uhub-mobile-lion-icon\" aria-hidden=\"true\">𓃮</span>"));
 });

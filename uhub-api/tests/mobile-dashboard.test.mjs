@@ -162,16 +162,17 @@ test('mobile viewport follows breakpoint changes and removes its listener on unm
   assert.equal(listener, undefined);
 });
 
-test('mobile footer orders Front Page, Stores, disabled Coming Soon and More', () => {
+test('mobile footer orders Front Page, Stores, rotating Find a Pantry / Coming Soon and More', () => {
   const nav = findNode(node => ts.isJsxElement(node) && node.openingElement.tagName.getText(tree) === 'nav' && node.openingElement.getText(tree).includes('Mobile sections'));
   const createElement = (type, props, ...children) => ({ type, props: { ...props, children } });
-  const render = compile(`function navigation(mobileSection, setMobileSection, setCenterView, setBroadcastView, unreadChatrooms) { return (${nav.getText(tree)}); }; navigation`, {
+  const render = compile(`function navigation(mobileSection, setMobileSection, setCenterView, setBroadcastView, unreadChatrooms, showBottomAnvilFeature, activateBannerButton) { return (${nav.getText(tree)}); }; navigation`, {
     React: { createElement }, Megaphone: 'Megaphone', Anvil: 'Anvil', ShoppingCart: 'ShoppingCart', MoreHorizontal: 'MoreHorizontal',
   });
   let section = 'front';
   let center = 'settings';
   let broadcast = 'UnionRadio#15';
-  const renderNav = () => render(section, value => { section = value; }, value => { center = value; }, value => { broadcast = value; }, new Set([1]));
+  const banners = [];
+  const renderNav = (showFeature = false) => render(section, value => { section = value; }, value => { center = value; }, value => { broadcast = value; }, new Set([1]), showFeature, value => banners.push(value));
   const buttons = renderNav().props.children.flat().filter(node => node?.type === 'button');
   assert.equal(buttons.length, 4);
   assert.equal(buttons.filter(node => node.props['aria-current'] === 'page').length, 1);
@@ -187,6 +188,13 @@ test('mobile footer orders Front Page, Stores, disabled Coming Soon and More', (
   buttons[0].props.onClick();
   assert.equal(center, 'broadcasts');
   assert.equal(broadcast, 'UnionNews#14');
+  const lion = renderNav(true).props.children.flat().filter(node => node?.type === 'button')[2];
+  assert.equal(lion.props.id, 'uhub-mobile-coming-soon-footer');
+  assert.equal(lion.props.disabled, undefined);
+  assert.equal(lion.props.style.backgroundColor, '#2563eb');
+  assert.equal(lion.props.children[1].props.children[0], 'Find a Pantry');
+  lion.props.onClick();
+  assert.deepEqual(banners, [5], 'The lion slot launches Find-a-Pantry like button 5');
 });
 
 test('only the mobile front-page broadcast moves its shared navigation below the MemeBox', () => {
@@ -213,10 +221,11 @@ test('broadcast hooks execute before alternate-view returns, including UnionRadi
   assert.ok(radioIndex > effectIndex, 'Switching to radio must not skip a previously executed hook');
 });
 
-test('mobile header orders Profile, hub, radio, separate disabled anvil and feature page', () => {
+test('mobile header orders Profile, hub, radio, rotating UmiMatch / anvil and feature page', () => {
   const nav = findNode(node => ts.isJsxElement(node) && node.openingElement.tagName.getText(tree) === 'nav' && node.openingElement.getText(tree).includes('Mobile shortcuts'));
   const actions = [];
-  const render = compile(`(${nav.getText(tree)})`, {
+  const renderWith = showTopAnvilFeature => compile(`(${nav.getText(tree)})`, {
+    showTopAnvilFeature, activateBannerButton: value => actions.push(['banner', value]), Heart: 'icon',
     React: { createElement: (type, props, ...children) => ({ type, props: { ...props, children } }) },
     Button: 'button', MessageSquare: 'icon', Anvil: 'icon', Radio: 'icon', Home: 'icon',
     user: { id: 1 }, mobileSection: 'front', unreadChatrooms: new Set(),
@@ -227,7 +236,7 @@ test('mobile header orders Profile, hub, radio, separate disabled anvil and feat
     handleMicrophoneButtonClick: () => actions.push(['radio']),
     setIsHomeModalOpen: value => actions.push(['home', value]),
   });
-  const buttons = render.props.children;
+  const buttons = renderWith(false).props.children;
   assert.equal(buttons.length, 5);
   assert.deepEqual(buttons.map(button => button.props.children[1].props.children[0]), ['Profile', 'uHome-Hub', 'UnionRadio', 'Coming Soon', '10,000']);
   assert.equal(buttons[3].props.disabled, true);
@@ -235,6 +244,13 @@ test('mobile header orders Profile, hub, radio, separate disabled anvil and feat
   buttons.filter(button => button.props.onClick).forEach(button => button.props.onClick());
   assert.deepEqual(actions, [['home', true], ['section', 'hub'], ['radio'], ['section', 'features']]);
   assert.equal(buttons[4].props.children[0].props.src, '/uhub/dist/mobile-custom-buttons-logo.png');
+  const heart = renderWith(true).props.children[3];
+  assert.equal(heart.props.id, 'uhub-mobile-coming-soon-top');
+  assert.equal(heart.props.disabled, undefined);
+  assert.equal(heart.props.style.backgroundColor, '#dc2626');
+  assert.equal(heart.props.children[1].props.children[0], 'UmiMatch');
+  heart.props.onClick();
+  assert.deepEqual(actions.at(-1), ['banner', 3], 'The heart slot launches UmiMatch like button 3');
 });
 
 test('More stacks matching Friends, social toggle and Close rows while preserving actions and visitor gating', async () => {
