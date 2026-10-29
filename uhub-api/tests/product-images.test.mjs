@@ -217,6 +217,11 @@ test('all store row/detail and cart controls retain handlers with explicit scope
   assert.equal(main.split('onClick={showMainCart}').length - 1, 3, 'Union Store, Users\' Stores and Store 01-30 header carts open the Main Cart');
   assert.match(css, /\.uhub-root button\.uhub-cart-checkout,[\s\S]*?cursor: not-allowed;/);
   assert.ok(main.includes('void addToMainCart(p, Boolean(user));'), 'Each Store 01-30 product row has a cart button that adds that product');
+  assert.equal(main.split('uhub-store-action uhub-tile-cart absolute bottom-1 right-9').length - 1, 2, 'Mountain store pages 2+ and user-store pages have a cart button left of the eye');
+  assert.ok(main.includes('className="uhub-store-browser-close"'), 'Mountain modal X uses the black/white close style');
+  assert.match(css, /button\.uhub-store-browser-close,[\s\S]*?background-color: #000;[\s\S]*?color: #fff;/);
+  const memeBox = await readFile(new URL('features/profile/TheMemeBoxImplementation001.jsx', root), 'utf8');
+  assert.ok(memeBox.includes('ROTATION_IMAGE_DELAY_MS = 6000') && memeBox.includes('ROTATION_MOTION_DELAY_MS = 16000'), 'MemeBox auto-rotation is doubled');
   assert.match(css, /\.uhub-root \.uhub-cart-toast \{[\s\S]*?background: #3f464f;[\s\S]*?color: #ffffff;/, 'Cart toast matches the gray site toasts with white text');
   assert.ok(main.includes("aria-label={inCart ? 'Remove from cart' : 'Add to cart'}"));
   assert.match(main, /className="uhub-store-action h-7 w-7 flex-shrink-0"[\s\S]*?onClick=/);

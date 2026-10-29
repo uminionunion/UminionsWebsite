@@ -242,6 +242,10 @@ User testing found major lag improvements with caches and serialized rotations; 
 
 ### Meme uploads and independent sound
 
+**MemeBox auto-rotation speed:** the MemeBox changes to the next meme on its own every **6 seconds** for image posts and every **16 seconds** for posts with videos/GIFs. These times were doubled from 3 and 8 seconds. Change `ROTATION_IMAGE_DELAY_MS` / `ROTATION_MOTION_DELAY_MS` in [TheMemeBoxImplementation001.jsx](includes/uhub/src/features/profile/TheMemeBoxImplementation001.jsx) to adjust them.
+
+**Mountain stores window close button:** the top-right X uses `.uhub-store-browser-close`, a black background with a white X, so theme button styles can't recolor it.
+
 The upload button beside "Got Memes? Share Memes:" opens the main MemeBox uploader. It accepts MP4, GIF, JPG, JPEG and PNG, with **1-10 entries per post and at most 50 GiB (50 x 1024 cubed bytes) per file**. Selection errors reject the selection rather than silently dropping extra files. MP4 previews use video elements; image previews use images. Browser object URLs avoid reading complete files into base64 strings, and are revoked on removal, completion or unmount.
 
 [TheMemeBoxImplementation001.jsx](includes/uhub/src/features/profile/TheMemeBoxImplementation001.jsx) sends multipart `media` files, `title` and `description` to authenticated `POST /api/memes/posts`. [meme-upload.ts](uhub-api/server/meme-upload.ts) uses Busboy and backpressure-aware stream pipelines into request-specific temporary disk storage, not the general memory-buffered upload parser. [memes.ts](uhub-api/server/memes.ts) repeats count, extension and byte-size validation, sanitizes the media, moves it to `DATA_DIRECTORY/uploads/memes`, and saves URLs and post metadata together in the dedicated MemeBox database. New posts no longer put large base64 media into SQLite; existing base64 posts still display. Failed saves roll back metadata and remove newly moved files. Temporary request directories are cleaned after success, rejection or disconnect. Owner deletion and the existing downvote auto-delete also remove newly file-backed media. Public `/api/uploads/memes/...` delivery supports video range requests through Express static serving. Back up both SQL and uploaded files.
@@ -441,7 +445,11 @@ Display and editing use the same `/api/carousels/:slot/items` records. Locations
 
 The desktop bottom banner row is **100px tall** (2.5× its former 40px `h-10`). The row, the linked-image wrapper and the image all use `h-[100px]`. The desktop top banner stays **160px** (`md:h-40`). A trial 1.5× increase for both banners (240px/150px) was judged too large and reverted. The mobile top cover (`h-32` and `.uhub-mobile-cover`) is unchanged. Widths, `object-cover` fitting and arrows are unchanged. Saved top and bottom banners retain their original `object-cover` fitting; personal top covers retain their original `object-contain` fitting. Button associations must not resize the slots or force captioned images to occupy half the available width.
 
-The supplied red umiMatch and blue Food & Clothing Pantry images live in [public](includes/uhub/public/) and are copied into the built assets. `food-clothing-pantry-banner.jpg` must be the **blue lion** image (top, button 5) and `umimatch-banner.jpg` the **red heart** image (bottom, button 3). An earlier build had the two files' contents swapped (red showed on top with the pantry action); the contents were swapped back with no database change, because the saved rows reference the file names.
+The supplied red umiMatch and blue Food & Clothing Pantry images live in [public](includes/uhub/public/) and are copied into the built assets. `food-clothing-pantry-banner.jpg` must be the **blue lion** image (top, button 5) and `umimatch-banner.jpg` the **red heart** image (bottom, button 3).
+
+**To swap a banner image manually,** replace the file with a new JPG of the **same name** in `includes/uhub/public/`, rebuild the frontend (which copies it into `includes/uhub/dist/`), and redeploy. The saved banner rows in `UhubManagedCarouselItems` point at `/uhub/dist/umimatch-banner.jpg` and `/uhub/dist/food-clothing-pantry-banner.jpg`; the one-time migration that created them is in [init-data.cjs](uhub-api/scripts/init-data.cjs) (`redBanner` / `blueBanner`). Alternatively, use the pink **Up** / purple **Down** editors to upload a different image and associate it with a button, with no code change.
+
+An earlier build had the two files' contents swapped (red showed on top with the pantry action); the contents were swapped back with no database change, because the saved rows reference the file names.
 
 **Mobile.** The bottom banner row is not shown on mobile. Instead, the mobile top cover plays the top (Up) entries in saved order, then every bottom (Down) entry that has an image (caption-only entries are skipped), then loops top → bottom → top. Mobile uses this sequential order; desktop keeps the random-after-first-change order. Linked bottom images remain clickable in the mobile cover.
 
@@ -502,6 +510,7 @@ Once WooCommerce (or another payment provider) is connected and the Main Cart ca
 | UnionSAM#20 → Users' Stores header | 🛒 | Opens the Main Cart |
 | Store 01–30 header | 🛒 (transparent, white) | Opens the Main Cart |
 | Store 01–30 product rows | 🔍 / 🛒 (transparent, white) | 🔍 opens product details; 🛒 **adds that row's product** to the Main Cart |
+| Mountain → store pages 2+ and users' store pages (tiles) | 🛒 / 👁 (transparent, white) | 🛒 sits just left of the 👁 and **adds that tile's product**; 👁 stays in the bottom-right corner and opens product details |
 | Mountain → Everything list | 🔍 / 🛒 | 🔍 opens product details; 🛒 adds that product to the Main Cart |
 | Product details window | 🛒 (transparent, white icon) | Adds that product to the Main Cart |
 | Small header/footer carousels | Price button | A price-like label (e.g. `$69.95`) adds that carousel entry to the Main Cart. Any other label (e.g. `u24.gov.ua`) opens the saved website. The title links to the saved website when one exists. |

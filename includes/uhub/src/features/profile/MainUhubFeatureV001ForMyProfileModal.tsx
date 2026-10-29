@@ -1977,7 +1977,7 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
 
 
           
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" className="uhub-store-browser-close" onClick={onClose} aria-label="Close stores" title="Close">
             <X className="h-6 w-6" />
           </Button>          
         </div>
@@ -2598,6 +2598,20 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
                     <Eye className="h-3 w-3 text-white" />
                   </button>
 
+                  {/* Add to cart, left of the Eye */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void addToMainCart(product, Boolean(user));
+                    }}
+                    className="uhub-store-action uhub-tile-cart absolute bottom-1 right-9 z-20 h-7 w-7 inline-flex items-center justify-center rounded transition"
+                    aria-label={user ? `Add ${product.name} to cart` : 'Log in to add to cart'}
+                    title={user ? 'Add to cart' : 'Log in to add to cart'}
+                  >
+                    <ShoppingCart className="h-3 w-3 text-white" />
+                  </button>
+
                   {/* Price */}
                   {product.price && (
                     <div className="absolute bottom-1 left-1 z-10 text-xs font-semibold bg-black bg-opacity-60 text-orange-400 px-1 rounded pointer-events-none">
@@ -2785,6 +2799,20 @@ const storePages = useMemo(() => buildStorePages(), [stores, userStoresData, use
       title="View product details"
     >
       <Eye className="h-3 w-3 text-white" />
+    </button>
+
+    {/* Add to cart, left of the Eye */}
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        void addToMainCart(product, Boolean(user));
+      }}
+      className="uhub-store-action uhub-tile-cart absolute bottom-1 right-9 z-20 h-7 w-7 inline-flex items-center justify-center rounded transition"
+      aria-label={user ? `Add ${product.name} to cart` : 'Log in to add to cart'}
+      title={user ? 'Add to cart' : 'Log in to add to cart'}
+    >
+      <ShoppingCart className="h-3 w-3 text-white" />
     </button>
   </div>
 ))}

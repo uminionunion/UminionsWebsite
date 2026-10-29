@@ -37,6 +37,20 @@
   opacity: 1;
 }
 
+.uhub-root button.uhub-store-browser-close,
+.uhub-root button.uhub-store-browser-close:hover,
+.uhub-root button.uhub-store-browser-close:focus {
+  background-color: #000;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: none;
+}
+
+.uhub-root button.uhub-store-browser-close svg {
+  color: #fff;
+  stroke: #fff;
+}
+
 .uhub-root button.uhub-cart-bookmark {
   color: #6b7280;
 }
