@@ -284,3 +284,8 @@ test('shared rotation prioritizes the first cover change once, then resumes rand
   assert.equal(loads.at(-1), '/new-blue.jpg', 'A new saved image collection gets its own first transition');
   assert.ok(timers.every(timer => [4000, 5000].includes(timer.delay)));
 });
+
+test('mobile cover overlay lets taps reach linked banner images', async () => {
+  const css = await readFile(new URL('../../includes/uhub/src/index.css', import.meta.url), 'utf8');
+  assert.match(css, /\.uhub-mobile-cover::after \{[^}]*pointer-events: none;/, 'The decorative ::after layer must not block banner taps on mobile');
+});

@@ -728,6 +728,8 @@
     inset: 0;
     content: '';
     background: none;
+    /* Decorative only; it must not swallow taps meant for linked banner images underneath. */
+    pointer-events: none;
   }
 
   .uhub-root .uhub-mobile-account-row {
