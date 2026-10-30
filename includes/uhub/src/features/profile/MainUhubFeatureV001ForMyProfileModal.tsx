@@ -753,16 +753,16 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
     {screen === 'matches' && <div className="space-y-2">{matches.length ? matches.map(match => <div key={match.id} className="flex w-full items-center gap-3 rounded border p-2 text-left hover:bg-gray-900 group"><button className="flex-1 flex items-center gap-3" onClick={() => openMessages(match)}><QueuedImage src={match.profile?.priority_image || match.profile?.image1 || match.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt="" className="h-12 w-12 rounded object-cover" /><span>{match.username}</span></button><Button size="sm" variant="destructive" className="opacity-0 group-hover:opacity-100 transition" onClick={() => unmatch(match.id)}>Unmatch</Button></div>) : <p className="text-muted-foreground">No matches yet.</p>}</div>}
     {screen === 'messages' && <div className="space-y-3"><div className="flex justify-between items-center"><Button size="sm" variant="outline" onClick={() => setScreen('matches')}>Back</Button><Button size="sm" variant="destructive" onClick={() => unmatch(messageUser?.id)}>Unmatch</Button></div><h3 className="font-bold">{messageUser?.username}</h3><div className="h-64 overflow-y-auto rounded border p-2">{messages.map(message => <div key={message.id} className={`mb-2 ${message.sender_id === user.id ? 'text-right' : 'text-left'}`}><span className="inline-block rounded bg-gray-800 px-2 py-1 text-sm">{message.content}</span></div>)}</div><div className="flex gap-2"><input value={messageText} onChange={event => setMessageText(event.target.value)} onKeyDown={event => event.key === 'Enter' && sendMessage()} className="flex-1 rounded border bg-gray-900 p-2" placeholder="Type a message..." /><Button onClick={sendMessage}>Send</Button></div></div>}
     {screen === 'settings' && <form onSubmit={saveProfile} className="grid gap-3 text-white">
-      <textarea name="bio" defaultValue={profile.bio || ''} maxLength={1000} className="min-h-24 rounded border bg-gray-900 p-2 text-white placeholder:text-gray-500" placeholder="Bio" />
-      <input name="city" defaultValue={profile.city || ''} className="rounded border bg-gray-900 p-2 text-white placeholder:text-gray-500" placeholder="City" />
+      <textarea name="bio" defaultValue={profile.bio || ''} maxLength={1000} style={{ color: 'white', backgroundColor: '#111827' }} className="min-h-24 rounded border bg-gray-900 p-2 placeholder:text-gray-500" placeholder="Bio" />
+      <input name="city" defaultValue={profile.city || ''} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 placeholder:text-gray-500" placeholder="City" />
       <div className="grid grid-cols-2 gap-2">
-        <select name="gender" defaultValue={profile.gender || ''} className="rounded border bg-gray-900 p-2 text-white">
+        <select name="gender" defaultValue={profile.gender || ''} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2">
           <option value="">Gender</option>
           <option>Male</option>
           <option>Female</option>
           <option>EveryoneElse</option>
         </select>
-        <select name="interested_in" defaultValue={profile.interested_in || ''} className="rounded border bg-gray-900 p-2 text-white">
+        <select name="interested_in" defaultValue={profile.interested_in || ''} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2">
           <option value="">Interested in</option>
           <option>Male</option>
           <option>Female</option>
@@ -770,12 +770,12 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
           <option>Everyone</option>
         </select>
       </div>
-      <select name="max_distance" defaultValue={profile.max_distance || 100} className="rounded border bg-gray-900 p-2 text-white">
+      <select name="max_distance" defaultValue={profile.max_distance || 100} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2">
         {Array.from({ length: 100 }, (_, i) => i + 1).map(num => (
           <option key={num} value={num}>{num} miles</option>
         ))}
       </select>
-      <select name="priority_image" defaultValue={profile.priority_image || 'image1'} className="rounded border bg-gray-900 p-2 text-white">
+      <select name="priority_image" defaultValue={profile.priority_image || 'image1'} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2">
         <option value="image1">Image 1 as Primary</option>
         <option value="image2">Image 2 as Primary</option>
         <option value="image3">Image 3 as Primary</option>
@@ -785,7 +785,7 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
       {[1, 2, 3, 4, 5].map(num => (
         <div key={num} className="flex flex-col gap-1">
           <label className="text-xs text-gray-400">Image {num}</label>
-          <input type="file" name={`image${num}`} accept="image/*" className="rounded border bg-gray-900 p-2 text-white text-sm file:text-white file:bg-gray-800 file:border-0" />
+          <input type="file" name={`image${num}`} accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
         </div>
       ))}
       <Button type="submit">Save Settings</Button>
