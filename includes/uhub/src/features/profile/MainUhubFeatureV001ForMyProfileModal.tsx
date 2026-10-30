@@ -688,6 +688,18 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
     loadMatches();
   };
 
+  const unmatch = async (targetUserId: number) => {
+    if (!confirm('Are you sure you want to unmatch? This will delete the chat and hide the profile.')) return;
+    const response = await fetch(`/api/umimatch/unmatch`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ targetUserId }) });
+    if (response.ok) {
+      alert('Unmatched successfully.');
+      loadMatches();
+      setScreen('matches');
+    } else {
+      alert('Unable to unmatch.');
+    }
+  };
+
   const openMessages = async (match: any) => {
     setMessageUser(match);
     setScreen('messages');
@@ -708,10 +720,18 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
   const saveProfile = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const body = Object.fromEntries(formData.entries());
-    body.allow_anyone = formData.get('allow_anyone') ? '1' : '';
-    const response = await fetch('/api/umimatch/profile', { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (response.ok) alert('UmiMatch profile saved.');
+    
+    try {
+      const response = await fetch('/api/umimatch/profile', { 
+        method: 'PUT', 
+        credentials: 'include', 
+        body: formData 
+      });
+      if (response.ok) alert('UmiMatch profile saved.');
+    } catch (error) {
+      console.error('[UMIMATCH] Save failed:', error);
+      alert('Unable to save profile.');
+    }
     loadProfile();
   };
 
@@ -728,11 +748,48 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
   return <div className="h-full overflow-y-auto rounded-md border bg-black p-4 text-white">
     <div className="mb-4 flex gap-2"><Button size="sm" onClick={() => setScreen('discover')}>Discover</Button><Button size="sm" variant="outline" onClick={() => { setScreen('matches'); loadMatches(); }}>Matches</Button><Button size="sm" variant="outline" onClick={() => { setScreen('settings'); loadProfile(); }}>Settings</Button></div>
     {screen === 'discover' && <div className="mx-auto max-w-md text-center">
-      {currentCard ? <><div className="overflow-hidden rounded-md border bg-gray-900"><QueuedImage src={currentCard.profile?.image1 || currentCard.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt={currentCard.username} className="h-72 w-full object-cover" /><div className="p-3"><h3 className="text-xl font-bold">{currentCard.username}{currentCard.profile?.gender ? `, ${currentCard.profile.gender}` : ''}</h3><p className="text-sm text-muted-foreground">{currentCard.profile?.city || 'Location unknown'}</p><p className="mt-2 text-sm">{currentCard.profile?.bio || 'No bio yet.'}</p></div></div><div className="mt-3 flex justify-center gap-4"><Button variant="outline" onClick={() => swipe(currentCard.id, 'skip')}>Skip</Button><Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => swipe(currentCard.id, 'like')}>Like</Button></div></> : <p className="text-muted-foreground">That's enough people in your area for now.</p>}
+      {currentCard ? <><div className="overflow-hidden rounded-md border bg-gray-900"><QueuedImage src={currentCard.profile?.priority_image || currentCard.profile?.image1 || currentCard.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt={currentCard.username} className="h-72 w-full object-cover" /><div className="p-3"><h3 className="text-xl font-bold">{currentCard.username}{currentCard.profile?.gender ? `, ${currentCard.profile.gender}` : ''}</h3><p className="text-sm text-muted-foreground">{currentCard.profile?.city || 'Location unknown'}</p><p className="mt-2 text-sm">{currentCard.profile?.bio || 'No bio yet.'}</p></div></div><div className="mt-3 flex justify-center gap-4"><Button variant="outline" onClick={() => swipe(currentCard.id, 'skip')}>Skip</Button><Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => swipe(currentCard.id, 'like')}>Like</Button></div></> : <p className="text-muted-foreground">That's enough people in your area for now.</p>}
     </div>}
-    {screen === 'matches' && <div className="space-y-2">{matches.length ? matches.map(match => <button key={match.id} className="flex w-full items-center gap-3 rounded border p-2 text-left hover:bg-gray-900" onClick={() => openMessages(match)}><QueuedImage src={match.profile?.image1 || match.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt="" className="h-12 w-12 rounded object-cover" /><span>{match.username}</span></button>) : <p className="text-muted-foreground">No matches yet.</p>}</div>}
-    {screen === 'messages' && <div className="space-y-3"><Button size="sm" variant="outline" onClick={() => setScreen('matches')}>Back</Button><h3 className="font-bold">{messageUser?.username}</h3><div className="h-64 overflow-y-auto rounded border p-2">{messages.map(message => <div key={message.id} className={`mb-2 ${message.sender_id === user.id ? 'text-right' : 'text-left'}`}><span className="inline-block rounded bg-gray-800 px-2 py-1 text-sm">{message.content}</span></div>)}</div><div className="flex gap-2"><input value={messageText} onChange={event => setMessageText(event.target.value)} onKeyDown={event => event.key === 'Enter' && sendMessage()} className="flex-1 rounded border bg-gray-900 p-2" placeholder="Type a message..." /><Button onClick={sendMessage}>Send</Button></div></div>}
-    {screen === 'settings' && <form onSubmit={saveProfile} className="grid gap-3"><textarea name="bio" defaultValue={profile.bio || ''} maxLength={1000} className="min-h-24 rounded border bg-gray-900 p-2" placeholder="Bio" /><input name="city" defaultValue={profile.city || ''} className="rounded border bg-gray-900 p-2" placeholder="City" /><div className="grid grid-cols-2 gap-2"><select name="gender" defaultValue={profile.gender || ''} className="rounded border bg-gray-900 p-2"><option value="">Gender</option><option>Male</option><option>Female</option><option>EveryoneElse</option></select><select name="interested_in" defaultValue={profile.interested_in || ''} className="rounded border bg-gray-900 p-2"><option value="">Interested in</option><option>Male</option><option>Female</option><option>EveryoneElse</option><option>Everyone</option></select></div><input name="max_distance" type="number" min="1" max="100" defaultValue={profile.max_distance || 100} className="rounded border bg-gray-900 p-2" placeholder="Max distance" /><label className="flex gap-2 text-sm"><input name="allow_anyone" type="checkbox" defaultChecked={profile.allow_anyone === 1} /> Allow me to match with everyone</label>{[1, 2, 3, 4, 5].map(num => <input key={num} name={`image${num}`} defaultValue={profile[`image${num}`] || ''} className="rounded border bg-gray-900 p-2" placeholder={`Image ${num} URL`} />)}<Button type="submit">Save Settings</Button></form>}
+    {screen === 'matches' && <div className="space-y-2">{matches.length ? matches.map(match => <div key={match.id} className="flex w-full items-center gap-3 rounded border p-2 text-left hover:bg-gray-900 group"><button className="flex-1 flex items-center gap-3" onClick={() => openMessages(match)}><QueuedImage src={match.profile?.priority_image || match.profile?.image1 || match.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt="" className="h-12 w-12 rounded object-cover" /><span>{match.username}</span></button><Button size="sm" variant="destructive" className="opacity-0 group-hover:opacity-100 transition" onClick={() => unmatch(match.id)}>Unmatch</Button></div>) : <p className="text-muted-foreground">No matches yet.</p>}</div>}
+    {screen === 'messages' && <div className="space-y-3"><div className="flex justify-between items-center"><Button size="sm" variant="outline" onClick={() => setScreen('matches')}>Back</Button><Button size="sm" variant="destructive" onClick={() => unmatch(messageUser?.id)}>Unmatch</Button></div><h3 className="font-bold">{messageUser?.username}</h3><div className="h-64 overflow-y-auto rounded border p-2">{messages.map(message => <div key={message.id} className={`mb-2 ${message.sender_id === user.id ? 'text-right' : 'text-left'}`}><span className="inline-block rounded bg-gray-800 px-2 py-1 text-sm">{message.content}</span></div>)}</div><div className="flex gap-2"><input value={messageText} onChange={event => setMessageText(event.target.value)} onKeyDown={event => event.key === 'Enter' && sendMessage()} className="flex-1 rounded border bg-gray-900 p-2" placeholder="Type a message..." /><Button onClick={sendMessage}>Send</Button></div></div>}
+    {screen === 'settings' && <form onSubmit={saveProfile} className="grid gap-3 text-white">
+      <textarea name="bio" defaultValue={profile.bio || ''} maxLength={1000} className="min-h-24 rounded border bg-gray-900 p-2 text-white placeholder:text-gray-500" placeholder="Bio" />
+      <input name="city" defaultValue={profile.city || ''} className="rounded border bg-gray-900 p-2 text-white placeholder:text-gray-500" placeholder="City" />
+      <div className="grid grid-cols-2 gap-2">
+        <select name="gender" defaultValue={profile.gender || ''} className="rounded border bg-gray-900 p-2 text-white">
+          <option value="">Gender</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>EveryoneElse</option>
+        </select>
+        <select name="interested_in" defaultValue={profile.interested_in || ''} className="rounded border bg-gray-900 p-2 text-white">
+          <option value="">Interested in</option>
+          <option>Male</option>
+          <option>Female</option>
+          <option>EveryoneElse</option>
+          <option>Everyone</option>
+        </select>
+      </div>
+      <select name="max_distance" defaultValue={profile.max_distance || 100} className="rounded border bg-gray-900 p-2 text-white">
+        {Array.from({ length: 100 }, (_, i) => i + 1).map(num => (
+          <option key={num} value={num}>{num} miles</option>
+        ))}
+      </select>
+      <select name="priority_image" defaultValue={profile.priority_image || 'image1'} className="rounded border bg-gray-900 p-2 text-white">
+        <option value="image1">Image 1 as Primary</option>
+        <option value="image2">Image 2 as Primary</option>
+        <option value="image3">Image 3 as Primary</option>
+        <option value="image4">Image 4 as Primary</option>
+        <option value="image5">Image 5 as Primary</option>
+      </select>
+      {[1, 2, 3, 4, 5].map(num => (
+        <div key={num} className="flex flex-col gap-1">
+          <label className="text-xs text-gray-400">Image {num}</label>
+          <input type="file" name={`image${num}`} accept="image/*" className="rounded border bg-gray-900 p-2 text-white text-sm file:text-white file:bg-gray-800 file:border-0" />
+        </div>
+      ))}
+      <Button type="submit">Save Settings</Button>
+    </form>}
   </div>;
 };
 
