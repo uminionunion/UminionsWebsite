@@ -125,7 +125,7 @@ router.post('/api/umimatch/unmatch', requireAuth, async (req: Request, res: Resp
 router.get('/api/umimatch/all-markers', requireAuth, async (req: Request, res: Response) => {
   try {
     const markers = await db.selectFrom('UmiMatchProfiles')
-      .select(['lat', 'lng'])
+      .select(['lat', 'lng'] as any)
       .where('is_enrolled', '=', 1)
       .where('deleted_at', 'is', null)
       .execute();
