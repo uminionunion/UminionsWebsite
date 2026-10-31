@@ -613,6 +613,7 @@ Paths are interpreted relative to route mounts in [server/index.ts](uhub-api/ser
 Use [db-types.ts](uhub-api/server/db-types.ts) and each dedicated database module for actual column/table names; older docs used conceptual names and are not SQL migration specifications. Existing public reads worth tracing include `/api/carousels/:slot/items`, `/api/episodes/scheduled`, `/api/episodes/calendar`, `/api/feed/world`, `/api/feed/friends` and `/api/feed/union-announcements`.
 
 ## 11. Patching, rebuilding and safe delivery
+**CRITICAL:** Any changes made to the source code in `includes/uhub/src` or `includes/pantry-finder/src` will NOT be visible in the browser until the project is rebuilt. You must run `npm run build` in the respective directory to update the files in the `dist/` folders. Failure to do this will result in the browser serving outdated code.
 
 ### Before editing
 

@@ -49,6 +49,8 @@ router.put('/api/umimatch/profile', requireAuth, async (req: Request, res: Respo
       interested_in: asString(req.body.interested_in).slice(0, 40),
       max_distance: Number.isFinite(Number(req.body.max_distance)) ? Number(req.body.max_distance) : 100,
       priority_image: asString(req.body.priority_image).slice(0, 20),
+      lat: req.body.lat ? Number(req.body.lat) : null,
+      lng: req.body.lng ? Number(req.body.lng) : null,
       ...imageUpdates,
       is_enrolled: 1 as const,
       deleted_at: null,
@@ -117,6 +119,20 @@ router.post('/api/umimatch/unmatch', requireAuth, async (req: Request, res: Resp
   } catch (error) {
     console.error('[UMIMATCH] Unmatch failed:', error);
     res.status(500).json({ error: 'Failed to unmatch' });
+  }
+});
+
+router.get('/api/umimatch/all-markers', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const markers = await db.selectFrom('UmiLMatchProfiles')
+      .select(['lat', 'lng'])
+      .where('is_enrolled', '=', 1)
+      .where('deleted_at', 'is', null)
+      .execute();
+    res.json({ markers });
+  } catch (error) {
+    console.error('[UMIMATCH] Failed to load markers:', error);
+    res.status(500).json({ error: 'Failed to load markers' });
   }
 });
 

@@ -645,7 +645,7 @@ const BetaButtonView = () => (
 
 const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
   const { user } = useAuth();
-  const [screen, setScreen] = useState<'discover' | 'matches' | 'messages' | 'settings'>('discover');
+  const [screen, setScreen] = useState<'discover' | 'matches' | 'messages' | 'settings' | 'map'>('discover');
   const [discoverUsers, setDiscoverUsers] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>({});
@@ -754,7 +754,15 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
     {screen === 'messages' && <div className="space-y-3"><div className="flex justify-between items-center"><Button size="sm" variant="outline" onClick={() => setScreen('matches')}>Back</Button><Button size="sm" variant="destructive" onClick={() => unmatch(messageUser?.id)}>Unmatch</Button></div><h3 className="font-bold">{messageUser?.username}</h3><div className="h-64 overflow-y-auto rounded border p-2">{messages.map(message => <div key={message.id} className={`mb-2 ${message.sender_id === user.id ? 'text-right' : 'text-left'}`}><span className="inline-block rounded bg-gray-800 px-2 py-1 text-sm">{message.content}</span></div>)}</div><div className="flex gap-2"><input value={messageText} onChange={event => setMessageText(event.target.value)} onKeyDown={event => event.key === 'Enter' && sendMessage()} className="flex-1 rounded border bg-gray-900 p-2" placeholder="Type a message..." /><Button onClick={sendMessage}>Send</Button></div></div>}
     {screen === 'settings' && <form onSubmit={saveProfile} className="grid gap-3 text-white">
       <textarea name="bio" defaultValue={profile.bio || ''} maxLength={1000} style={{ color: 'white', backgroundColor: '#111827' }} className="min-h-24 rounded border bg-gray-900 p-2 placeholder:text-gray-500" placeholder="Bio" />
-      <input name="city" defaultValue={profile.city || ''} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 placeholder:text-gray-500" placeholder="City" />
+      
+      <div className="flex items-center gap-2">
+        <div className="flex-1 overflow-hidden rounded border bg-gray-900 p-2 text-white text-sm truncate">
+          {profile.city || 'No city selected'}
+        </div>
+        <Button type="button" size="sm" onClick={() => setScreen('map')}>Please Choose a City</Button>
+      </div>
+      <input type="hidden" name="city" defaultValue={profile.city || ''} />
+
       <div className="grid grid-cols-2 gap-2">
         <select name="gender" defaultValue={profile.gender || ''} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2">
           <option value="">Gender</option>
@@ -771,23 +779,38 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
         </select>
       </div>
       <select name="max_distance" defaultValue={profile.max_distance || 100} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2">
-        {Array.from({ length: 100 }, (_, i) => i + 1).map(num => (
+        {Array.from({ length: 300 }, (_, i) => i + 1).map(num => (
           <option key={num} value={num}>{num} miles</option>
         ))}
       </select>
       <select name="priority_image" defaultValue={profile.priority_image || 'image1'} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2">
-        <option value="image1">Image 1 as Primary</option>
-        <option value="image2">Image 2 as Primary</option>
-        <option value="image3">Image 3 as Primary</option>
-        <option value="image4">Image 4 as Primary</option>
-        <option value="image5">Image 5 as Primary</option>
+        {/* Only show priority options if more than 1 image exists */}
+        {Object.keys(profile).filter(k => k.startsWith('image')).length > 1 && (
+          <>
+            <option value="image1">Image 1 as Primary</option>
+            <option value="image2">Image 2 as Primary</option>
+            <option value="image3">Image 3 as Primary</option>
+            <option value="image4">Image 4 as Primary</option>
+            <option value="image5">Image 5 as Primary</option>
+          </>
+        )}
       </select>
-      {[1, 2, 3, 4, 5].map(num => (
-        <div key={num} className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400">Image {num}</label>
-          <input type="file" name={`image${num}`} accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
-        </div>
-      ))}
+      {/* Dynamic image upload section: limit to 5 */}
+      <div className="grid gap-2">
+        {Object.keys(profile).filter(k => k.startsWith('image')).length < 5 && (
+          <div className="flex flex-col gap-1 p-2 border border-dashed border-gray-700 rounded">
+            <label className="text-xs text-gray-400">Add new image?</label>
+            <input type="file" name={`image${Object.keys(profile).filter(k => k.startsWith('image')).length + 1}`} accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
+          </div>
+        )}
+        {/* Show existing image slots to allow replacement/deletion if needed, or just keep them simple */}
+        {Object.keys(profile).filter(k => k.startsWith('image')).map((key, idx) => (
+          <div key={key} className="flex items-center gap-2 text-xs text-gray-400">
+            <span>Image {idx + 1}: {profile[key]?.split('/').pop()}</span>
+            <input type="file" name={key} accept="image/*" className="text-xs" />
+          </div>
+        ))}
+      </div>
       <Button type="submit">Save Settings</Button>
     </form>}
   </div>;
