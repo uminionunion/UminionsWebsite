@@ -653,6 +653,7 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
   const [messages, setMessages] = useState<any[]>([]);
   const [messageText, setMessageText] = useState('');
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const currentCard = discoverUsers[0];
 
   const loadDiscover = () => fetch('/api/umimatch/discover', { credentials: 'include' }).then(res => res.ok ? res.json() : { users: [] }).then(data => setDiscoverUsers(data.users || [])).catch(() => setDiscoverUsers([]));
@@ -759,7 +760,7 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
         <div className="flex-1 overflow-hidden rounded border bg-gray-900 p-2 text-white text-sm truncate">
           {profile.city || 'No city selected'}
         </div>
-        <Button type="button" size="sm" onClick={() => setScreen('map')}>Please Choose a City</Button>
+        <Button type="button" size="sm" onClick={() => setShowLocationModal(true)}>Please Choose a City</Button>
       </div>
       <input type="hidden" name="city" defaultValue={profile.city || ''} />
 
@@ -813,6 +814,23 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
       </div>
       <Button type="submit">Save Settings</Button>
     </form>}
+    {showLocationModal && (
+      <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/80 p-4">
+        <div className="relative h-[80vh] w-full max-w-4xl overflow-hidden rounded-xl border bg-black shadow-2xl">
+          <div className="absolute top-0 left-0 right-0 z-[1001] flex items-center justify-between bg-gray-900 p-3 text-white">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" onClick={() => setShowLocationModal(false)}><ChevronLeft className="h-4 w-4" /> Back</Button>
+              <h3 className="font-bold">Select Your Location</h3>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-400">Selected: <span className="text-orange-400 font-bold">{profile.city || '...'}</span></span>
+              <Button size="sm" disabled={!profile.city} onClick={() => { loadProfile(); setShowLocationModal(false); }}>Confirm</Button>
+            </div>
+          </div>
+          <UmiMatchLocationMap user={user} onLocationSelected={(city) => setProfile({ ...profile, city })} onExit={() => setShowLocationModal(false)} />
+        </div>
+      </div>
+    )}
   </div>;
 };
 
