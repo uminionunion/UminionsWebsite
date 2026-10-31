@@ -42,19 +42,19 @@ router.put('/api/umimatch/profile', requireAuth, async (req: Request, res: Respo
       }
     }
 
-    const updates = {
-      bio: asString(req.body.bio).slice(0, 1000),
-      city: asString(req.body.city).slice(0, 120),
-      gender: asString(req.body.gender).slice(0, 40),
-      interested_in: asString(req.body.interested_in).slice(0, 40),
-      max_distance: Number.isFinite(Number(req.body.max_distance)) ? Number(req.body.max_distance) : 100,
-      priority_image: asString(req.body.priority_image).slice(0, 20),
-      lat: req.body.lat ? Number(req.body.lat) : null,
-      lng: req.body.lng ? Number(req.body.lng) : null,
-      ...imageUpdates,
-      is_enrolled: 1 as const,
-      deleted_at: null,
-    };
+    const updates: any = {};
+    if (req.body.bio !== undefined) updates.bio = asString(req.body.bio).slice(0, 1000);
+    if (req.body.city !== undefined) updates.city = asString(req.body.city).slice(0, 120);
+    if (req.body.gender !== undefined) updates.gender = asString(req.body.gender).slice(0, 40);
+    if (req.body.interested_in !== undefined) updates.interested_in = asString(req.body.interested_in).slice(0, 40);
+    if (req.body.max_distance !== undefined) updates.max_distance = Number.isFinite(Number(req.body.max_distance)) ? Number(req.body.max_distance) : 100;
+    if (req.body.priority_image !== undefined) updates.priority_image = asString(req.body.priority_image).slice(0, 20);
+    if (req.body.lat !== undefined) updates.lat = Number(req.body.lat);
+    if (req.body.lng !== undefined) updates.lng = Number(req.body.lng);
+
+    Object.assign(updates, imageUpdates);
+    updates.is_enrolled = 1 as const;
+    updates.deleted_at = null;
 
     const existing = await db.selectFrom('UmiMatchProfiles').select('id').where('user_id', '=', userId).executeTakeFirst();
     const profile = existing
