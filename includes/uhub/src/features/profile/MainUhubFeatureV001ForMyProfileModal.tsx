@@ -762,6 +762,7 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
         </Avatar>
         <div className="truncate flex-1">{profile.bio || 'No bio yet.'}</div>
       </div>
+      
       <textarea name="bio" defaultValue={profile.bio || ''} maxLength={1000} style={{ color: 'white', backgroundColor: '#111827' }} className="min-h-24 rounded border bg-gray-900 p-2 placeholder:text-gray-500" placeholder="Bio" />
       
       <div className="flex items-center gap-2">
@@ -793,7 +794,6 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
         ))}
       </select>
       <select name="priority_image" defaultValue={profile.priority_image || 'image1'} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2">
-        {/* Only show priority options if more than 1 image exists */}
         {Object.keys(profile).filter(k => k.startsWith('image')).length > 1 && (
           <>
             <option value="image1">Image 1 as Primary</option>
@@ -804,12 +804,12 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
           </>
         )}
       </select>
-      {/* Dynamic image upload section: limit to 5 */}
+
       <div className="grid gap-2">
-        {Object.keys(profile).filter(k => k.startsWith('image')).length < 5 && (
+        {Object.keys(profile).filter(k => k.startsWith('image')).length === 0 && (
           <div className="flex flex-col gap-1 p-2 border border-dashed border-gray-700 rounded">
             <label className="text-xs text-gray-400">Add new image?</label>
-            <input type="file" name={`image${Object.keys(profile).filter(k => k.startsWith('image')).length + 1}`} accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
+            <input type="file" name="image1" accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
           </div>
         )}
         {Object.keys(profile).filter(k => k.startsWith('image')).map((key, idx) => (
@@ -821,6 +821,12 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
             <input type="file" name={key} accept="image/*" className="text-[10px] w-32" />
           </div>
         ))}
+        {Object.keys(profile).filter(k => k.startsWith('image')).length > 0 && Object.keys(profile).filter(k => k.startsWith('image')).length < 5 && (
+          <div className="flex flex-col gap-1 p-2 border border-dashed border-gray-700 rounded">
+            <label className="text-xs text-gray-400">Add another image?</label>
+            <input type="file" name={`image${Object.keys(profile).filter(k => k.startsWith('image')).length + 1}`} accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
+          </div>
+        )}
       </div>
       <Button type="submit">Save Settings</Button>
     </form>}
