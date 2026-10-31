@@ -25,19 +25,23 @@ router.get('/api/umimatch/profile', requireAuth, async (req: Request, res: Respo
 router.put('/api/umimatch/profile', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.userId;
-    
     const imageUpdates: Record<string, string | null> = {};
-    if (req.files && typeof req.files === 'object') {
+
+    if (req.files) {
       const files = req.files as any;
       for (let i = 1; i <= 5; i++) {
         const file = files[`image${i}`];
         if (file) {
-          const singleFile = Array.isArray(file) ? file[0] : file;
-          const fileName = `${Date.now()}-umimatch-${i}-${Math.random().toString(36).slice(2, 10)}${path.extname(singleFile.name)}`;
-          const uploadsDir = path.join(process.env.DATA_DIRECTORY || process.cwd(), 'uploads');
-          if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-          await singleFile.mv(path.join(uploadsDir, fileName));
-          imageUpdates[`image${i}`] = `/api/uploads/${fileName}`;
+          try {
+            const singleFile = Array.isArray(file) ? file[0] : file;
+            const fileName = `${Date.now()}-umimatch-${i}-${Math.random().toString(36).slice(2, 10)}${path.extname(singleFile.name)}`;
+            const uploadsDir = path.join(process.env.DATA_DIRECTORY || process.cwd(), 'uploads');
+            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+            await singleFile.mv(path.join(uploadsDir, fileName));
+            imageUpdates[`image${i}`] = `/api/uploads/${fileName}`;
+          } catch (fileErr) {
+            console.error(`[UMIMATCH] File move failed for image${i}:`, fileErr);
+          }
         }
       }
     }

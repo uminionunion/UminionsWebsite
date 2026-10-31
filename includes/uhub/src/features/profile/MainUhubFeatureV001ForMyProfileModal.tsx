@@ -812,7 +812,6 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
             <input type="file" name={`image${Object.keys(profile).filter(k => k.startsWith('image')).length + 1}`} accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
           </div>
         )}
-        {/* Show images only as they are uploaded. */}
         {Object.keys(profile).filter(k => k.startsWith('image')).map((key, idx) => (
           <div key={key} className="flex items-center justify-between gap-2 p-2 border rounded bg-gray-900/50 text-xs text-gray-400">
             <div className="flex items-center gap-2 truncate">
