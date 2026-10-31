@@ -27,7 +27,7 @@ router.put('/api/umimatch/profile', requireAuth, async (req: Request, res: Respo
     const userId = req.user!.userId;
     
     const imageUpdates: Record<string, string | null> = {};
-    if (req.files) {
+    if (req.files && typeof req.files === 'object') {
       const files = req.files as any;
       for (let i = 1; i <= 5; i++) {
         const file = files[`image${i}`];
