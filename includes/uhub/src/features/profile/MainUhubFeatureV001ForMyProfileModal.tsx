@@ -825,7 +825,21 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
             </div>
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-400">Selected: <span className="text-orange-400 font-bold">{profile.city || '...'}</span></span>
-              <Button size="sm" disabled={!profile.city} onClick={() => { loadProfile(); setShowLocationModal(false); }}>Confirm</Button>
+              <Button size="sm" disabled={!profile.city} onClick={async () => { 
+                try {
+                  const response = await fetch('/api/umimatch/profile', { 
+                    method: 'PUT', 
+                    credentials: 'include', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ city: profile.city }) 
+                  });
+                  if (!response.ok) throw new Error('Failed to save');
+                  loadProfile();
+                  setShowLocationModal(false);
+                } catch (e) {
+                  alert('Error saving location.');
+                }
+              }}>Confirm</Button>
             </div>
           </div>
           <UmiMatchLocationMap user={user} onLocationSelected={(city) => setProfile({ ...profile, city })} onExit={() => setShowLocationModal(false)} />
