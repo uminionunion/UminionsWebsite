@@ -805,7 +805,7 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
             <input type="file" name={`image${Object.keys(profile).filter(k => k.startsWith('image')).length + 1}`} accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
           </div>
         )}
-        {/* Show existing image slots to allow replacement/deletion if needed, or just keep them simple */}
+        {/* Show only the current image count and a simple list, removing fixed slots 2-5 */}
         {Object.keys(profile).filter(k => k.startsWith('image')).map((key, idx) => (
           <div key={key} className="flex items-center gap-2 text-xs text-gray-400">
             <span>Image {idx + 1}: {profile[key]?.split('/').pop()}</span>

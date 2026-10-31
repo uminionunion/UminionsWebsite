@@ -57,18 +57,9 @@ const UmiMatchLocationMap = ({ user, onLocationSelected, onExit }: { user: any; 
       const data = await res.json();
       const city = data.address.city || data.address.town || data.address.village || 'Unknown Location';
       
-      // Save coordinates to profile
-      await fetch('/api/umimatch/profile', { 
-        method: 'PUT', 
-        credentials: 'include', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ city, lat, lng }) 
-      });
-
       onLocationSelected(city);
-      onExit();
     } catch (e) {
-      alert('Error saving location.');
+      alert('Error retrieving location name.');
     }
   };
 
