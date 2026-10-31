@@ -38,6 +38,7 @@ import { TheFoodPantryFeature } from '../../../../pantry-finder/src/pages/pantry
 import { pantryApiUrl } from '@/lib/api';
 import ProfilePhotoEditor, { ProfilePhotoSuccessToast, type ProfilePhotoPurpose } from './ProfilePhotoEditor';
 import { PROFILE_PHOTOS_CHANGED_EVENT, type ProfilePhotosChangedDetail } from '../../lib/profile-photo-events';
+import UmiMatchLocationMap from './UmiMatchLocationMap';
 import 'leaflet/dist/leaflet.css';
 
 
