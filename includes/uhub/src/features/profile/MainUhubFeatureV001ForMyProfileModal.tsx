@@ -646,7 +646,14 @@ const BetaButtonView = () => (
 const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
   const { user } = useAuth();
   const [screen, setScreen] = useState<'discover' | 'matches' | 'messages' | 'settings' | 'map'>('discover');
-  const [showLocationMap, setShowLocationMap] = useState(false);
+  const [discoverUsers, setDiscoverUsers] = useState<any[]>([]);
+  const [matches, setMatches] = useState<any[]>([]);
+  const [profile, setProfile] = useState<any>({});
+  const [messageUser, setMessageUser] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [messageText, setMessageText] = useState('');
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const currentCard = discoverUsers[0];
 
   const loadDiscover = () => fetch('/api/umimatch/discover', { credentials: 'include' }).then(res => res.ok ? res.json() : { users: [] }).then(data => setDiscoverUsers(data.users || [])).catch(() => setDiscoverUsers([]));
   const loadMatches = () => fetch('/api/umimatch/matches', { credentials: 'include' }).then(res => res.ok ? res.json() : { matches: [] }).then(data => setMatches(data.matches || [])).catch(() => setMatches([]));
@@ -752,23 +759,9 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
         <div className="flex-1 overflow-hidden rounded border bg-gray-900 p-2 text-white text-sm truncate">
           {profile.city || 'No city selected'}
         </div>
-        <Button type="button" size="sm" onClick={() => setShowLocationMap(true)}>Please Choose a City</Button>
+        <Button type="button" size="sm" onClick={() => setScreen('map')}>Please Choose a City</Button>
       </div>
       <input type="hidden" name="city" defaultValue={profile.city || ''} />
-
-      {showLocationMap && (
-        <div className="h-64 w-full rounded border overflow-hidden relative">
-          <UmiMatchLocationMap 
-            user={user} 
-            onLocationSelected={(city) => { 
-              setProfile({ ...profile, city }); 
-              loadProfile(); 
-              setShowLocationMap(false); 
-            }} 
-            onExit={() => setShowLocationMap(false)} 
-          />
-        </div>
-      )}
 
       <div className="grid grid-cols-2 gap-2">
         <select name="gender" defaultValue={profile.gender || ''} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2">
