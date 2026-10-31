@@ -755,14 +755,12 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
     {screen === 'matches' && <div className="space-y-2">{matches.length ? matches.map(match => <div key={match.id} className="flex w-full items-center gap-3 rounded border p-2 text-left hover:bg-gray-900 group"><button className="flex-1 flex items-center gap-3" onClick={() => openMessages(match)}><QueuedImage src={match.profile?.priority_image || match.profile?.image1 || match.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt="" className="h-12 w-12 rounded object-cover" /><span>{match.username}</span></button><Button size="sm" variant="destructive" className="opacity-0 group-hover:opacity-100 transition" onClick={() => unmatch(match.id)}>Unmatch</Button></div>) : <p className="text-muted-foreground">No matches yet.</p>}</div>}
     {screen === 'messages' && <div className="space-y-3"><div className="flex justify-between items-center"><Button size="sm" variant="outline" onClick={() => setScreen('matches')}>Back</Button><Button size="sm" variant="destructive" onClick={() => unmatch(messageUser?.id)}>Unmatch</Button></div><h3 className="font-bold">{messageUser?.username}</h3><div className="h-64 overflow-y-auto rounded border p-2">{messages.map(message => <div key={message.id} className={`mb-2 ${message.sender_id === user.id ? 'text-right' : 'text-left'}`}><span className="inline-block rounded bg-gray-800 px-2 py-1 text-sm">{message.content}</span></div>)}</div><div className="flex gap-2"><input value={messageText} onChange={event => setMessageText(event.target.value)} onKeyDown={event => event.key === 'Enter' && sendMessage()} className="flex-1 rounded border bg-gray-900 p-2" placeholder="Type a message..." /><Button onClick={sendMessage}>Send</Button></div></div>}
     {screen === 'settings' && <form onSubmit={saveProfile} className="grid gap-3 text-white">
-      <div className="flex items-center gap-2">
-        <div className="flex-1 flex items-center gap-3 overflow-hidden rounded border bg-gray-900 p-2 text-white text-sm">
-          <Avatar className="h-8 w-8 shrink-0 border border-gray-700">
-            <AvatarImage src={profile.priority_image || profile.image1 || '/defaultUminionUassets/defaultUminionUbadge.png'} />
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
-          <div className="truncate">{profile.bio || 'No bio yet.'}</div>
-        </div>
+      <div className="flex items-center gap-3 overflow-hidden rounded border bg-gray-900 p-2 text-white text-sm">
+        <Avatar className="h-10 w-10 shrink-0 border border-gray-700">
+          <AvatarImage src={profile.priority_image || profile.image1 || '/defaultUminionUassets/defaultUminionUbadge.png'} />
+          <AvatarFallback>U</AvatarFallback>
+        </Avatar>
+        <div className="truncate flex-1">{profile.bio || 'No bio yet.'}</div>
       </div>
       <textarea name="bio" defaultValue={profile.bio || ''} maxLength={1000} style={{ color: 'white', backgroundColor: '#111827' }} className="min-h-24 rounded border bg-gray-900 p-2 placeholder:text-gray-500" placeholder="Bio" />
       
@@ -814,7 +812,7 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
             <input type="file" name={`image${Object.keys(profile).filter(k => k.startsWith('image')).length + 1}`} accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
           </div>
         )}
-        {/* Show only a clean list of existing images with the option to replace them */}
+        {/* Show images only as they are uploaded. */}
         {Object.keys(profile).filter(k => k.startsWith('image')).map((key, idx) => (
           <div key={key} className="flex items-center justify-between gap-2 p-2 border rounded bg-gray-900/50 text-xs text-gray-400">
             <div className="flex items-center gap-2 truncate">
