@@ -10,30 +10,30 @@
     "start": "node scripts/init-data.cjs && node dist/server/index.js"
   },
   "dependencies": {
-    "busboy": "^1.6.0",
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^12.4.1",
+    "busboy": "^1.6.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "16.4.7",
     "express": "5.1.0",
     "express-fileupload": "^1.5.2",
     "jsonwebtoken": "^9.0.2",
     "kysely": "^0.28.8",
-    "socket.io": "^4.8.1",
+    "sanitize-html": "^2.18.1",
     "sharp": "^0.34.5",
-    "sanitize-html": "^2.17.0"
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "@types/busboy": "^1.5.4",
     "@types/bcryptjs": "^3.0.0",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/busboy": "^1.5.4",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "5.0.0",
     "@types/express-fileupload": "^1.5.1",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "22.13.5",
-    "typescript": "5.8.2",
+    "@types/sanitize-html": "^2.16.0",
     "ffmpeg-static": "^5.3.0",
-    "@types/sanitize-html": "^2.16.0"
+    "typescript": "5.8.2"
   }
 }
