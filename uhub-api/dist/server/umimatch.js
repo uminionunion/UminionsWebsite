@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { db } from './db.js';
 import { requireAuth } from './auth-middleware.js';
+import path from 'path';
+import fs from 'fs';
 const router = Router();
 const asString = (value) => Array.isArray(value) ? String(value[0] || '') : String(value || '');
 router.get('/api/umimatch/profile', requireAuth, async (req, res) => {
@@ -20,21 +22,47 @@ router.get('/api/umimatch/profile', requireAuth, async (req, res) => {
 router.put('/api/umimatch/profile', requireAuth, async (req, res) => {
     try {
         const userId = req.user.userId;
-        const updates = {
-            bio: asString(req.body.bio).slice(0, 1000),
-            city: asString(req.body.city).slice(0, 120),
-            gender: asString(req.body.gender).slice(0, 40),
-            interested_in: asString(req.body.interested_in).slice(0, 40),
-            max_distance: Number.isFinite(Number(req.body.max_distance)) ? Number(req.body.max_distance) : 100,
-            allow_anyone: req.body.allow_anyone ? 1 : 0,
-            image1: asString(req.body.image1).slice(0, 1000) || null,
-            image2: asString(req.body.image2).slice(0, 1000) || null,
-            image3: asString(req.body.image3).slice(0, 1000) || null,
-            image4: asString(req.body.image4).slice(0, 1000) || null,
-            image5: asString(req.body.image5).slice(0, 1000) || null,
-            is_enrolled: 1,
-            deleted_at: null,
-        };
+        const imageUpdates = {};
+        if (req.files) {
+            const files = req.files;
+            for (let i = 1; i <= 5; i++) {
+                const file = files[`image${i}`];
+                if (file) {
+                    try {
+                        const singleFile = Array.isArray(file) ? file[0] : file;
+                        const fileName = `${Date.now()}-umimatch-${i}-${Math.random().toString(36).slice(2, 10)}${path.extname(singleFile.name)}`;
+                        const uploadsDir = path.join(process.env.DATA_DIRECTORY || process.cwd(), 'uploads');
+                        if (!fs.existsSync(uploadsDir))
+                            fs.mkdirSync(uploadsDir, { recursive: true });
+                        await singleFile.mv(path.join(uploadsDir, fileName));
+                        imageUpdates[`image${i}`] = `/api/uploads/${fileName}`;
+                    }
+                    catch (fileErr) {
+                        console.error(`[UMIMATCH] File move failed for image${i}:`, fileErr);
+                    }
+                }
+            }
+        }
+        const updates = {};
+        if (req.body.bio !== undefined)
+            updates.bio = asString(req.body.bio).slice(0, 1000);
+        if (req.body.city !== undefined)
+            updates.city = asString(req.body.city).slice(0, 120);
+        if (req.body.gender !== undefined)
+            updates.gender = asString(req.body.gender).slice(0, 40);
+        if (req.body.interested_in !== undefined)
+            updates.interested_in = asString(req.body.interested_in).slice(0, 40);
+        if (req.body.max_distance !== undefined)
+            updates.max_distance = Number.isFinite(Number(req.body.max_distance)) ? Number(req.body.max_distance) : 100;
+        if (req.body.priority_image !== undefined)
+            updates.priority_image = asString(req.body.priority_image).slice(0, 20);
+        if (req.body.lat !== undefined)
+            updates.lat = Number(req.body.lat);
+        if (req.body.lng !== undefined)
+            updates.lng = Number(req.body.lng);
+        Object.assign(updates, imageUpdates);
+        updates.is_enrolled = 1;
+        updates.deleted_at = null;
         const existing = await db.selectFrom('UmiMatchProfiles').select('id').where('user_id', '=', userId).executeTakeFirst();
         const profile = existing
             ? await db.updateTable('UmiMatchProfiles').set(updates).where('user_id', '=', userId).returningAll().executeTakeFirstOrThrow()
@@ -77,6 +105,41 @@ router.post('/api/umimatch/remove', requireAuth, async (req, res) => {
     catch (error) {
         console.error('[UMIMATCH] Failed to remove account:', error);
         res.status(500).json({ error: 'Failed to remove UmiMatch account' });
+    }
+});
+router.post('/api/umimatch/unmatch', requireAuth, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+        const targetUserId = Number(req.body.targetUserId);
+        if (!Number.isFinite(targetUserId) || targetUserId === userId)
+            return res.status(400).json({ error: 'Invalid user' });
+        await db.deleteFrom('UmiMatchSwipes').where(eb => eb.or([
+            eb.and([eb('user_id', '=', userId), eb('target_user_id', '=', targetUserId)]),
+            eb.and([eb('user_id', '=', targetUserId), eb('target_user_id', '=', userId)]),
+        ])).execute();
+        await db.deleteFrom('UmiMatchMessages').where(eb => eb.or([
+            eb.and([eb('sender_id', '=', userId), eb('receiver_id', '=', targetUserId)]),
+            eb.and([eb('sender_id', '=', targetUserId), eb('receiver_id', '=', userId)]),
+        ])).execute();
+        res.json({ success: true });
+    }
+    catch (error) {
+        console.error('[UMIMATCH] Unmatch failed:', error);
+        res.status(500).json({ error: 'Failed to unmatch' });
+    }
+});
+router.get('/api/umimatch/all-markers', requireAuth, async (req, res) => {
+    try {
+        const markers = await db.selectFrom('UmiMatchProfiles')
+            .select(['lat', 'lng'])
+            .where('is_enrolled', '=', 1)
+            .where('deleted_at', 'is', null)
+            .execute();
+        res.json({ markers });
+    }
+    catch (error) {
+        console.error('[UMIMATCH] Failed to load markers:', error);
+        res.status(500).json({ error: 'Failed to load markers' });
     }
 });
 router.get('/api/umimatch/discover', requireAuth, async (req, res) => {
