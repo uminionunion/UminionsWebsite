@@ -8,7 +8,7 @@ RUN npm run build
 
 FROM node:22-alpine
 WORKDIR /app
-RUN apk add --no-cache ffmpeg
+RUN apk add --no-cache ffmpeg python3 make g++
 ENV NODE_ENV=production
 ENV PORT=4001
 ENV DATA_DIRECTORY=/app/data
