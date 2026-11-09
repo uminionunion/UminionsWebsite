@@ -655,13 +655,9 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
   const [messageText, setMessageText] = useState('');
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const currentCard = discoverUsers[0];
 
-  const loadDiscover = () => fetch('/api/umimatch/discover', { credentials: 'include' }).then(res => res.ok ? res.json() : { users: [] }).then(data => {
-    setDiscoverUsers(data.users || []);
-    setCurrentImageIndex(0);
-  }).catch(() => setDiscoverUsers([]));
+  const loadDiscover = () => fetch('/api/umimatch/discover', { credentials: 'include' }).then(res => res.ok ? res.json() : { users: [] }).then(data => setDiscoverUsers(data.users || [])).catch(() => setDiscoverUsers([]));
   const loadMatches = () => fetch('/api/umimatch/matches', { credentials: 'include' }).then(res => res.ok ? res.json() : { matches: [] }).then(data => setMatches(data.matches || [])).catch(() => setMatches([]));
   const loadProfile = () => fetch('/api/umimatch/profile', { credentials: 'include' }).then(res => res.ok ? res.json() : { profile: {} }).then(data => setProfile(data.profile || {})).catch(() => setProfile({}));
 
@@ -754,58 +750,7 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
   return <div className="h-full overflow-y-auto rounded-md border bg-black p-4 text-white">
     <div className="mb-4 flex gap-2"><Button size="sm" onClick={() => setScreen('discover')}>Discover</Button><Button size="sm" variant="outline" onClick={() => { setScreen('matches'); loadMatches(); }}>Matches</Button><Button size="sm" variant="outline" onClick={() => { setScreen('settings'); loadProfile(); }}>Settings</Button></div>
     {screen === 'discover' && <div className="mx-auto max-w-md text-center">
-      {currentCard ? (
-        <div className="space-y-3">
-          <div className="overflow-hidden rounded-md border bg-gray-900 relative group">
-            {(() => {
-              const imgs = [
-                currentCard.profile?.priority_image,
-                currentCard.profile?.image1,
-                currentCard.profile?.image2,
-                currentCard.profile?.image3,
-                currentCard.profile?.image4,
-                currentCard.profile?.image5,
-              ].filter(Boolean) as string[];
-              
-              const displayImg = imgs.length > 0 ? imgs[currentImageIndex % imgs.length] : currentCard.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png';
-              
-              return (
-                <>
-                  <QueuedImage src={displayImg} alt={currentCard.username} className="h-72 w-full object-cover" />
-                  {imgs.length > 1 && (
-                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-2 pointer-events-none">
-                      <Button 
-                        variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-black/50 text-white pointer-events-auto" 
-                        onClick={() => setCurrentImageIndex(prev => prev === 0 ? imgs.length - 1 : prev - 1)}
-                      ><ChevronLeft className="h-4 w-4" /></Button>
-                      <Button 
-                        variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-black/50 text-white pointer-events-auto" 
-                        onClick={() => setCurrentImageIndex(prev => (prev + 1) % imgs.length)}
-                      ><ChevronRight className="h-4 w-4" /></Button>
-                    </div>
-                  )}
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                    {imgs.map((_, i) => (
-                      <div key={i} className={`h-1.5 w-1.5 rounded-full ${i === (currentImageIndex % imgs.length) ? 'bg-white' : 'bg-white/40'}`} />
-                    ))}
-                  </div>
-                </>
-              );
-            })()}
-            <div className="p-3">
-              <h3 className="text-xl font-bold">{currentCard.username}{currentCard.profile?.gender ? `, ${currentCard.profile.gender}` : ''}</h3>
-              <p className="text-sm text-muted-foreground">{currentCard.profile?.city || 'Location unknown'}</p>
-              <p className="mt-2 text-sm">{currentCard.profile?.bio || 'No bio yet.'}</p>
-            </div>
-          </div>
-          <div className="mt-3 flex justify-center gap-4">
-            <Button variant="outline" onClick={() => swipe(currentCard.id, 'skip')}>Skip</Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => swipe(currentCard.id, 'like')}>Like</Button>
-          </div>
-        </div>
-      ) : (
-        <p className="text-muted-foreground">That's enough people in your area for now.</p>
-      )}
+      {currentCard ? <><div className="overflow-hidden rounded-md border bg-gray-900"><QueuedImage src={currentCard.profile?.priority_image || currentCard.profile?.image1 || currentCard.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt={currentCard.username} className="h-72 w-full object-cover" /><div className="p-3"><h3 className="text-xl font-bold">{currentCard.username}{currentCard.profile?.gender ? `, ${currentCard.profile.gender}` : ''}</h3><p className="text-sm text-muted-foreground">{currentCard.profile?.city || 'Location unknown'}</p><p className="mt-2 text-sm">{currentCard.profile?.bio || 'No bio yet.'}</p></div></div><div className="mt-3 flex justify-center gap-4"><Button variant="outline" onClick={() => swipe(currentCard.id, 'skip')}>Skip</Button><Button className="bg-red-600 hover:bg-red-700 text-white" onClick={() => swipe(currentCard.id, 'like')}>Like</Button></div></> : <p className="text-muted-foreground">That's enough people in your area for now.</p>}
     </div>}
     {screen === 'matches' && <div className="space-y-2">{matches.length ? matches.map(match => <div key={match.id} className="flex w-full items-center gap-3 rounded border p-2 text-left hover:bg-gray-900 group"><button className="flex-1 flex items-center gap-3" onClick={() => openMessages(match)}><QueuedImage src={match.profile?.priority_image || match.profile?.image1 || match.profile_image_url || '/defaultUminionUassets/defaultUminionUbadge.png'} alt="" className="h-12 w-12 rounded object-cover" /><span>{match.username}</span></button><Button size="sm" variant="destructive" className="opacity-0 group-hover:opacity-100 transition" onClick={() => unmatch(match.id)}>Unmatch</Button></div>) : <p className="text-muted-foreground">No matches yet.</p>}</div>}
     {screen === 'messages' && <div className="space-y-3"><div className="flex justify-between items-center"><Button size="sm" variant="outline" onClick={() => setScreen('matches')}>Back</Button><Button size="sm" variant="destructive" onClick={() => unmatch(messageUser?.id)}>Unmatch</Button></div><h3 className="font-bold">{messageUser?.username}</h3><div className="h-64 overflow-y-auto rounded border p-2">{messages.map(message => <div key={message.id} className={`mb-2 ${message.sender_id === user.id ? 'text-right' : 'text-left'}`}><span className="inline-block rounded bg-gray-800 px-2 py-1 text-sm">{message.content}</span></div>)}</div><div className="flex gap-2"><input value={messageText} onChange={event => setMessageText(event.target.value)} onKeyDown={event => event.key === 'Enter' && sendMessage()} className="flex-1 rounded border bg-gray-900 p-2" placeholder="Type a message..." /><Button onClick={sendMessage}>Send</Button></div></div>}
@@ -841,7 +786,7 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
         ))}
       </select>
       <select name="priority_image" defaultValue={profile.priority_image || 'image1'} style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2">
-        {Object.entries(profile).filter(([key, value]) => key.startsWith('image') && value).length > 1 && (
+        {Object.keys(profile).filter(k => k.startsWith('image')).length > 1 && (
           <>
             <option value="image1">Image 1 as Primary</option>
             <option value="image2">Image 2 as Primary</option>
@@ -853,25 +798,25 @@ const UmiMatchView = ({ onExit }: { onExit: () => void }) => {
       </select>
 
       <div className="grid gap-2">
-        {Object.entries(profile).filter(([key, value]) => key.startsWith('image') && value).length === 0 && (
+        {Object.keys(profile).filter(k => k.startsWith('image')).length === 0 && (
           <div className="flex flex-col gap-1 p-2 border border-dashed border-gray-700 rounded">
             <label className="text-xs text-gray-400">Add new image?</label>
             <input type="file" name="image1" accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
           </div>
         )}
-        {Object.entries(profile).filter(([key, value]) => key.startsWith('image') && value).map(([key, value], idx) => (
+        {Object.keys(profile).filter(k => k.startsWith('image')).map((key, idx) => (
           <div key={key} className="flex items-center justify-between gap-2 p-2 border rounded bg-gray-900/50 text-xs text-gray-400">
             <div className="flex items-center gap-2 truncate">
               <span className="font-bold text-gray-500">Image {idx + 1}:</span>
-              <span className="truncate">{(value as string).split('/').pop()}</span>
+              <span className="truncate">{profile[key]?.split('/').pop()}</span>
             </div>
             <input type="file" name={key} accept="image/*" className="text-[10px] w-32" />
           </div>
         ))}
-        {Object.entries(profile).filter(([key, value]) => key.startsWith('image') && value).length > 0 && Object.entries(profile).filter(([key, value]) => key.startsWith('image') && value).length < 5 && (
+        {Object.keys(profile).filter(k => k.startsWith('image')).length > 0 && Object.keys(profile).filter(k => k.startsWith('image')).length < 5 && (
           <div className="flex flex-col gap-1 p-2 border border-dashed border-gray-700 rounded">
             <label className="text-xs text-gray-400">Add another image?</label>
-            <input type="file" name={`image${Object.entries(profile).filter(([key, value]) => key.startsWith('image') && value).length + 1}`} accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
+            <input type="file" name={`image${Object.keys(profile).filter(k => k.startsWith('image')).length + 1}`} accept="image/*" style={{ color: 'white', backgroundColor: '#111827' }} className="rounded border bg-gray-900 p-2 text-sm file:text-white file:bg-gray-800 file:border-0" />
           </div>
         )}
       </div>
