@@ -17,7 +17,6 @@ services:
       - "4002:80"
     restart: always
     volumes:
-      - wordpress_html:/var/www/html
       - /root/private-includes/includes:/var/www/html/includes
       - /root/private-includes/includes:/app/includes
       - /root/private-includes/StoreProductsAndImagery:/var/www/html/StoreProductsAndImagery
@@ -113,7 +112,6 @@ services:
 volumes:
   pantry_data:
   uhub_data:
-  wordpress_html:
 
 networks:
   uminionnet:
