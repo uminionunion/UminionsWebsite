@@ -5180,8 +5180,8 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
               </button>
               <button type="button" className="uhub-mobile-brand" aria-label="Uminion Union - About Us" onClick={() => setMobileAboutOpen(true)}>Uminion Union</button>
               {user ? <div className="uhub-mobile-username truncate text-xs text-gray-200">{user.username}</div> : <div className="uhub-mobile-inline-auth">
-                  <Button type="button" size="sm" onClick={() => onOpenAuthModal('login')}>Log In</Button>
-                  <Button type="button" size="sm" className="bg-orange-400 text-black hover:bg-orange-500" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button>
+                  <Button type="button" size="sm" disabled aria-disabled="true" className="cursor-not-allowed opacity-60" onClick={() => undefined}>Log In</Button>
+                  <Button type="button" size="sm" disabled aria-disabled="true" className="cursor-not-allowed bg-orange-400 text-black opacity-60 hover:bg-orange-500" onClick={() => undefined}>Sign Up</Button>
                 </div>}
               <SiteWideMuteButton />
               {user && <div className="uhub-mobile-login-status"><AccountStatusButton showLogout={showLogout} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }} /></div>}
@@ -5447,7 +5447,7 @@ const getRandomizedProducts = (products: Product[]): Product[] => {
     )}
   </div>
     <div className="absolute bottom-0 right-0 flex items-center gap-2">
-      {user ? <AccountStatusButton showLogout={showLogout} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }} /> : <div className="flex gap-1"><Button size="sm" className="h-7 text-xs" onClick={() => onOpenAuthModal('login')}>Log In</Button><Button size="sm" className="h-7 text-xs bg-orange-400 hover:bg-orange-500 text-black" onClick={() => onOpenAuthModal('signup')}>Sign Up</Button></div>}
+      {user ? <AccountStatusButton showLogout={showLogout} onClick={() => { if (showLogout) void logout(); else setShowLogout(true); }} /> : <div className="flex gap-1"><Button size="sm" className="h-7 cursor-not-allowed text-xs opacity-60" disabled aria-disabled="true" onClick={() => undefined}>Log In</Button><Button size="sm" className="h-7 cursor-not-allowed bg-orange-400 text-xs text-black opacity-60 hover:bg-orange-500" disabled aria-disabled="true" onClick={() => undefined}>Sign Up</Button></div>}
   </div>
 </div>
          </div>
