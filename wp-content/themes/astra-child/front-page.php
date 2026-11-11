@@ -91,8 +91,14 @@ if(isset($_POST["submit2"])) { // Check if the login form was submitted.
             window.PANTRY_API_BASE_URL = '/pantry-api';
         </script>
 
-        <link rel="stylesheet" href="/uhub/dist/uhub.css">
-        <script type="module" src="/uhub/dist/uhub.js"></script>
+        <?php
+            $uhubCssPath = ABSPATH . 'uhub/dist/uhub.css';
+            $uhubJsPath = ABSPATH . 'uhub/dist/uhub.js';
+            $uhubCssVersion = is_file($uhubCssPath) ? filemtime($uhubCssPath) : '1';
+            $uhubJsVersion = is_file($uhubJsPath) ? filemtime($uhubJsPath) : '1';
+        ?>
+        <link rel="stylesheet" href="/uhub/dist/uhub.css?ver=<?php echo esc_attr((string) $uhubCssVersion); ?>">
+        <script type="module" src="/uhub/dist/uhub.js?ver=<?php echo esc_attr((string) $uhubJsVersion); ?>"></script>
 
         <style>
             #uhub-launcher-layout {
