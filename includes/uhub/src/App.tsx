@@ -126,7 +126,10 @@ useEffect(() => {
     setBodyAvatar(document.getElementById('uhub-body-avatar'));
   }, []);
 
+  const AUTH_FLOW_DISABLED = true;
+
   const handleOpenAuthModal = (mode: 'login' | 'signup') => {
+    if (AUTH_FLOW_DISABLED) return;
     setAuthModal({ isOpen: true, mode });
   };
 
