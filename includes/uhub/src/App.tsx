@@ -255,7 +255,7 @@ useEffect(() => {
       )}
       {isLauncherPhotoSuccessOpen && <ProfilePhotoSuccessToast purpose="profile" onDismiss={dismissLauncherPhotoSuccess} />}
 
-      {authModal.isOpen && (
+      {authModal.isOpen && !AUTH_FLOW_DISABLED && (
         <AuthModal
           isOpen={authModal.isOpen}
           mode={authModal.mode}
